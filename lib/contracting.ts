@@ -732,10 +732,14 @@ export function seedBills(state: ContractingState): ContractorBill[] {
   const p = wos.find(w => w.id === 'wo_b1'), q = wos.find(w => w.id === 'wo_b2')
   const out: ContractorBill[] = []
   if (p) {
+    // 6 m more than was checked on the deepest band: approved at the record.
+    const lines = draftLines({ ...state, contractorBills: [] }, p, '2026-08-01', '2026-08-31')
+    const deep = [...lines].reverse().find(l => l.kind === 'metres')
+    if (deep) { deep.qty = r2(deep.qty + 6); deep.amount = Math.round(deep.qty * deep.rate) }
     const bill: ContractorBill = {
       id: 'cb_1', number: 'CP/26-27/041', workOrderId: p.id, project: p.project, contractorId: p.contractorId,
       periodFrom: '2026-08-01', periodTo: '2026-08-31', receivedAt: '2026-09-03T11:20', source: 'login',
-      lines: draftLines({ ...state, contractorBills: [] }, p, '2026-08-01', '2026-08-31'), manual: [], status: 'received',
+      lines, manual: [], status: 'received',
     }
     const c = checkBill({ ...state, contractorBills: [bill] }, bill)
     out.push({ ...bill, status: 'approved', approved: snapshotOf(c, 'Admin User', '2026-09-06T15:05') })

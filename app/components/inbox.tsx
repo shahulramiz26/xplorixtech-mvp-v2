@@ -40,7 +40,13 @@ export function useInbox(): InboxResult {
 export function useMark() {
   const { setFindingStatus } = useCosting()
   return (u: InboxUnit, st: Omit<FindingStatus, 'by' | 'at' | 'ids'> | null) =>
-    setFindingStatus(u.id, st ? { ...st, by: ADMIN_NAME, at: nowStamp(), ids: u.items.map(f => f.id) } : null)
+    setFindingStatus(u.id, st ? {
+      ...st, by: ADMIN_NAME, at: nowStamp(), ids: u.items.map(f => f.id),
+      found: {
+        title: u.title, dept: u.dept, money: u.money, on: u.since ?? TODAY,
+        items: u.items.map(f => ({ id: f.id, title: f.title, kind: f.kind, ref: f.ref, money: f.money })),
+      },
+    } : null)
 }
 
 const SEV_STYLE: Record<Severity, { bg: string; fg: string }> = {

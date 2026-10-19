@@ -1853,6 +1853,35 @@ export interface FindingStatus {
   /* The findings it covered when it was marked. A story that gains a new
    * finding opens again, so new evidence is never hidden by an old answer. */
   ids?: string[]
+  /* What was found, as it stood when it was answered: kept so XPLORIX can
+   * later check in the record what came of it (lib/value.ts), even after the
+   * finding itself has gone from the list. */
+  found?: FoundSnapshot
+}
+export interface FoundSnapshot {
+  title: string
+  dept: string
+  money?: number
+  on?: string           // the day it was found, where known
+  items: { id: string; title: string; kind?: string; ref?: Record<string, string | number | string[]>; money?: number }[]
+}
+
+/* What the demo company did with earlier findings, so the inbox has a
+ * history and the Value screen has something to check in the record. Each
+ * keeps the finding as it stood when it was answered. */
+const SEED_FINDING_STATUS: Record<string, FindingStatus> = {
+  'past:inv-0001-overdue': {
+    status: 'done', by: 'Admin User', at: '2026-08-06T10:15', ids: [],
+    found: { title: 'Invoice INV-0001 is overdue', dept: 'billing', on: '2026-08-06', items: [{ id: 'live:od_inv_seed_1', title: 'Invoice INV-0001 is overdue', kind: 'invoice-overdue', ref: { invoiceId: 'inv_seed_1' } }] },
+  },
+  'past:t08-runout': {
+    status: 'assigned', to: 'Stores', by: 'Admin User', at: '2026-08-29T09:40', ids: [],
+    found: { title: 'HQ Impregnated Bit runs out in 7 days', dept: 'stock', money: 22000, on: '2026-08-29', items: [{ id: 'stock:running_t08', title: 'HQ Impregnated Bit runs out in 7 days', kind: 'stock-runout', ref: { itemId: 't08', gapDays: 11, runsOutOn: '2026-09-05' }, money: 22000 }] },
+  },
+  'past:rig002-fuel': {
+    status: 'dismissed', note: 'New pump fitted on 2 Sep, settling in', by: 'Admin User', at: '2026-09-04T17:20', ids: [],
+    found: { title: 'RIG-002 fuel 30% above its own normal', dept: 'finance', money: 8600, on: '2026-09-04', items: [{ id: 'finance:fuel-own:RIG-002', title: 'RIG-002 fuel 30% above its own normal', money: 8600 }] },
+  },
 }
 
 function initial(): State {
@@ -1865,10 +1894,22 @@ function initial(): State {
     contractors: SEED_CONTRACTORS, workOrders: SEED_WORK_ORDERS, contractorReports: SEED_CONTRACTOR_REPORTS,
     wording: 'standard' as Wording,
     users: SEED_USERS,
-    findingStatus: {} as Record<string, FindingStatus>,
+    findingStatus: SEED_FINDING_STATUS,
   }
   const demo = seedInvoices(base, SEED_PROJECTS[0].name, SEED_PROJECTS[0].client)
-  const withInvoices = { ...base, invoices: demo.invoices, holeStatus: { ...base.holeStatus, ...demo.holeStatus } }
+  /* Two days of client standby on Site B that were on no hole, billed on
+   * their own invoice and paid: what the standby check finds. */
+  const siteB = SEED_PROJECTS.find(p => p.name === SITE_B)
+  const sbRate = versionOn(SEED_CLIENT_RATES.filter(c => c.project === SITE_B), '2026-08-20')?.standbyPerDay ?? 0
+  const standbyDays = ['CQ-01|2026-08-20', 'CP-01|2026-08-23']
+  const sbLines: InvoiceLine[] = standbyDays.map(k => ({ label: `${k.split('|')[0]} · client standby, no hole · ${k.slice(-2)}/${k.slice(-5, -3)}`, qty: '1 day', rate: money(sbRate), amount: sbRate }))
+  const sbSub = sbLines.reduce((s, l) => s + l.amount, 0)
+  const standbyInvoice: Invoice = {
+    id: 'inv_seed_sb', number: 'INV-0004', project: SITE_B, client: siteB?.client ?? '', date: '2026-08-28', holeNumbers: [],
+    lines: sbLines, subtotal: sbSub, taxPercent: 18, total: sbSub * 1.18, status: 'paid', dueDate: '2026-09-27',
+    paidDate: '2026-09-09', paidAmount: sbSub * 1.18, standbyDays,
+  }
+  const withInvoices = { ...base, invoices: sbRate ? [...demo.invoices, standbyInvoice] : demo.invoices, holeStatus: { ...base.holeStatus, ...demo.holeStatus } }
   return { ...withInvoices, contractorBills: seedBills(withInvoices) }
 }
 
@@ -1976,7 +2017,8 @@ export interface ProjectLog { kind: ProjectEventKind; title: string; detail?: st
 const CostingContext = createContext<CtxValue | null>(null)
 /* v4: logins, and the fuller drill and maintenance logs, joined the record. An older
  * saved copy has none of them, so it is left behind rather than merged. */
-const KEY = 'xplorix_costing_v5'
+/* v6: the MVP v2 demo (an inbox history, standby billed, a bill cut to the record). */
+const KEY = 'xplorix_costing_v6'
 
 /* One store per browser tab. A layout mounts the provider once; a screen that
  * also wraps itself in <CostingProvider> (Finance, Inventory, Projects do, so

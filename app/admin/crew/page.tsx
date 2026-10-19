@@ -384,7 +384,7 @@ export default function CrewPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1400 }}>
+    <div style={{ maxWidth: 2000 }}>
 
       {/* ---------- header ---------- */}
       <div style={{

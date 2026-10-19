@@ -236,7 +236,8 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       action: spare ? `Transfer the ${spare} from ${elsewhere[0].project} before ordering.` : a.kind === 'overdue' || a.kind === 'replacement' ? 'Chase the supplier today, or re-source.' : a.kind === 'idle' || a.kind === 'stranded' ? 'Issue it to a rig or move it to a live project.' : 'Order now.',
       owner: a.kind === 'overdue' || a.kind === 'replacement' || a.kind === 'dueSoon' ? 'Procurement' : 'Stores',
       money: a.value, moneyNote: a.kind === 'idle' || a.kind === 'stranded' ? 'tied up in stock' : 'to order', href: '/admin/inventory',
-      kind: a.kind === 'runningOut' ? 'stock-runout' : a.kind === 'stranded' ? 'stranded' : undefined, ref: { itemId: partId },
+      kind: a.kind === 'runningOut' ? 'stock-runout' : a.kind === 'stranded' ? 'stranded' : undefined,
+      ref: { itemId: partId, ...(a.gapDays != null ? { gapDays: a.gapDays, runsOutOn: addDays(today, a.days ?? 0) } : {}) },
     })
   })
 
