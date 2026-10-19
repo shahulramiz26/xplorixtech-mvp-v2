@@ -34,22 +34,12 @@ const SCREENS = [
   { href: '/admin/intelligence/risks', label: 'Risk analysis', icon: ShieldAlert },
 ]
 
-/* The screens are one piece of work, so each carries the way to the others. */
+/* The Intelligence screens used to carry their own row of links to each
+ * other. They now sit inside their departments, and the department's tabs
+ * come from the admin shell (app/components/dept-tabs.tsx). Kept so the
+ * screens that render it need no change. */
 export function IntelTabs() {
-  const path = usePathname()
-  return (
-    <nav aria-label="XPLORIX Intelligence" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-      {SCREENS.map(s => {
-        const on = path === s.href
-        return (
-          <Link key={s.href} href={s.href} aria-current={on ? 'page' : undefined} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 9, fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            color: on ? T.text : T.muted, background: on ? tint(T.orange, 12) : T.card, border: `1px solid ${on ? tint(T.orange, 45) : T.border}`,
-          }}><s.icon size={14} />{s.label}</Link>
-        )
-      })}
-    </nav>
-  )
+  return null
 }
 
 /* One colour for each party, the same on every chart: own rigs first. */

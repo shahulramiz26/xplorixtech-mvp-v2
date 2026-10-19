@@ -1,5 +1,6 @@
 'use client'
 
+import { DeptInbox } from '../../components/inbox'
 import Link from 'next/link'
 import { ChevronRight, MapPin } from 'lucide-react'
 import { useCosting, fullDate } from '../../../lib/costing-store'
@@ -32,6 +33,8 @@ export default function ProjectsPage() {
       <Head title="Projects"
         sub="One record per project. What you set here is what Finance bills at, what the rig logs against, and what the client sees in his portal."
         right={<Btn kind="primary" href="/admin/projects/new">New project</Btn>} />
+
+      <DeptInbox depts={['operations', 'geology']} name="Operations" />
 
       <Grid>
         <Tile label="Active projects" value={live.length} note={`${projects.length - live.length} on hold or completed`} />

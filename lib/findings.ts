@@ -67,6 +67,13 @@ export interface Finding {
   href?: string
   rig?: string
   project?: string
+  /* What the finding is about (a part, a hole, a rig, an invoice). Findings
+   * that share a subject are one story in the inbox (lib/inbox.ts). */
+  subject?: string
+  since?: string           // YYYY-MM-DD the thing behind it happened, where known
+  tag?: string             // a short kind label, for a department's filters
+  kind?: string            // what XPLORIX tracks afterwards to value it (lib/value.ts)
+  ref?: Record<string, string | number | string[]>
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -118,7 +125,8 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       detail: [stop.detail, a.checks.length > 1 ? `${plural(a.checks.length - 1, 'more check')} on this shift.` : ''].filter(Boolean).join(' '),
       action: 'Correct the log. Every figure built on it (cost, invoice, forecast) is wrong until then.',
       owner: a.log.supervisor || ownerOf('data'), due: today, evidence: [shiftLabel(a.log)],
-      href: '/admin/intelligence/drill-logs', rig: a.log.rig, project: a.log.project,
+      href: `/admin/logs/drill?edit=${encodeURIComponent(a.log.id)}`, rig: a.log.rig, project: a.log.project, since: a.log.date,
+      subject: a.log.holeNumber ? `hole:${a.log.holeNumber}` : undefined,
     })
   })
   if (withStops.length > 12) push({
@@ -166,7 +174,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
     title: `${rig}: ${plural(list.length, 'shift')} not logged in the last 7 days`,
     detail: list.slice(0, 4).map(m => `${shortDate(m.date)} ${m.shift.toLowerCase()}`).join(', ') + (list.length > 4 ? ' and more.' : '.'),
     action: 'Ask the supervisor to enter them, or log the rig as stood down. A missing shift is missing metres, cost and billing.',
-    owner: 'Site in-charge', due: today, rig, project: list[0].project, href: '/admin/logs/drill',
+    owner: 'Site in-charge', due: today, rig, project: list[0].project, href: '/admin/logs/drill', since: list[list.length - 1].date,
   }))
 
   // ── operations ─────────────────────────────────────────────────────────
@@ -228,6 +236,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       action: spare ? `Transfer the ${spare} from ${elsewhere[0].project} before ordering.` : a.kind === 'overdue' || a.kind === 'replacement' ? 'Chase the supplier today, or re-source.' : a.kind === 'idle' || a.kind === 'stranded' ? 'Issue it to a rig or move it to a live project.' : 'Order now.',
       owner: a.kind === 'overdue' || a.kind === 'replacement' || a.kind === 'dueSoon' ? 'Procurement' : 'Stores',
       money: a.value, moneyNote: a.kind === 'idle' || a.kind === 'stranded' ? 'tied up in stock' : 'to order', href: '/admin/inventory',
+      kind: a.kind === 'runningOut' ? 'stock-runout' : a.kind === 'stranded' ? 'stranded' : undefined, ref: { itemId: partId },
     })
   })
 
@@ -242,6 +251,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       detail: c.map(x => `${x.name}: ordering ${x.ordering}, ${x.free} free on ${Array.from(new Set(x.spares.map(sp => sp.project))).join(', ')}`).join('; ') + '.',
       action: 'Open the order: XPLORIX moves them across in one click and trims the order.',
       owner: 'Procurement', money: saves, moneyNote: 'not spent', href: '/admin/inventory',
+      kind: 'buy-check', ref: { poId: po.id, items: c.map(x => x.itemId) }, tag: 'Before you buy',
     })
   })
 
@@ -303,6 +313,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       detail: `${plural(ds.length, 'day')} the client stopped the rig while it was on no hole (${ds.slice(0, 4).map(d => `${d.rig} ${shortDate(d.date)}`).join(', ')}${ds.length > 4 ? '…' : ''}). No hole's bill carries them.`,
       action: 'Add them on the next invoice: Finance offers them when you review it.', owner: 'Billing', project,
       money: amount, moneyNote: 'standby at the contract rate', href: '/admin/intelligence/money',
+      subject: `standby:${project}`, kind: 'standby-loose', ref: { project, keys: ds.map(d => d.key) }, tag: 'Standby',
       evidence: ds.map(d => `${d.rig} · ${shortDate(d.date)} · ${d.hours} h${d.noted ? '' : ' · no note'}`),
     })
   })

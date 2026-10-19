@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { operations, operationsInsights } from '../../../../lib/analytics'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Meter, Empty, Legend, Tip, Status, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, rigColour, n0, n1 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, rigColour, n0, n1 } from '../shared'
 
 /* OPERATIONS — are the rigs drilling as fast as they should?
  * Speed while the bit is on bottom, metres and core by week, every stop by
@@ -13,7 +13,6 @@ import { useAnalytics, BoardTabs, FilterBar, InsightsCard, rigColour, n0, n1 } f
 export default function OperationsDashboard() {
   const { state, f } = useAnalytics()
   const o = useMemo(() => operations(state, f), [state, f])
-  const insights = useMemo(() => operationsInsights(o), [o])
   const lost = o.ownHours + o.clientHours
   const topStop = Math.max(1, ...o.downtime.map(d => d.hours))
   const onTarget = o.target.reduce((s, t) => s + t.on, 0), targetDays = o.target.reduce((s, t) => s + t.days, 0)
@@ -26,7 +25,6 @@ export default function OperationsDashboard() {
           : <>No metres logged for these filters.</>}
         right={<FilterBar />} />
       <BoardTabs />
-      <InsightsCard insights={insights} empty="Not enough drilling in these filters to compare yet." />
 
       <Grid min={170}>
         <Tile label="Metres drilled" value={`${n0(o.metres)} m`} note={`${o.days ? n1(o.metres / o.days) : 0} m a rig-day`} />

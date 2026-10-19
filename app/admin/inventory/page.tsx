@@ -1,5 +1,6 @@
 'use client'
 
+import { DeptInbox } from '../../components/inbox'
 import { useState, useMemo, Fragment, ReactNode } from 'react'
 import {
   useInventory, TODAY, FORMATIONS, CATEGORIES, costPerMetre, toolingPerMetre,
@@ -1838,15 +1839,9 @@ export default function InventoryPage() {
             Finance charges every metre from what the rig holds, so the two modules can never disagree.
           </p>
         </div>
-        {alerts.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 9, background: urgent ? 'color-mix(in srgb, var(--x-red) 10%, transparent)' : 'color-mix(in srgb, var(--x-amber) 10%, transparent)', border: `1px solid ${urgent ? 'color-mix(in srgb, var(--x-red) 30%, transparent)' : 'color-mix(in srgb, var(--x-amber) 30%, transparent)'}` }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: urgent ? C.red : C.amber }} />
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: urgent ? C.red : C.amber }}>{alerts.length} need{alerts.length === 1 ? 's' : ''} attention</span>
-          </div>
-        )}
       </div>
 
-      <AlertsPanel alerts={alerts} />
+      <DeptInbox depts={['stock']} name="Stores" />
 
       <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
         {TABS.map(t => (

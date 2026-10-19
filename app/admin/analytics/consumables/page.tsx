@@ -5,7 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, 
 import { consumables, consumablesInsights } from '../../../../lib/analytics'
 import { money } from '../../../../lib/costing-store'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Meter, Empty, Legend, Tip, Status, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0, n1 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, n0, n1 } from '../shared'
 
 /* CONSUMABLES — where are fuel, water, additives and parts going?
  * Your own rigs only: a contractor's fuel and parts are his. The cost split
@@ -14,7 +14,6 @@ import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0, n1 } from '../sha
 export default function ConsumablesDashboard() {
   const { state, inv, f } = useAnalytics()
   const c = useMemo(() => consumables(state, inv, f), [state, inv, f])
-  const insights = useMemo(() => consumablesInsights(c), [c])
   const total = c.costRows.reduce((s, r) => s + r.value, 0)
   const topPart = Math.max(1, ...c.parts.map(p => p.cost))
 
@@ -26,7 +25,6 @@ export default function ConsumablesDashboard() {
           : <>None of your own rigs drilled in these filters.</>}
         right={<FilterBar />} />
       <BoardTabs />
-      <InsightsCard insights={insights} />
 
       <Grid min={170}>
         <Tile label="Fuel" value={`${n0(c.fuel)} L`} note={c.ownMetres ? `${n1(c.fuel / c.ownMetres)} L a metre` : undefined} />

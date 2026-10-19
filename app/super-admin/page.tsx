@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 
 // ── TYPES ─────────────────────────────────────────────────────────────────
 interface Company {
@@ -119,7 +120,7 @@ function LoginPage({onLogin}:{onLogin:()=>void}) {
 
   return (
     <div style={{minHeight:'100vh',background:'#080B10',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Space Grotesk',sans-serif",position:'relative',overflow:'hidden'}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0;}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0;}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}` }} />
       <div style={{position:'absolute',top:'-20%',left:'50%',transform:'translateX(-50%)',width:600,height:600,background:'radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 65%)',borderRadius:'50%'}}/>
       <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(30,41,59,0.1) 1px,transparent 1px),linear-gradient(90deg,rgba(30,41,59,0.1) 1px,transparent 1px)',backgroundSize:'50px 50px'}}/>
       <div style={{width:'100%',maxWidth:400,position:'relative',zIndex:10}}>
@@ -163,8 +164,8 @@ function LoginPage({onLogin}:{onLogin:()=>void}) {
                   placeholder="Enter password"
                   style={{width:'100%',padding:'11px 40px 11px 13px',borderRadius:9,border:'1px solid #1E293B',background:'rgba(255,255,255,0.03)',color:'#F8FAFC',fontFamily:'inherit',fontSize:13,outline:'none'}}
                   onFocus={e=>{e.target.style.borderColor='rgba(249,115,22,0.5)'}} onBlur={e=>{e.target.style.borderColor='#1E293B'}}/>
-                <button type="button" onClick={()=>setShow(!show)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#64748B',cursor:'pointer',fontSize:14}}>
-                  {show?'👁':'👁‍🗨'}
+                <button type="button" aria-label={show ? 'Hide password' : 'Show password'} onClick={()=>setShow(!show)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#64748B',cursor:'pointer',fontSize:14}}>
+                  {show ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
                 </button>
               </div>
             </div>
@@ -177,7 +178,7 @@ function LoginPage({onLogin}:{onLogin:()=>void}) {
         </div>
         <p style={{textAlign:'center',fontSize:11,color:'#1E293B',marginTop:16}}>ANMAK CONSULTANCY SERVICES PRIVATE LIMITED · Internal Only</p>
       </div>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}` }} />
     </div>
   )
 }
@@ -247,7 +248,7 @@ export default function SuperAdmin() {
 
   return (
     <div style={{fontFamily:"'Space Grotesk',sans-serif",background:'#080B10',color:'#F8FAFC',minHeight:'100vh'}}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-track{background:#080B10;}::-webkit-scrollbar-thumb{background:#1E293B;border-radius:2px;}
@@ -257,7 +258,7 @@ export default function SuperAdmin() {
         tr:hover td{background:rgba(255,255,255,0.02);}
         select option{background:#0D1117;}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-      `}</style>
+      ` }} />
 
       {/* TOP NAV */}
       <nav style={{background:'#0D1117',borderBottom:'1px solid rgba(249,115,22,0.1)',padding:`12px ${P}`,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100}}>

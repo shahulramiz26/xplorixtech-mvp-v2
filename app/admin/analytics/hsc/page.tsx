@@ -5,7 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { safety, safetyInsights } from '../../../../lib/analytics'
 import { day } from '../../../../lib/projects'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Meter, Empty, Tip, Status, axisTick, gridStroke, th, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, n0 } from '../shared'
 
 /* HEALTH AND SAFETY — is everyone working safely?
  * Every incident and near miss the supervisors logged on a drill log. */
@@ -13,7 +13,6 @@ import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0 } from '../shared'
 export default function SafetyDashboard() {
   const { state, f } = useAnalytics()
   const x = useMemo(() => safety(state, f), [state, f])
-  const insights = useMemo(() => safetyInsights(x), [x])
   const topType = Math.max(1, ...x.byType.map(t => t.value))
   const sevTone = (s: string) => /high|serious|major|critical/i.test(s) ? 'bad' as const : /medium|moderate/i.test(s) ? 'warn' as const : 'info' as const
 
@@ -25,7 +24,6 @@ export default function SafetyDashboard() {
           : <>No shifts logged for these filters.</>}
         right={<FilterBar />} />
       <BoardTabs />
-      <InsightsCard insights={insights} />
 
       <Grid min={170}>
         <Tile label="Incidents and near misses" value={x.incidents.length} tone={x.incidents.length ? 'warn' : undefined} />

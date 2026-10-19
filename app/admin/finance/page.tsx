@@ -1,5 +1,6 @@
 'use client'
 
+import { DeptInbox } from '../../components/inbox'
 import { useState, useMemo, useEffect, useCallback, Fragment, ReactNode, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useInventory, toolingRatesFor } from '../../../lib/inventory-store'
@@ -2306,6 +2307,8 @@ function CostingScreen() {
           <Btn size="sm" onClick={() => setShowHistory(true)}>↺ Rates history</Btn>
         </div>
       </div>
+
+      <DeptInbox depts={['finance', 'billing']} name="Finance and billing" />
 
       <div style={{
         background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,

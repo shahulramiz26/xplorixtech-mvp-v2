@@ -2,8 +2,8 @@
 
 import { ADMIN_NAME } from '../../../../lib/costing-store'
 import { DrillLogsScreen } from '../../../components/log-screens'
+import { DeptInbox } from '../../../components/inbox'
 
-/* Every drill log in the company's record: the admin can open and change any. */
 export default function AdminDrillLogs() {
-  return <DrillLogsScreen who={ADMIN_NAME} />
+  return <DrillLogsScreen who={ADMIN_NAME} top={<DeptInbox depts={['data', 'crew', 'safety']} name="Drill logs" />} />
 }

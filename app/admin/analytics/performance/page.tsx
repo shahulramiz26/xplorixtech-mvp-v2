@@ -6,7 +6,7 @@ import { holeShifts, type Insight } from '../../../../lib/analytics'
 import { projectHoles } from '../../../../lib/projects'
 import { useInventory } from '../../../../lib/inventory-store'
 import { Page, PageHead, Card, Tile, Grid, Table, Empty, Status, Tip, inputStyle, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n1 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, n1 } from '../shared'
 
 /* HOLE BY HOLE — what happened in this hole, shift by shift?
  * Depth against plan, every shift's metres, stops and parts, read from the
@@ -55,7 +55,16 @@ export default function HoleByHole() {
           </select>
           <Status tone={hole.status === 'drilling' ? 'info' : 'good'}>{hole.status === 'drilling' ? 'Drilling' : 'Finished'}</Status>
         </div>
-        <InsightsCard insights={insights} />
+        {insights.length > 0 && (
+          <Card title="This hole in a few lines" pad={false}>
+            {insights.map((i, n) => (
+              <div key={i.id} style={{ padding: '11px 18px', borderTop: n ? rowLine : 'none' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{i.title}</div>
+                <div style={{ fontSize: 12.5, color: T.muted, marginTop: 2, lineHeight: 1.5 }}>{i.detail}</div>
+              </div>
+            ))}
+          </Card>
+        )}
         <Grid min={160}>
           <Tile label="Depth" value={`${n1(metres)} m`} note={hole.planned ? `of ${hole.planned} m planned` : 'No planned depth'} />
           <Tile label="Days on the hole" value={days} note={`${rows.filter(r => !r.l.segmentOf).length} shifts`} />

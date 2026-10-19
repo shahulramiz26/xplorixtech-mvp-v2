@@ -9,7 +9,10 @@ import {
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2,
 } from 'lucide-react'
 import { CurrencyProvider } from '../components/currency-context'
-import { CostingProvider, monthOf, projectCode } from '../../lib/costing-store'
+import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
+import { deptLabel, type Dept } from '../../lib/findings'
+import { InboxProvider, useInbox } from '../components/inbox'
+import { DeptTabs } from '../components/dept-tabs'
 import { useAdminOverview, financeLink, type Tone } from '../../lib/admin-overview'
 import { T, display, toneColor } from '../components/kit'
 import { ThemeScope, ThemeToggle } from '../components/theme'
@@ -33,70 +36,56 @@ import { IS_DEMO, COMPANY_NAME } from '../../lib/company'
  * copy and the badges stay true as work is done.
  * ========================================================================== */
 
-/* `sample` marks a screen that still runs on sample data: shown for the demo
- * company only. `owner` is for the account that set XPLORIX up. */
-type NavItem = { href: string; label: string; icon: React.ElementType; badge?: 'finance' | 'inventory' | 'projects' | 'contractors' | number; sample?: true; owner?: true }
+/* The menu is one entry per job, grouped by department. Where a job has more
+ * than one screen, the others are tabs on it (app/components/dept-tabs.tsx),
+ * so XPLORIX Intelligence sits inside the department it is about.
+ *
+ * `badge` is the department's "act now" count from the one inbox, so the
+ * numbers in the menu are the numbers on the Dashboard. `also` lists the tab
+ * screens that keep the entry lit. `sample` marks a screen still on sample
+ * data: kept out of the menu, and blocked in a real company. `owner` is for
+ * the account that set XPLORIX up. */
+type NavItem = { href: string; label: string; icon: React.ElementType; badge?: 'all' | Dept[]; also?: string[]; sample?: true; owner?: true }
 const NAV: { title: string | null; items: NavItem[] }[] = [
-  { title: null, items: [{ href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
+  { title: null, items: [{ href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 'all', also: ['/admin/inbox'] }] },
   {
     title: 'Operations',
     items: [
-      { href: '/admin/projects', label: 'Projects', icon: FolderOpen, badge: 'projects' },
-      { href: '/admin/contractors', label: 'Contractors', icon: Handshake, badge: 'contractors' },
-      { href: '/admin/rigs', label: 'Rigs & equipment', icon: Truck },
+      { href: '/admin/projects', label: 'Projects & holes', icon: FolderOpen, badge: ['operations', 'geology'], also: ['/admin/intelligence/holes'] },
+      { href: '/admin/rigs', label: 'Rigs', icon: Truck },
+      { href: '/admin/logs/drill', label: 'Drill logs', icon: Activity, badge: ['data', 'crew', 'safety'], also: ['/admin/intelligence/drill-logs'] },
+      { href: '/admin/logs/maintenance', label: 'Maintenance', icon: Wrench, badge: ['maintenance'] },
+    ],
+  },
+  { title: 'Contractors', items: [{ href: '/admin/contractors', label: 'Contractors', icon: Handshake, badge: ['contractors'], also: ['/admin/intelligence/contractors'] }] },
+  { title: 'Stores', items: [{ href: '/admin/inventory', label: 'Parts & inventory', icon: Boxes, badge: ['stock'] }] },
+  { title: 'Finance & billing', items: [{ href: '/admin/finance', label: 'Finance & costing', icon: DollarSign, badge: ['finance', 'billing'], also: ['/admin/intelligence/money'] }] },
+  { title: 'Tenders', items: [{ href: '/admin/intelligence/pricing', label: 'Tenders', icon: Target, also: ['/admin/bid-intelligence'] }] },
+  {
+    title: 'Management',
+    items: [
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-      { href: '/admin/reports', label: 'Performance reports', icon: FileText, sample: true },
+      { href: '/admin/intelligence/months', label: 'Outlook', icon: CalendarRange, also: ['/admin/intelligence/risks'] },
     ],
   },
   {
-    title: 'Logs',
-    items: [
-      { href: '/admin/logs/drill', label: 'Drill logs', icon: Activity },
-      { href: '/admin/logs/maintenance', label: 'Maintenance logs', icon: Wrench },
-    ],
-  },
-  {
-    title: 'Commercial',
-    items: [
-      { href: '/admin/bid-intelligence', label: 'Bid Intelligence', icon: Target, sample: true },
-      { href: '/admin/finance', label: 'Finance & costing', icon: DollarSign, badge: 'finance' },
-    ],
-  },
-  {
-    title: 'Stock',
-    items: [{ href: '/admin/inventory', label: 'Parts & inventory', icon: Boxes, badge: 'inventory' }],
-  },
-  {
-    title: 'XPLORIX Intelligence',
-    items: [
-      { href: '/admin/intelligence', label: 'Today', icon: ListChecks },
-      { href: '/admin/intelligence/drill-logs', label: 'Drill log check', icon: ClipboardCheck },
-      { href: '/admin/intelligence/money', label: 'Money checks', icon: IndianRupee },
-      { href: '/admin/intelligence/pricing', label: 'Price a tender', icon: Calculator },
-      { href: '/admin/intelligence/contractors', label: 'Contractor comparison', icon: GitCompare },
-      { href: '/admin/intelligence/holes', label: 'Hole finish prediction', icon: Flag },
-      { href: '/admin/intelligence/months', label: 'This month and next', icon: CalendarRange },
-      { href: '/admin/intelligence/risks', label: 'Risk analysis', icon: ShieldAlert },
-    ],
-  },
-  {
-    title: 'Exchange',
-    items: [
-      { href: '/admin/marketplace', label: 'Marketplace', icon: Store, sample: true },
-      { href: '/admin/crew', label: 'Crew & jobs', icon: HardHat, badge: 8, sample: true },
-    ],
-  },
-  {
-    title: 'Account',
+    title: 'Setup',
     items: [
       { href: '/admin/users', label: 'Users', icon: Users },
-      { href: '/admin/billing', label: 'Billing', icon: CreditCard, sample: true },
       { href: '/admin/companies', label: 'Companies', icon: Building2, owner: true },
       { href: '/admin/settings', label: 'Settings', icon: Settings },
     ],
   },
 ]
-const ALL = NAV.flatMap(g => g.items)
+/* Screens with no menu entry: still guarded, still found by search. */
+const HIDDEN: NavItem[] = [
+  { href: '/admin/bid-intelligence', label: 'Engineering estimate', icon: Target, sample: true },
+  { href: '/admin/reports', label: 'Performance reports', icon: FileText, sample: true },
+  { href: '/admin/marketplace', label: 'Marketplace', icon: Store, sample: true },
+  { href: '/admin/crew', label: 'Crew & jobs', icon: HardHat, sample: true },
+  { href: '/admin/billing', label: 'Plans and billing', icon: CreditCard, sample: true },
+]
+const ALL = [...NAV.flatMap(g => g.items), ...HIDDEN]
 /* The menu for this company and this person. */
 function menuFor(demo: boolean, owner: boolean) {
   return NAV.map(g => ({ ...g, items: g.items.filter(i => (demo || !i.sample) && (owner || !i.owner)) })).filter(g => g.items.length > 0)
@@ -108,6 +97,7 @@ const SHELL_CSS = `
   .xpl-row:hover { background: rgba(var(--x-ov),0.025); }
   .xpl-nav:hover { background: rgba(var(--x-ov),0.04); color: var(--x-text) !important; }
   .xpl-hit:hover { background: rgba(var(--x-ov),0.05); }
+  @media (max-width: 640px) { .xpl-actions { padding-left: 0 !important; } .xpl-chips { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; } .xpl-chips > * { flex-shrink: 0; } }
 `
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -125,17 +115,21 @@ function Shell({ children }: { children: React.ReactNode }) {
   const o = useAdminOverview()
   const session = useSession()
 
-  const current = [...ALL].sort((a, b) => b.href.length - a.href.length)
-    .find(n => pathname === n.href || pathname.startsWith(n.href + '/'))
+  const inbox = useInbox()
+  /* The screen the path is on: its own entry if it has one, otherwise the
+   * entry it is a tab of. */
+  const within = (h: string) => pathname === h || pathname.startsWith(h + '/')
+  const current = [...ALL].sort((a, b) => b.href.length - a.href.length).find(n => within(n.href))
+  const lit = ALL.filter(n => within(n.href) || (n.also ?? []).some(within))
+    .sort((a, b) => Math.max(...[b.href, ...(b.also ?? [])].filter(within).map(h => h.length)) - Math.max(...[a.href, ...(a.also ?? [])].filter(within).map(h => h.length)))[0]
   const demo = IS_DEMO
   const owner = session.status === 'in' && !!session.user.owner
   const menu = menuFor(demo, owner)
   // A screen on sample data, opened by its address in a real company: say so instead of showing someone else's numbers.
   const blocked = !!current && ((current.sample && !demo) || (current.owner && !owner))
 
-  const financeCount = o.money.returned.length + o.money.disputed.length
-  const badge = (b: NavItem['badge']) => b === 'finance' ? financeCount : b === 'inventory' ? o.urgentAlerts.length : b === 'projects' ? o.projectNews : b === 'contractors' ? o.contractorWork : b ?? 0
-  const badgeTone = (b: NavItem['badge']) => (b === 'finance' && financeCount) || (b === 'inventory' && o.urgentAlerts.length) ? T.red : T.orange
+  const actNow = inbox.open.filter(u => u.severity === 'act')
+  const badge = (b: NavItem['badge']) => !b ? 0 : b === 'all' ? actNow.length : actNow.filter(u => u.depts.some(d => b.includes(d))).length
 
   // Ctrl K or ⌘ K opens search from anywhere; so does "/" when not typing.
   useEffect(() => {
@@ -180,7 +174,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <div key={g.title ?? 'top'} style={{ marginTop: gi === 0 ? 4 : 11 }}>
               {g.title && <div style={{ fontSize: 11.5, fontWeight: 600, color: T.dim, padding: '0 10px 5px' }}>{g.title}</div>}
               {g.items.map(item => {
-                const active = current?.href === item.href
+                const active = lit?.href === item.href
                 const n = badge(item.badge)
                 return (
                   <Link key={item.href} href={item.href} className={active ? '' : 'xpl-nav'} aria-current={active ? 'page' : undefined} style={{
@@ -191,9 +185,9 @@ function Shell({ children }: { children: React.ReactNode }) {
                     <item.icon size={16} style={{ color: active ? T.orange : T.faint, flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                     {n > 0 && (
-                      <span aria-label={`${n} need attention`} style={{
+                      <span aria-label={`${n} to act on now`} style={{
                         minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                        background: badgeTone(item.badge), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: T.red, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>{n}</span>
                     )}
                   </Link>
@@ -249,34 +243,37 @@ function Shell({ children }: { children: React.ReactNode }) {
               <SavedState />
               <ThemeToggle />
               <div style={{ position: 'relative' }}>
-                <button onClick={() => setBell(b => !b)} aria-label={`${o.attention.length} things need attention`} aria-expanded={bell} className="xpl-hit"
+                <button onClick={() => setBell(b => !b)} aria-label={`${actNow.length} to act on now`} aria-expanded={bell} className="xpl-hit"
                   style={{ position: 'relative', padding: 8, borderRadius: 9, background: 'none', border: `1px solid ${T.border}`, color: T.muted, cursor: 'pointer', display: 'flex' }}>
                   <Bell size={16} />
-                  {o.attention.length > 0 && (
-                    <span style={{ position: 'absolute', top: -6, right: -6, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: T.orange, color: '#fff', fontSize: 10.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{o.attention.length}</span>
+                  {actNow.length > 0 && (
+                    <span style={{ position: 'absolute', top: -6, right: -6, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: T.red, color: '#fff', fontSize: 10.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{actNow.length}</span>
                   )}
                 </button>
                 {bell && (
                   <>
                     <div className="fixed inset-0" style={{ zIndex: 40 }} onClick={() => setBell(false)} />
-                    <div role="dialog" aria-label="Needs attention" style={{
+                    <div role="dialog" aria-label="To act on now" style={{
                       position: 'absolute', right: 0, top: 44, zIndex: 50, width: 'min(400px, calc(100vw - 32px))',
                       background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 50px rgba(var(--x-shadow),0.55)',
                     }}>
                       <div style={{ padding: '12px 14px', borderBottom: `1px solid ${T.line}`, fontSize: 13, fontWeight: 700, color: T.text }}>
-                        Needs attention{o.attention.length ? ` · ${o.attention.length}` : ''}
+                        To act on now{actNow.length ? ` · ${actNow.length}` : ''}
                       </div>
-                      {o.attention.length === 0
-                        ? <div style={{ padding: 16, fontSize: 13, color: T.faint }}>Nothing needs you right now.</div>
-                        : o.attention.map((a, i) => (
-                          <Link key={a.key} href={a.href} className="xpl-row" style={{ display: 'flex', gap: 11, padding: '11px 14px', textDecoration: 'none', borderTop: i ? `1px solid ${T.line}` : 'none' }}>
-                            <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: toneColor[a.tone as Tone], flexShrink: 0, marginTop: 5 }} />
+                      {actNow.length === 0
+                        ? <div style={{ padding: 16, fontSize: 13, color: T.faint }}>Nothing needs action now.</div>
+                        : actNow.slice(0, 7).map((u, i) => (
+                          <Link key={u.id} href={u.href ?? '/admin/dashboard'} className="xpl-row" style={{ display: 'flex', gap: 11, padding: '11px 14px', textDecoration: 'none', borderTop: i ? `1px solid ${T.line}` : 'none' }}>
+                            <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: T.red, flexShrink: 0, marginTop: 5 }} />
                             <span style={{ minWidth: 0 }}>
-                              <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{a.title}</span>
-                              <span style={{ display: 'block', fontSize: 12, color: T.faint, marginTop: 2, lineHeight: 1.4 }}>{a.detail}</span>
+                              <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{u.title}</span>
+                              <span style={{ display: 'block', fontSize: 12, color: T.faint, marginTop: 2, lineHeight: 1.4 }}>{deptLabel(u.dept)} · {u.owner}{u.money ? ` · ${moneyL(u.money)}` : ''}</span>
                             </span>
                           </Link>
                         ))}
+                      <Link href="/admin/dashboard" style={{ display: 'block', padding: '11px 14px', borderTop: `1px solid ${T.line}`, fontSize: 13, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>
+                        {actNow.length > 7 ? `All ${actNow.length}, and the rest of the list →` : 'The whole list →'}
+                      </Link>
                     </div>
                   </>
                 )}
@@ -296,7 +293,7 @@ function Shell({ children }: { children: React.ReactNode }) {
               </p>
               <Link href="/admin/dashboard" style={{ fontSize: 13.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>Back to the Dashboard</Link>
             </div>
-          ) : children}
+          ) : <><DeptTabs />{children}</>}
         </div>
       </main>
 
@@ -386,7 +383,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <CurrencyProvider>
       <CostingProvider>
         <ThemeScope />
-        <Guard role="admin"><Shell>{children}</Shell></Guard>
+        <Guard role="admin"><InboxProvider><Shell>{children}</Shell></InboxProvider></Guard>
       </CostingProvider>
     </CurrencyProvider>
   )
