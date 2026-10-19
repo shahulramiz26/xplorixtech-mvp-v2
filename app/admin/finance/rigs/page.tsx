@@ -1,5 +1,7 @@
 'use client'
 
+import { useEscape } from '../../../components/kit'
+
 import { useState, useMemo, useEffect, useCallback, Fragment, ReactNode, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useInventory, toolingRatesFor } from '../../../../lib/inventory-store'
@@ -259,6 +261,7 @@ const fm = (m: number) => String(Math.round(m * 10) / 10)
 function Modal({ title, subtitle, width = 760, onClose, children, footer }: {
   title: string; subtitle?: string; width?: number; onClose: () => void; children: ReactNode; footer?: ReactNode
 }) {
+  useEscape(onClose)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(var(--x-shadow),0.82)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, width, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>

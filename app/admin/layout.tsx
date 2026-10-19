@@ -98,6 +98,7 @@ const SHELL_CSS = `
   .xpl-nav:hover { background: rgba(var(--x-ov),0.04); color: var(--x-text) !important; }
   .xpl-hit:hover { background: rgba(var(--x-ov),0.05); }
   .xpl-narrow { display: none; }
+  @media (max-width: 760px) { .xpl-runway { grid-template-columns: minmax(0, 1fr) auto !important; } .xpl-runway > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; } }
   @media (max-width: 640px) { .xpl-clamp { white-space: normal !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } }
   @media (max-width: 640px) { .xpl-wide { display: none !important; } .xpl-narrow { display: block; } }
   @media print { aside, main > header, .xpl-noprint, .xpl-depttabs { display: none !important; } main { display: block !important; } body { background: #fff !important; } }

@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import Link from 'next/link'
 import { C } from '../../lib/costing-store'
 import { hexA } from '../../lib/theme'
@@ -226,9 +226,19 @@ export function Flag({ on, children }: { on: boolean; children: ReactNode }) {
 
 // ── MODAL ─────────────────────────────────────────────────────────────────
 
+/* Escape closes whatever modal is open, as on every desktop app. */
+export function useEscape(onClose: () => void) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose])
+}
+
 export function Modal({ title, subtitle, width = 860, onClose, children, footer }: {
   title: string; subtitle?: ReactNode; width?: number; onClose: () => void; children: ReactNode; footer?: ReactNode
 }) {
+  useEscape(onClose)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(var(--x-shadow),0.72)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '5vh 16px', overflowY: 'auto' }}>
       <div role="dialog" aria-modal onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: width, background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden' }}>

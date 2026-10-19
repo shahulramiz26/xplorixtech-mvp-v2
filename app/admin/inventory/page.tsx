@@ -1,7 +1,9 @@
 'use client'
 
-import { DeptInbox } from '../../components/inbox'
-import { useState, useMemo, Fragment, ReactNode } from 'react'
+import { useState, useMemo, useCallback, Fragment, ReactNode, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Page, useEscape } from '../../components/kit'
+import { StoresOverview } from './overview'
 import {
   useInventory, TODAY, FORMATIONS, CATEGORIES, costPerMetre, toolingPerMetre,
   normFormation, poValue, poStatus, poReceivedValue, poStoreValue, poOpenReorderValue,
@@ -134,6 +136,7 @@ const PART_SIZES = ['HQ', 'NQ', 'PQ', 'BQ', 'AQ']
 const useLabel = (p: Part) => `${FORMATION_USE_LABEL[formationUse(p)]}${p.holeSize ? ` · ${p.holeSize} only` : ''}`
 
 function Modal({ title, subtitle, width = 760, onClose, children, footer }: { title: string; subtitle?: string; width?: number; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+  useEscape(onClose)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(var(--x-shadow),0.82)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
@@ -1790,13 +1793,18 @@ function POModal({ po, onSave, onPlace, onClose }: { po: PurchaseOrder; onSave: 
  * SCREEN
  * ========================================================================== */
 
-const TABS = ['Catalogue', 'Orders', 'Store', 'Insights'] as const
+const TABS = ['Overview', 'Stock by site', 'Orders', 'Part life', 'Catalogue'] as const
 type Tab = typeof TABS[number]
 
 export default function InventoryPage() {
+  return <Suspense fallback={null}><InventoryScreen /></Suspense>
+}
+
+function InventoryScreen() {
   const { state, savePart, savePO, placeOrder, addReceipt, addReorder, receiveReorder } = useInventory()
   const cost = useOwnLogs()
-  const [tab, setTab] = useState<Tab>('Catalogue')
+  const params = useSearchParams()
+  const [tab, setTab] = useState<Tab>(() => { const t = params.get('tab'); return t && (TABS as readonly string[]).includes(t) ? t as Tab : 'Overview' })
   const [editPart, setEditPart] = useState<Part | null>(null)
   const [importing, setImporting] = useState(false)
   const [editPO, setEditPO] = useState<PurchaseOrder | null>(null)
@@ -1826,35 +1834,40 @@ export default function InventoryPage() {
     return { rig, metresPerDay: Math.round((metres / days) * 10) / 10, formation }
   }).filter(Boolean) as { rig: string; metresPerDay: number; formation: Formation }[], [cost.shiftLogs, burnMonth])
 
+  const rigsOn = useCallback((project: string) => RIGS.filter(rig => cost.shiftLogs.some(l => l.rig === rig && l.project === project) || state.rigKit.some(k => k.rig === rig && k.project === project)), [cost.shiftLogs, state.rigKit])
+  const usedBy = useCallback((rig: string, project: string) => {
+    const out: { itemId: string; qty: number }[] = []
+    cost.shiftLogs.filter(l => l.rig === rig && l.project === project).forEach(l => (l.partsUsed ?? []).forEach(u => {
+      const e = out.find(x => x.itemId === u.itemId); if (e) e.qty += u.qty ?? 0; else out.push({ itemId: u.itemId, qty: u.qty ?? 0 })
+    }))
+    return out
+  }, [cost.shiftLogs])
+
   const alerts = useMemo(() => buildAlerts(state.pos, state.catalogue, TODAY, COMPLETED_PROJECTS, burn, state.alerts, state.suppliers), [state.pos, state.catalogue, state.alerts, state.suppliers, burn])
   const urgent = alerts.filter(a => a.level === 'urgent').length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, padding: 20, paddingBottom: 56 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: C.text, margin: 0 }}>Parts &amp; inventory</h1>
-          <p style={{ fontSize: 13, color: C.faint, marginTop: 5, maxWidth: 700, lineHeight: 1.6 }}>
-            The catalogue, what is on order, what is on the shelf, and what each rig is carrying.
-            Finance charges every metre from what the rig holds, so the two modules can never disagree.
-          </p>
-        </div>
-      </div>
-
-      <DeptInbox depts={['stock']} name="Stores" />
-
-      <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
+    <Page>
+      <nav aria-label="Stores" className="xpl-chips" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', borderBottom: `1px solid ${C.border}` }}>
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '7px 18px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', border: 'none', fontFamily: 'inherit', background: tab === t ? C.orange : 'transparent', color: tab === t ? '#fff' : C.muted }}>
-            {t}
-          </button>
+          <button key={t} type="button" aria-current={tab === t ? 'page' : undefined} onClick={() => setTab(t)} style={{
+            minHeight: 42, padding: '0 14px', marginBottom: -1, border: 'none', borderBottom: `2px solid ${tab === t ? C.orange : 'transparent'}`, background: 'none',
+            fontSize: 13.5, fontWeight: tab === t ? 700 : 500, color: tab === t ? C.text : C.muted, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+          }}>{t}{t === 'Catalogue' ? <span style={{ fontWeight: 400, color: C.faint }}> · setup</span> : null}</button>
         ))}
-      </div>
+      </nav>
 
+      {tab === 'Overview' && <StoresOverview burn={burn} rigsOn={rigsOn} used={usedBy} go={setTab} />}
+      {tab !== 'Overview' && (
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0 }}>{TAB_TITLE[tab]}</h1>
+          <p style={{ fontSize: 13, color: C.muted, marginTop: 5, maxWidth: 760, lineHeight: 1.55 }}>{TAB_NOTE[tab]}</p>
+        </div>
+      )}
       {tab === 'Catalogue' && <CatalogueTab onEdit={setEditPart} onImport={() => setImporting(true)} />}
       {tab === 'Orders' && <OrdersTab onReceive={setReceiving} onCreate={() => setEditPO(blankPO())} onEdit={setEditPO} onRaiseReorder={setRaising} onReceiveReorder={(po, reorder) => setReplacing({ po, reorder })} />}
-      {tab === 'Store' && <StoreTab />}
-      {tab === 'Insights' && <InsightsTab />}
+      {tab === 'Stock by site' && <StoreTab />}
+      {tab === 'Part life' && <InsightsTab />}
 
       {editPart && <PartModal part={editPart} onSave={savePart} onClose={() => setEditPart(null)} />}
       {importing && <ImportModal onClose={() => setImporting(false)} />}
@@ -1862,6 +1875,15 @@ export default function InventoryPage() {
       {receiving && <ReceiveModal po={receiving} onClose={() => setReceiving(null)} onSave={(date, lines, delayReason, note) => addReceipt(receiving.id, { date, lines, delayReason, note })} />}
       {raising && <RaiseReorderModal po={raising} onClose={() => setRaising(null)} onSave={rs => rs.forEach(r => addReorder(raising.id, r))} />}
       {replacing && <ReceiveReorderModal po={replacing.po} reorder={replacing.reorder} onClose={() => setReplacing(null)} onSave={receipt => receiveReorder(replacing.po.id, replacing.reorder.id, receipt)} />}
-    </div>
+    </Page>
   )
+}
+
+const TAB_TITLE: Record<Tab, string> = { Overview: 'Stores', 'Stock by site': 'Stock by site', Orders: 'Orders', 'Part life': 'Part life', Catalogue: 'Catalogue' }
+const TAB_NOTE: Record<Tab, string> = {
+  Overview: '',
+  'Stock by site': 'What is on the shelf at each site and what each rig is carrying. Issue parts to a rig from here; a part is charged to the metres it drills once it is on the rig.',
+  Orders: 'Every purchase order from draft to the store: place it, receive it, send back what was faulty, and see how each supplier keeps its dates.',
+  'Part life': 'How long each part really lasts in each ground, from the drill logs, against what the catalogue says. A part that wears faster than its catalogue life is costing more a metre than you think.',
+  Catalogue: 'Set once: each part, its rate, its life in metres, its supplier and lead time. Every cost per metre and every stock warning is worked out from these.',
 }
