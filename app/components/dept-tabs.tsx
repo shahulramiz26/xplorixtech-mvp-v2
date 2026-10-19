@@ -20,8 +20,8 @@ export const DEPT_TABS: Tab[][] = [
   [{ href: '/admin/projects', label: 'Projects' }, { href: '/admin/intelligence/holes', label: 'When each hole finishes' }],
   [{ href: '/admin/logs/drill', label: 'Drill logs' }, { href: '/admin/intelligence/drill-logs', label: 'Drill log check' }],
   [{ href: '/admin/contractors', label: 'Contractors' }, { href: '/admin/intelligence/contractors', label: 'Contractor comparison' }],
-  [{ href: '/admin/finance', label: 'Finance & costing' }, { href: '/admin/intelligence/money', label: 'Money checks' }],
-  [{ href: '/admin/tenders', label: 'Tenders' }, { href: '/admin/intelligence/pricing', label: 'Rate book' }, { href: '/admin/bid-intelligence', label: 'Engineering estimate', sample: true }],
+  [{ href: '/admin/finance', label: 'Overview' }, { href: '/admin/finance/rigs', label: 'Rig by rig' }, { href: '/admin/intelligence/money', label: 'Money checks' }],
+  [{ href: '/admin/tenders', label: 'Tenders' }, { href: '/admin/intelligence/pricing', label: 'Rate book' }],
   [{ href: '/admin/intelligence/months', label: 'This month and next' }, { href: '/admin/intelligence/risks', label: 'Risks' }],
 ]
 

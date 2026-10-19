@@ -66,12 +66,50 @@ const actBtn: React.CSSProperties = {
   border: `1px solid ${T.border}`, background: T.card, color: T.text, fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none',
 }
 
-/* One story or one finding, with its answers. */
-export function UnitCard({ u, compact, first }: { u: InboxUnit; compact?: boolean; first?: boolean }) {
+/* The four answers, and Open. Kept against the story, so answering it
+ * here answers it on every screen. */
+export function UnitActions({ u }: { u: InboxUnit }) {
   const mark = useMark()
   const [mode, setMode] = useState<'none' | 'hand' | 'remind' | 'dismiss'>('none')
   const [text, setText] = useState('')
   const [date, setDate] = useState(addDays(TODAY, 1))
+  const closed = u.state === 'done' || u.state === 'dismissed'
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        {closed || u.state === 'reminder' ? (
+          <button type="button" style={actBtn} onClick={() => mark(u, null)}><RotateCcw size={13} aria-hidden />{u.state === 'reminder' ? 'Bring back now' : 'Reopen'}</button>
+        ) : mode === 'none' ? <>
+          <button type="button" style={actBtn} onClick={() => mark(u, { status: 'done' })}><Check size={14} aria-hidden style={{ color: T.green }} />Done</button>
+          <button type="button" style={actBtn} onClick={() => { setMode('hand'); setText(u.state === 'handed' ? u.status?.to ?? '' : '') }}><UserRound size={13} aria-hidden />Hand to…</button>
+          <button type="button" style={actBtn} onClick={() => setMode('remind')}><Clock size={13} aria-hidden />Remind me…</button>
+          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => { setMode('dismiss'); setText('') }}><X size={13} aria-hidden />Not relevant</button>
+          {u.href && <Link href={u.href} style={{ ...actBtn, background: tint(T.orange, 10), borderColor: tint(T.orange, 30), color: 'var(--x-text)' }}>Open<ArrowRight size={13} aria-hidden /></Link>}
+        </> : mode === 'remind' ? <>
+          {[{ l: 'Tomorrow', d: addDays(TODAY, 1) }, { l: 'In 3 days', d: addDays(TODAY, 3) }, { l: 'Next week', d: addDays(TODAY, 7) }].map(o => (
+            <button key={o.l} type="button" style={actBtn} onClick={() => { mark(u, { status: 'snoozed', until: o.d }); setMode('none') }}>{o.l}</button>
+          ))}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.muted }}>
+            On <input type="date" min={addDays(TODAY, 1)} value={date} onChange={e => setDate(e.target.value)} style={{ ...inputStyle, width: 150, padding: '6px 8px', fontSize: 12.5 }} />
+          </label>
+          <button type="button" style={actBtn} onClick={() => { mark(u, { status: 'snoozed', until: date }); setMode('none') }}>Set</button>
+          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => setMode('none')}>Cancel</button>
+        </> : <>
+          <label style={{ display: 'flex', flex: '1 1 260px', maxWidth: 380 }}>
+            <span className="sr-only">{mode === 'hand' ? 'Who should do it' : 'Why it does not apply'}</span>
+            <input autoFocus value={text} onChange={e => setText(e.target.value)} placeholder={mode === 'hand' ? 'Who should do it? A name or a role' : 'Why it does not apply (kept with it)'}
+              onKeyDown={e => { if (e.key === 'Enter' && text.trim()) { mark(u, mode === 'hand' ? { status: 'assigned', to: text.trim() } : { status: 'dismissed', note: text.trim() }); setMode('none') } }}
+              style={{ ...inputStyle, fontSize: 13, width: '100%' }} />
+          </label>
+          <button type="button" disabled={!text.trim()} style={{ ...actBtn, opacity: text.trim() ? 1 : 0.45 }}
+            onClick={() => { mark(u, mode === 'hand' ? { status: 'assigned', to: text.trim() } : { status: 'dismissed', note: text.trim() }); setMode('none') }}>Save</button>
+          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => setMode('none')}>Cancel</button>
+        </>}
+    </div>
+  )
+}
+
+/* One story or one finding, with its answers. */
+export function UnitCard({ u, compact, first }: { u: InboxUnit; compact?: boolean; first?: boolean }) {
   const story = u.items.length > 1
   const closed = u.state === 'done' || u.state === 'dismissed'
   const due = u.due ? (u.due <= TODAY ? 'Due today' : `Due ${dayWord(u.due)}`) : undefined
@@ -119,77 +157,98 @@ export function UnitCard({ u, compact, first }: { u: InboxUnit; compact?: boolea
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10, paddingLeft: 104 }} className="xpl-actions">
-        {closed || u.state === 'reminder' ? (
-          <button type="button" style={actBtn} onClick={() => mark(u, null)}><RotateCcw size={13} aria-hidden />{u.state === 'reminder' ? 'Bring back now' : 'Reopen'}</button>
-        ) : mode === 'none' ? <>
-          <button type="button" style={actBtn} onClick={() => mark(u, { status: 'done' })}><Check size={14} aria-hidden style={{ color: T.green }} />Done</button>
-          <button type="button" style={actBtn} onClick={() => { setMode('hand'); setText(u.state === 'handed' ? u.status?.to ?? '' : '') }}><UserRound size={13} aria-hidden />Hand to…</button>
-          <button type="button" style={actBtn} onClick={() => setMode('remind')}><Clock size={13} aria-hidden />Remind me…</button>
-          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => { setMode('dismiss'); setText('') }}><X size={13} aria-hidden />Not relevant</button>
-          {u.href && <Link href={u.href} style={{ ...actBtn, background: tint(T.orange, 10), borderColor: tint(T.orange, 30), color: 'var(--x-text)' }}>Open<ArrowRight size={13} aria-hidden /></Link>}
-        </> : mode === 'remind' ? <>
-          {[{ l: 'Tomorrow', d: addDays(TODAY, 1) }, { l: 'In 3 days', d: addDays(TODAY, 3) }, { l: 'Next week', d: addDays(TODAY, 7) }].map(o => (
-            <button key={o.l} type="button" style={actBtn} onClick={() => { mark(u, { status: 'snoozed', until: o.d }); setMode('none') }}>{o.l}</button>
-          ))}
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.muted }}>
-            On <input type="date" min={addDays(TODAY, 1)} value={date} onChange={e => setDate(e.target.value)} style={{ ...inputStyle, width: 150, padding: '6px 8px', fontSize: 12.5 }} />
-          </label>
-          <button type="button" style={actBtn} onClick={() => { mark(u, { status: 'snoozed', until: date }); setMode('none') }}>Set</button>
-          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => setMode('none')}>Cancel</button>
-        </> : <>
-          <label style={{ display: 'flex', flex: '1 1 260px', maxWidth: 380 }}>
-            <span className="sr-only">{mode === 'hand' ? 'Who should do it' : 'Why it does not apply'}</span>
-            <input autoFocus value={text} onChange={e => setText(e.target.value)} placeholder={mode === 'hand' ? 'Who should do it? A name or a role' : 'Why it does not apply (kept with it)'}
-              onKeyDown={e => { if (e.key === 'Enter' && text.trim()) { mark(u, mode === 'hand' ? { status: 'assigned', to: text.trim() } : { status: 'dismissed', note: text.trim() }); setMode('none') } }}
-              style={{ ...inputStyle, fontSize: 13, width: '100%' }} />
-          </label>
-          <button type="button" disabled={!text.trim()} style={{ ...actBtn, opacity: text.trim() ? 1 : 0.45 }}
-            onClick={() => { mark(u, mode === 'hand' ? { status: 'assigned', to: text.trim() } : { status: 'dismissed', note: text.trim() }); setMode('none') }}>Save</button>
-          <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => setMode('none')}>Cancel</button>
-        </>}
-      </div>
+      <div style={{ marginTop: 10, paddingLeft: 104 }} className="xpl-actions"><UnitActions u={u} /></div>
     </article>
   )
 }
 
-/* A department's share of the inbox, at the top of its own screen. */
-export function DeptInbox({ depts, name, show = 5 }: { depts: Dept[]; name: string; show?: number }) {
+const SEV_DOT: Record<Severity, string> = { act: T.red, plan: T.amber, watch: 'var(--x-faint)' }
+
+/* One line a notification, like a mail inbox: what it is, where, how much,
+ * and when. Tap it to read the rest and answer it. Nothing is hidden behind
+ * the line: the detail, the steps of a story and every answer open in place. */
+export function InboxRow({ u, open, onToggle, first, showDept = true }: { u: InboxUnit; open: boolean; onToggle: () => void; first?: boolean; showDept?: boolean }) {
+  const closed = u.state === 'done' || u.state === 'dismissed'
+  const story = u.items.length > 1
+  const dueToday = !!u.due && u.due <= TODAY && !closed
+  const badge = u.state === 'reminder' && u.status?.until ? { t: `Back ${dayWord(u.status.until)}`, c: T.blue }
+    : u.state === 'handed' ? { t: `With ${u.status?.to}`, c: T.blue }
+    : closed ? { t: u.state === 'done' ? `Done · ${u.status?.by ?? ''}` : 'Set aside', c: T.muted }
+    : dueToday ? { t: 'Due today', c: T.red }
+    : u.due ? { t: `Due ${dayWord(u.due)}`, c: T.muted } : null
+  const sub = [showDept ? deptLabel(u.dept) : null, story ? `${u.items.length} linked: ${u.items.slice(1).map(f => f.title).join('; ')}` : u.detail].filter(Boolean).join(' · ')
+  return (
+    <article id={`u-${encodeURIComponent(u.id)}`} style={{ borderTop: first ? 'none' : `1px solid ${T.line}`, background: open ? 'rgba(var(--x-ov),0.025)' : undefined }}>
+      <button type="button" aria-expanded={open} onClick={onToggle} className="xpl-row"
+        style={{ width: '100%', display: 'grid', gridTemplateColumns: '12px minmax(0, 1fr) auto 16px', gap: 12, alignItems: 'center', padding: '11px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', color: T.text, minHeight: 56 }}>
+        <span aria-label={SEVERITY_LABEL[u.severity]} style={{ width: 10, height: 10, borderRadius: 99, background: closed ? 'transparent' : SEV_DOT[u.severity], border: closed ? `2px solid ${T.faint}` : 'none' }} />
+        <span style={{ minWidth: 0, display: 'grid', gap: 2 }}>
+          <span style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+            <span className="xpl-clamp" style={{ fontSize: 14, fontWeight: closed ? 500 : 600, color: closed ? T.muted : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{u.title}</span>
+            {u.isNew && !closed && <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: T.blue, background: tint(T.blue, 12), borderRadius: 6, padding: '1px 6px' }}>NEW</span>}
+          </span>
+          <span style={{ fontSize: 12.5, color: T.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>
+        </span>
+        <span style={{ display: 'grid', justifyItems: 'end', gap: 2 }}>
+          {u.money ? <span style={{ fontSize: 13.5, fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>{moneyL(u.money)}</span> : null}
+          {badge && <span style={{ fontSize: 11.5, fontWeight: 600, color: badge.c, whiteSpace: 'nowrap' }}>{badge.t}</span>}
+        </span>
+        <ArrowRight size={14} aria-hidden style={{ color: T.faint, transform: open ? 'rotate(90deg)' : undefined, transition: 'transform 0.15s' }} />
+      </button>
+      {open && (
+        <div style={{ padding: '0 16px 14px 40px', display: 'grid', gap: 8 }}>
+          {story ? (
+            <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 4 }}>
+              {u.items.map((f, i) => (
+                <li key={f.id} style={{ display: 'flex', gap: 8, fontSize: 13, color: T.text, lineHeight: 1.45 }}>
+                  <span style={{ color: T.faint, fontWeight: 700, minWidth: 14 }}>{i + 1}</span>
+                  <span style={{ minWidth: 0 }}>{f.title}{f.money ? <span style={{ color: T.faint }}> · {moneyL(f.money)}</span> : null}</span>
+                </li>
+              ))}
+            </ol>
+          ) : <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.55 }}>{u.detail}</div>}
+          {u.action && <div style={{ fontSize: 13, color: T.text, lineHeight: 1.55 }}><b style={{ fontWeight: 600 }}>What to do: </b>{u.action}</div>}
+          <div style={{ fontSize: 12, color: T.muted, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><UserRound size={13} aria-hidden />{u.state === 'handed' ? `Handed to ${u.status?.to}` : u.owner}</span>
+            {u.moneyNote && u.money ? <span>{moneyL(u.money)} {u.moneyNote}</span> : null}
+            {closed && u.status?.note ? <span>Reason: {u.status.note}</span> : null}
+          </div>
+          <UnitActions u={u} />
+        </div>
+      )}
+    </article>
+  )
+}
+
+/* Rows with one open at a time. */
+export function InboxRows({ units, showDept = true, startOpen }: { units: InboxUnit[]; showDept?: boolean; startOpen?: string }) {
+  const [open, setOpen] = useState<string | null>(startOpen ?? null)
+  return <>{units.map((u, i) => <InboxRow key={u.id} u={u} first={i === 0} showDept={showDept} open={open === u.id} onToggle={() => setOpen(o => o === u.id ? null : u.id)} />)}</>
+}
+
+/* A department's share of the inbox, at the top of its own screen: short,
+ * one line a notification, the most urgent first. */
+export function DeptInbox({ depts, name, show = 4 }: { depts: Dept[]; name: string; show?: number }) {
   const inbox = useInbox()
-  const [tag, setTag] = useState<string>('all')
   const [all, setAll] = useState(false)
   const mine = inbox.open.filter(u => u.depts.some(d => depts.includes(d)))
   const reminders = inbox.reminders.filter(u => u.depts.some(d => depts.includes(d)))
-  const tags = Array.from(new Set(mine.flatMap(u => u.tags)))
-  const shown = mine.filter(u => tag === 'all' || u.tags.includes(tag))
   const act = mine.filter(u => u.severity === 'act').length
-  const list = all ? shown : shown.slice(0, show)
-  const review = `/admin/inbox?dept=${depts.join(',')}`
-
+  const list = all ? mine : mine.slice(0, show)
   return (
-    <section aria-label={`To act on in ${name}`} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--x-card-shadow)' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ display: 'grid', gap: 2 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text }}>To act on in {name} · {mine.length}{act ? <span style={{ color: T.red }}> · {act} now</span> : null}</h2>
-          <span style={{ fontSize: 12, color: T.faint }}>The Dashboard&apos;s list, for {name}. Answer one here and it is answered on the Dashboard too.{reminders.length ? ` ${reminders.length} waiting for a reminder date.` : ''}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          {tags.length > 1 && ['all', ...tags].map(t => {
-            const n = t === 'all' ? mine.length : mine.filter(u => u.tags.includes(t)).length
-            const on = tag === t
-            return <button key={t} type="button" aria-pressed={on} onClick={() => setTag(t)} style={{ ...actBtn, minHeight: 32, background: on ? tint(T.orange, 14) : T.card, borderColor: on ? tint(T.orange, 40) : T.border }}>{t === 'all' ? 'All' : t} · {n}</button>
-          })}
-          {mine.length > 0 && <Link href={review} style={{ ...actBtn, minHeight: 32 }}>One by one<ArrowRight size={13} aria-hidden /></Link>}
-        </div>
+    <section aria-label={`Needs you in ${name}`} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--x-card-shadow)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center', padding: '11px 16px', borderBottom: mine.length ? `1px solid ${T.line}` : 'none' }}>
+        <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: T.text }}>
+          {mine.length ? <>Needs you in {name} · {mine.length}{act ? <span style={{ color: T.red }}> · {act} today</span> : null}</> : <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}><ShieldCheck size={16} aria-hidden style={{ color: T.green }} />Nothing needs you in {name}</span>}
+          {reminders.length ? <span style={{ fontWeight: 400, color: T.faint, fontSize: 12.5 }}> · {reminders.length} on a reminder</span> : null}
+        </h2>
+        {mine.length > 0 && <Link href={`/admin/inbox?dept=${depts.join(',')}`} style={{ fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>Go through them one by one<ArrowRight size={13} aria-hidden /></Link>}
       </div>
-      {mine.length === 0
-        ? <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '16px 18px', fontSize: 13, color: T.muted }}><ShieldCheck size={16} aria-hidden style={{ color: T.green }} />Nothing open for {name}. New findings appear here the moment the record shows them.</div>
-        : list.map((u, i) => <UnitCard key={u.id} u={u} compact first={i === 0} />)}
-      {shown.length > show && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 18px', borderTop: `1px solid ${T.line}`, background: 'rgba(var(--x-ov),0.015)', fontSize: 12.5, color: T.muted }}>
-          <span>{all ? `All ${shown.length} shown.` : `Showing ${list.length} of ${shown.length}, most urgent first. None is hidden: open the rest here.`}</span>
-          <button type="button" style={actBtn} onClick={() => setAll(a => !a)}>{all ? 'Show fewer' : `Show all ${shown.length}`}</button>
-        </div>
+      <InboxRows units={list} showDept={false} />
+      {mine.length > show && (
+        <button type="button" onClick={() => setAll(a => !a)} style={{ width: '100%', padding: '10px 16px', border: 'none', borderTop: `1px solid ${T.line}`, background: 'rgba(var(--x-ov),0.015)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.orange, cursor: 'pointer', textAlign: 'left' }}>
+          {all ? 'Show fewer' : `Show all ${mine.length}`}
+        </button>
       )}
     </section>
   )

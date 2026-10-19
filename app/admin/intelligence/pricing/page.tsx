@@ -138,7 +138,7 @@ export default function PriceTender() {
 
       <Card title={`Your record in ${holeSize}`} pad={false}
         subtitle={`Every ground and depth band you have drilled in ${holeSize} with ${kind === 'own' ? 'your own rigs' : 'contractors'}. A band with under 60 m behind it is a thin record: one hole, one bit, one bad week.`}
-        right={<Link href="/admin/bid-intelligence" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Full bid estimate →</Link>}>
+        right={<Link href="/admin/tenders" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Price a tender →</Link>}>
         {sizeCells.length === 0 ? <Empty>No {holeSize} metres in the record{kind === 'contractor' ? ' from contractors' : ''} yet.</Empty> : (
           <Table>
             <thead><tr><th style={th}>Ground</th>{DEPTH_BANDS.map(b => <th key={b.key} style={thR}>{b.label}</th>)}</tr></thead>

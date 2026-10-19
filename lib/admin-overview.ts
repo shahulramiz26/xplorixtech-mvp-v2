@@ -83,7 +83,7 @@ const addDays = (date: string, n: number) => {
 /* Deep link into Finance: the screen opens on this project, rig, month and tab. */
 export function financeLink(p: { project: string; rig: string; month: string; tab?: 'Performance' | 'Drillholes' | 'Tracker' }) {
   const q = new URLSearchParams({ project: p.project, rig: p.rig, month: p.month, tab: p.tab ?? 'Performance' })
-  return `/admin/finance?${q.toString()}`
+  return `/admin/finance/rigs?${q.toString()}`
 }
 
 export function monthNumbers(

@@ -59,7 +59,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   },
   { title: 'Contractors', items: [{ href: '/admin/contractors', label: 'Contractors', icon: Handshake, badge: ['contractors'], also: ['/admin/intelligence/contractors'] }] },
   { title: 'Stores', items: [{ href: '/admin/inventory', label: 'Parts & inventory', icon: Boxes, badge: ['stock'] }] },
-  { title: 'Finance & billing', items: [{ href: '/admin/finance', label: 'Finance & costing', icon: DollarSign, badge: ['finance', 'billing'], also: ['/admin/intelligence/money'] }] },
+  { title: 'Finance & billing', items: [{ href: '/admin/finance', label: 'Finance & billing', icon: DollarSign, badge: ['finance', 'billing'], also: ['/admin/intelligence/money'] }] },
   { title: 'Tenders', items: [{ href: '/admin/tenders', label: 'Tenders', icon: Target, also: ['/admin/intelligence/pricing', '/admin/bid-intelligence'] }] },
   {
     title: 'Management',
@@ -80,7 +80,6 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
 ]
 /* Screens with no menu entry: still guarded, still found by search. */
 const HIDDEN: NavItem[] = [
-  { href: '/admin/bid-intelligence', label: 'Engineering estimate', icon: Target, sample: true },
   { href: '/admin/reports', label: 'Performance reports', icon: FileText, sample: true },
   { href: '/admin/marketplace', label: 'Marketplace', icon: Store, sample: true },
   { href: '/admin/crew', label: 'Crew & jobs', icon: HardHat, sample: true },
@@ -99,6 +98,7 @@ const SHELL_CSS = `
   .xpl-nav:hover { background: rgba(var(--x-ov),0.04); color: var(--x-text) !important; }
   .xpl-hit:hover { background: rgba(var(--x-ov),0.05); }
   .xpl-narrow { display: none; }
+  @media (max-width: 640px) { .xpl-clamp { white-space: normal !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } }
   @media (max-width: 640px) { .xpl-wide { display: none !important; } .xpl-narrow { display: block; } }
   @media print { aside, main > header, .xpl-noprint, .xpl-depttabs { display: none !important; } main { display: block !important; } body { background: #fff !important; } }
   @media (max-width: 640px) { .xpl-actions { padding-left: 0 !important; } .xpl-chips { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; } .xpl-chips > * { flex-shrink: 0; } }

@@ -213,7 +213,7 @@ export default function AdminDashboard() {
           <Stage n={o.money.waitingOwner.length} label="With the client" value={o.money.waitingOwner.reduce((s, h) => s + h.value, 0)} href="/admin/finance" unit="holes" />
           <Stage n={o.money.readyToInvoice.length} label="Approved, ready to invoice" value={o.money.readyValue}
             href={o.money.readyToInvoice[0] ? financeLink({ project: o.money.readyToInvoice[0].project, rig: o.money.readyToInvoice[0].rig, month: monthOf(o.money.readyToInvoice[0].end ?? o.money.readyToInvoice[0].start), tab: 'Drillholes' }) : '/admin/finance'} unit="holes" />
-          <Stage n={o.money.unpaid.length} label="Invoiced, not yet paid" value={o.money.outstanding} href="/admin/finance?tab=Tracker" unit="invoices"
+          <Stage n={o.money.unpaid.length} label="Invoiced, not yet paid" value={o.money.outstanding} href="/admin/finance#invoices" unit="invoices"
             warn={o.money.overdue.length ? `${o.money.overdue.length} overdue` : undefined} last />
         </div>
       </Card>
