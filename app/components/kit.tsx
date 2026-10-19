@@ -64,7 +64,7 @@ export function PageHead({ question, answer, tone = 'neutral', right }: {
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 48, maxWidth: 1280 }}>{children}</div>
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 48, maxWidth: 2000, width: '100%' }}>{children}</div>
 }
 
 // ── CARD / TILE ───────────────────────────────────────────────────────────

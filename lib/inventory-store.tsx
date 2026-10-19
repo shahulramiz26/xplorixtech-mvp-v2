@@ -937,6 +937,9 @@ export type AlertLevel = 'info' | 'warn' | 'urgent'
 
 export interface Alert {
   id: string; kind: AlertKind; level: AlertLevel; title: string; detail: string; value?: number
+  /* For a part running out: days the store lasts, and the days a rig would
+   * stand if it is ordered today (lead time beyond what the store covers). */
+  days?: number; gapDays?: number
 }
 
 export interface AlertSettings {
@@ -1027,7 +1030,7 @@ export function buildAlerts(
     if (days >= part.leadTimeDays + s.coverDays) return
     const onWay = onOrder(pos, today).filter(o => o.itemId === part.id).reduce((a, o) => a + o.qty, 0)
     out.push({
-      id: `running_${part.id}`, kind: 'runningOut',
+      id: `running_${part.id}`, kind: 'runningOut', days: Math.floor(days), gapDays: Math.max(0, Math.ceil(part.leadTimeDays - days)),
       level: days < part.leadTimeDays && onWay === 0 ? 'urgent' : 'warn',
       title: n === 0 ? `${part.name} — none in the store` : `${part.name} runs out in ${Math.floor(days)} days`,
       detail: `${n} in store covers ${Math.round(metresOfLife).toLocaleString('en-IN')} m at ${totalBurn.toFixed(1)} m/day. Lead time is ${part.leadTimeDays} days`
@@ -1199,6 +1202,11 @@ export const SEED_POS: PurchaseOrder[] = [
     receipts: [], reorders: [], issues: [], transfers: [], note: 'Awaiting approval' },
 ]
 
+/* A spare moved from a closed project's store instead of being bought: what
+ * the "Before you buy" check on a new order does, kept in the demo record so
+ * the Value screen can show it. */
+SEED_POS.find(p => p.id === 'po6')?.transfers.push({ id: 'po6_tr1', date: '2026-09-08', itemId: 't17', qty: 1, toProject: 'Site A - North Field', note: 'Moved instead of buying' })
+
 /* Kits are dated before the first shift of the month, which is what a real
  * site does — the rig cannot turn until it is kitted. Date one of these
  * after the first log and the early days of the month read free. */
@@ -1298,8 +1306,8 @@ interface Ctx {
 }
 
 const InvCtx = createContext<Ctx | null>(null)
-const KEY = 'xplorix_inventory_v11'
-const LEGACY_KEY = 'xplorix_inventory_v10'
+const KEY = 'xplorix_inventory_v12'
+const LEGACY_KEY = 'xplorix_inventory_v11'
 
 /* One store per browser tab. The root layout mounts this once; the Finance and
  * Inventory routes also wrap themselves in it, and when they do they join the

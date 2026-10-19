@@ -386,7 +386,7 @@ export default function MarketplacePage() {
   }
 
   return (
-    <div style={{ maxWidth: 1440 }}>
+    <div style={{ maxWidth: 2000 }}>
 
       {/* ============ BILLBOARD ============ */}
       <BillboardCarousel />

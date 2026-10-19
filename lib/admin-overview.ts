@@ -86,7 +86,7 @@ export function financeLink(p: { project: string; rig: string; month: string; ta
   return `/admin/finance?${q.toString()}`
 }
 
-function monthNumbers(
+export function monthNumbers(
   costing: ReturnType<typeof useCosting>['state'], inv: ReturnType<typeof useInventory>['state'], month: string, upToDay?: number,
 ): MonthNumbers {
   const pairs = new Map<string, { project: string; rig: string }>()

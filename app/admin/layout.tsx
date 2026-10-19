@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
-  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2,
+  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, PiggyBank,
 } from 'lucide-react'
 import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
@@ -64,6 +64,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: 'Management',
     items: [
+      { href: '/admin/value', label: 'Value', icon: PiggyBank },
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/intelligence/months', label: 'Outlook', icon: CalendarRange, also: ['/admin/intelligence/risks'] },
     ],
@@ -97,6 +98,9 @@ const SHELL_CSS = `
   .xpl-row:hover { background: rgba(var(--x-ov),0.025); }
   .xpl-nav:hover { background: rgba(var(--x-ov),0.04); color: var(--x-text) !important; }
   .xpl-hit:hover { background: rgba(var(--x-ov),0.05); }
+  .xpl-narrow { display: none; }
+  @media (max-width: 640px) { .xpl-wide { display: none !important; } .xpl-narrow { display: block; } }
+  @media print { aside, main > header, .xpl-noprint, .xpl-depttabs { display: none !important; } main { display: block !important; } body { background: #fff !important; } }
   @media (max-width: 640px) { .xpl-actions { padding-left: 0 !important; } .xpl-chips { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; } .xpl-chips > * { flex-shrink: 0; } }
 `
 

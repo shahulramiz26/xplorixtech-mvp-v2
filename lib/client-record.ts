@@ -260,7 +260,7 @@ export function liveInvoices(state: CostingStateLike, holes: LiveHole[]): Portal
 
 interface SeedSpec { number: string; holes: string[]; date: string; due: string; state: 'paid' | 'approved' | 'awaiting'; paidDate?: string; mobilisation?: boolean }
 const SEED_SPECS: SeedSpec[] = [
-  { number: 'INV-0001', holes: ['DH-901', 'DH-911', 'DH-902'], date: '2026-07-06', due: '2026-08-05', state: 'paid', paidDate: '2026-08-03', mobilisation: true },
+  { number: 'INV-0001', holes: ['DH-901', 'DH-911', 'DH-902'], date: '2026-07-06', due: '2026-08-05', state: 'paid', paidDate: '2026-08-12', mobilisation: true },
   { number: 'INV-0002', holes: ['DH-951', 'DH-961', 'DH-952'], date: '2026-08-06', due: '2026-09-05', state: 'approved' },
   { number: 'INV-0003', holes: ['DH-001', 'DH-011'], date: '2026-09-10', due: '2026-10-10', state: 'awaiting' },
 ]
