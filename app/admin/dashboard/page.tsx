@@ -7,9 +7,10 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { moneyL, perUnit, monthLabel, shiftMonth, projectCode, monthOf, useCosting } from '../../../lib/costing-store'
 import { useInventory } from '../../../lib/inventory-store'
 import { IS_DEMO } from '../../../lib/company'
-import { useAdminOverview, financeLink, RIG_STATUS_LABEL, type RigStatus, type Attention } from '../../../lib/admin-overview'
+import { useAdminOverview, financeLink, RIG_STATUS_LABEL, type RigStatus } from '../../../lib/admin-overview'
 import { num } from '../../../lib/client-record'
-import { buildFindings, deptLabel, SEVERITY_LABEL } from '../../../lib/findings'
+import { useInbox } from '../../components/inbox'
+import { InboxBoard, InboxSummary } from '../../components/inbox-board'
 import {
   Page, Head, Card, Split, Btn, Table, Status, Legend, Tip, DepthBar, Spark, Delta, Empty,
   th, thR, td, tdR, rowLine, T, display, toneColor, axisTick, gridStroke, type Tone,
@@ -63,58 +64,11 @@ function StartHere() {
   )
 }
 
-/* XPLORIX Intelligence on the Dashboard: the five things to act on first,
- * and whether the drill logs underneath every figure can be trusted. The full
- * list, with who does what and by when, is on Intelligence > Today. */
-function IntelligenceCard({ intel, handled }: { intel: ReturnType<typeof buildFindings>; handled: Record<string, { status: string }> }) {
-  const open = intel.findings.filter(f => !handled[f.id] || handled[f.id].status === 'assigned')
-  const act = open.filter(f => f.severity === 'act')
-  const top = (act.length ? act : open).slice(0, 5)
-  const atStake = open.reduce((s, f) => s + (f.money ?? 0), 0)
-  const clean = intel.audits.filter(a => a.checks.length === 0).length
-  const pct = intel.audits.length ? Math.round((clean / intel.audits.length) * 100) : 100
-  const pctTone: Tone = pct >= 90 ? 'good' : pct >= 70 ? 'warn' : 'bad'
-  const sevTone: Record<string, Tone> = { act: 'bad', plan: 'warn', watch: 'neutral' }
-  return (
-    <Card title="XPLORIX Intelligence" pad={false}
-      subtitle={open.length ? `${open.length} open across the company · ${act.length} to act on now · ${moneyL(atStake)} at stake` : 'Nothing in the record needs action today.'}
-      right={<Btn href="/admin/intelligence">Open Today</Btn>}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '12px 18px', borderBottom: `1px solid ${T.line}`, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, color: T.muted }}>Drill logs that pass every check</span>
-        <b style={{ fontSize: 15, color: toneColor[pctTone] }}>{pct}%</b>
-        <Link href="/admin/intelligence/drill-logs" style={{ fontSize: 12.5, color: T.orange, textDecoration: 'none', fontWeight: 600, marginLeft: 'auto' }}>
-          {intel.audits.length - clean} of {intel.audits.length} shifts to look at →
-        </Link>
-      </div>
-      {top.length === 0
-        ? <Empty>Nothing to act on. New findings appear here as each shift comes in.</Empty>
-        : top.map((f, i) => {
-          const body = (
-            <div style={{ display: 'flex', gap: 12, padding: '12px 18px', borderTop: i ? `1px solid ${T.line}` : 'none', alignItems: 'flex-start' }}>
-              <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: toneColor[sevTone[f.severity]], flexShrink: 0, marginTop: 6 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{f.title}</div>
-                <div style={{ fontSize: 12, color: T.faint, marginTop: 3 }}>
-                  {SEVERITY_LABEL[f.severity]} · {deptLabel(f.dept)} · {f.owner}{f.money ? ` · ${moneyL(f.money)}` : ''}
-                </div>
-              </div>
-              {f.href && <ChevronRight size={16} style={{ color: T.faint, flexShrink: 0, marginTop: 3 }} />}
-            </div>
-          )
-          return f.href
-            ? <Link key={f.id} href={f.href} className="xpl-row" style={{ display: 'block', textDecoration: 'none' }}>{body}</Link>
-            : <div key={f.id}>{body}</div>
-        })}
-    </Card>
-  )
-}
-
 export default function AdminDashboard() {
   const o = useAdminOverview()
   const { state: costing } = useCosting()
   const { state: inv } = useInventory()
-  // The same findings as XPLORIX Intelligence > Today, the most urgent first.
-  const intel = useMemo(() => buildFindings(costing, inv), [costing, inv])
+  const inbox = useInbox()
   const drilling = o.rigs.filter(r => r.status === 'drilling').length
   const working = o.rigs.filter(r => r.project).length
   const todayMetres = o.rigs.reduce((s, r) => s + (r.day ?? 0) + (r.night ?? 0), 0)
@@ -127,41 +81,34 @@ export default function AdminDashboard() {
   return (
     <Page>
       <Head
-        title="Dashboard"
+        title={inbox.open.length ? `${inbox.open.length} things are open; ${inbox.counts.act} need you today` : 'Nothing needs you right now'}
         sub={<>
-          {drilling} of {working} rigs are drilling today, {num(todayMetres)} m so far.{' '}
-          {o.attention.length
-            ? <><b style={{ color: T.text }}>{o.attention.length} {o.attention.length === 1 ? 'thing needs' : 'things need'} you.</b></>
-            : <>Nothing needs you right now.</>}
+          Every finding from every department, once. {drilling} of {working} rigs are drilling today, {num(todayMetres)} m so far.
         </>}
         right={<>
           <Btn href="/admin/projects">New project</Btn>
-          <Btn href="/admin/finance" kind="primary">Open Finance</Btn>
+          <Btn href="/admin/finance">Open Finance</Btn>
         </>}
       />
 
       <StartHere />
 
-      <Split left={3} right={2}>
-        <Card title={`Needs you${o.attention.length ? ` · ${o.attention.length}` : ''}`} subtitle="Most urgent first. Each line opens the screen where you fix it." pad={false}>
-          {o.attention.length === 0
-            ? <Empty>Nothing is waiting. Breakdowns, returned holes, disputed invoices and stock problems appear here as they happen.</Empty>
-            : o.attention.map((a, i) => <AttentionRow key={a.key} a={a} first={i === 0} />)}
-        </Card>
-
-        <Card title={`${monthLabel(o.month)} so far`} subtitle={`Against the first ${o.dayOfMonth} days of ${lastMonth}`}>
-          <Figure label="Metres drilled" value={`${num(o.now.metres)} m`}
-            note={<>{o.now.perRigDay.toFixed(1)} m per rig per day · <Delta now={o.now.perRigDay} before={o.prev.perRigDay} /></>} />
-          <Figure label="Billable value" value={moneyL(o.now.revenue)}
-            note={<>{perUnit(o.now.ratePerMetre)} earned · <Delta now={o.now.revenue} before={o.prev.revenue} /></>} />
-          <Figure label="Cost per metre" value={perUnit(o.now.costPerMetre)}
-            note={<Delta now={o.now.costPerMetre} before={o.prev.costPerMetre} goodWhenUp={false} />} />
-          <Figure label="Margin" value={`${o.now.marginPct.toFixed(1)}%`} last
-            note={<>{moneyL(o.now.margin)} · <Delta now={o.now.marginPct} before={o.prev.marginPct} unit="pts" /></>} />
-        </Card>
-      </Split>
-
-      {costing.shiftLogs.length > 0 && <IntelligenceCard intel={intel} handled={costing.findingStatus ?? {}} />}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ flex: '999 1 620px', minWidth: 0 }}><InboxBoard /></div>
+        <aside style={{ flex: '1 1 300px', minWidth: 0, display: 'grid', gap: 14 }}>
+          <InboxSummary />
+          <Card title={`${monthLabel(o.month)} so far`} subtitle={`Against the first ${o.dayOfMonth} days of ${lastMonth}`}>
+            <Figure label="Metres drilled" value={`${num(o.now.metres)} m`}
+              note={<>{o.now.perRigDay.toFixed(1)} m per rig per day · <Delta now={o.now.perRigDay} before={o.prev.perRigDay} /></>} />
+            <Figure label="Billable value" value={moneyL(o.now.revenue)}
+              note={<>{perUnit(o.now.ratePerMetre)} earned · <Delta now={o.now.revenue} before={o.prev.revenue} /></>} />
+            <Figure label="Cost per metre" value={perUnit(o.now.costPerMetre)}
+              note={<Delta now={o.now.costPerMetre} before={o.prev.costPerMetre} goodWhenUp={false} />} />
+            <Figure label="Margin" value={`${o.now.marginPct.toFixed(1)}%`} last
+              note={<>{moneyL(o.now.margin)} · <Delta now={o.now.marginPct} before={o.prev.marginPct} unit="pts" /></>} />
+          </Card>
+        </aside>
+      </div>
 
       <Card title="Rigs today" subtitle="Where each rig is, how deep its hole has gone, and what it did on today's two shifts" pad={false}
         right={<Link href="/admin/rigs" style={{ fontSize: 12.5, color: T.muted, textDecoration: 'none' }}>All rigs</Link>}>
@@ -271,19 +218,6 @@ export default function AdminDashboard() {
         </div>
       </Card>
     </Page>
-  )
-}
-
-function AttentionRow({ a, first }: { a: Attention; first: boolean }) {
-  return (
-    <Link href={a.href} className="xpl-row" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 18px', textDecoration: 'none', borderTop: first ? 'none' : `1px solid ${T.line}` }}>
-      <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: toneColor[a.tone], flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{a.title}</div>
-        <div style={{ fontSize: 12.5, color: T.faint, marginTop: 3, lineHeight: 1.45 }}>{a.detail}</div>
-      </div>
-      <span style={{ fontSize: 12.5, color: T.muted, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3 }}>{a.action}<ChevronRight size={14} /></span>
-    </Link>
   )
 }
 

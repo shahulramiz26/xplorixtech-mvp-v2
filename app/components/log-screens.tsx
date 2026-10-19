@@ -87,7 +87,7 @@ function Filters({ children, from, to, onFrom, onTo, onReset, dirty }: { childre
 
 type DK = 'date' | 'shift' | 'metres' | 'hmr' | 'engine' | 'core' | 'drill' | 'down'
 
-export function DrillLogsScreen({ who, supervisor }: { who: string; supervisor?: string }) {
+export function DrillLogsScreen({ who, supervisor, top }: { who: string; supervisor?: string; top?: ReactNode }) {
   const { state, saveShiftLog, deleteShiftLog } = useCosting()
   const [project, setProject] = useState('all')
   const [rig, setRig] = useState('all')
@@ -157,6 +157,7 @@ export function DrillLogsScreen({ who, supervisor }: { who: string; supervisor?:
           <Btn onClick={exportIt} disabled={!rows.length}><Download size={14} /> Export logs</Btn>
           <Btn kind="primary" onClick={() => setEditing('new')} disabled={!scopes.length}><Plus size={15} /> New Drill Log</Btn>
         </>} />
+      {top}
 
       <Filters from={from} to={to} onFrom={setFrom} onTo={setTo} onReset={reset} dirty={dirty}>
         <select value={project} aria-label="Project" onChange={e => { setProject(e.target.value); setRig('all') }} style={{ ...sel, flex: '1 1 170px', width: 'auto' }}>
@@ -261,7 +262,7 @@ export function DrillLogsScreen({ who, supervisor }: { who: string; supervisor?:
 
 type MK = 'date' | 'type' | 'hours' | 'cost' | 'action'
 
-export function MaintenanceLogsScreen({ who, supervisor }: { who: string; supervisor?: string }) {
+export function MaintenanceLogsScreen({ who, supervisor, top }: { who: string; supervisor?: string; top?: ReactNode }) {
   const { state, saveMaintenance, deleteMaintenance } = useCosting()
   const [project, setProject] = useState('all')
   const [rig, setRig] = useState('all')
@@ -306,6 +307,7 @@ export function MaintenanceLogsScreen({ who, supervisor }: { who: string; superv
           <Btn onClick={exportIt} disabled={!rows.length}><Download size={14} /> Export logs</Btn>
           <Btn kind="primary" onClick={() => setEditing('new')} disabled={!scopes.length}><Plus size={15} /> New Maintenance Log</Btn>
         </>} />
+      {top}
 
       <Filters from={from} to={to} onFrom={setFrom} onTo={setTo} onReset={reset} dirty={dirty}>
         <select value={project} aria-label="Project" onChange={e => { setProject(e.target.value); setRig('all') }} style={{ ...sel, flex: '1 1 170px', width: 'auto' }}>

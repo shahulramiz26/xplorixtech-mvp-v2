@@ -1843,10 +1843,16 @@ interface State {
 }
 
 export interface FindingStatus {
-  status: 'done' | 'dismissed' | 'assigned'
+  /* snoozed: back in the list on `until`; it is never out of sight before
+   * then, it waits under Reminders with its date. */
+  status: 'done' | 'dismissed' | 'assigned' | 'snoozed'
   by: string; at: string
   to?: string        // who it was handed to
   note?: string      // why it is not relevant, or what was done
+  until?: string     // YYYY-MM-DD, for snoozed
+  /* The findings it covered when it was marked. A story that gains a new
+   * finding opens again, so new evidence is never hidden by an old answer. */
+  ids?: string[]
 }
 
 function initial(): State {

@@ -73,7 +73,7 @@ export interface MonthNumbers {
 }
 
 export type Tone = 'good' | 'warn' | 'bad' | 'info' | 'neutral'
-export interface Attention { key: string; tone: Tone; title: string; detail: string; href: string; action: string }
+export interface Attention { key: string; tone: Tone; title: string; detail: string; href: string; action: string; money?: number; since?: string }
 
 const order = (l: { date: string; shift: string }) => `${l.date}${l.shift === 'Day' ? '0' : '1'}`
 const addDays = (date: string, n: number) => {
@@ -115,11 +115,19 @@ function monthNumbers(
   return z
 }
 
+export type OverviewCosting = ReturnType<typeof useCosting>['state']
+export type OverviewInv = ReturnType<typeof useInventory>['state']
+
 export function useAdminOverview() {
   const { state: costing } = useCosting()
   const { state: inv } = useInventory()
+  return useMemo(() => computeOverview(costing, inv), [costing, inv])
+}
 
-  return useMemo(() => {
+/* The same figures as a plain function, so the inbox (lib/inbox.ts) can read
+ * them without a second copy of the logic. */
+export function computeOverview(costing: OverviewCosting, inv: OverviewInv) {
+  {
     const today = TODAY
     const month = monthOf(today)
     const dayOfMonth = Number(today.slice(8))
@@ -258,6 +266,7 @@ export function useAdminOverview() {
     const contractorItems: Attention[] = [
       ...(reportsWaiting.length ? [{
         key: 'ctr_reports', tone: 'warn' as Tone, action: 'Check them', href: ctrLink('reports', reportsWaiting[0].project),
+        since: reportsWaiting.map(r => r.date).sort().pop(),
         title: `${reportsWaiting.length} contractor ${reportsWaiting.length === 1 ? 'shift is' : 'shifts are'} waiting to be checked`,
         detail: `${Array.from(new Set(reportsWaiting.map(r => r.rig))).join(', ')} · not in the record, and not paid or billed, until accepted`,
       }] : []),
@@ -265,6 +274,7 @@ export function useAdminOverview() {
         const f = billFigures(costing, b)
         return {
           key: `ctr_bill_${b.id}`, tone: (f.claimed > f.supported ? 'bad' : 'info') as Tone, action: 'Check the bill', href: ctrLink('bills', b.project),
+          money: f.claimed > f.supported ? f.claimed - f.supported : undefined, since: (b as { receivedAt?: string }).receivedAt?.slice(0, 10),
           title: `Bill ${b.number} from ${contractorName(costing, b.contractorId)} is waiting · ${money(f.claimed)}`,
           detail: f.claimed > f.supported ? `It claims ${money(f.claimed - f.supported)} more than the checked record supports` : 'Every line matches the checked record',
         }
@@ -297,7 +307,7 @@ export function useAdminOverview() {
       ...rateItems,
       ...contractorItems,
       ...rigs.filter(r => r.status === 'breakdown').map(r => ({
-        key: `bd_${r.rig}`, tone: 'bad' as Tone, action: 'Open rig', href: '/admin/rigs',
+        key: `bd_${r.rig}`, tone: 'bad' as Tone, action: 'Open rig', href: '/admin/rigs', since: today,
         title: `${r.rig} is broken down today`, detail: `${r.project ?? ''} · ${r.note}`,
       })),
       ...rigs.filter(r => r.status === 'idle' && r.project && projectByName(costing, r.project)?.status !== 'completed').map(r => ({
@@ -310,7 +320,7 @@ export function useAdminOverview() {
         detail: `${r.last7PerDay!.toFixed(1)} m a day over its last 7 logged days · ${r.monthOnTarget} of ${r.monthDays} days on target this month`,
       })),
       ...rigs.filter(r => r.status === 'no-shift' && r.project && !COMPLETED_PROJECTS.includes(r.project)).map(r => ({
-        key: `ns_${r.rig}`, tone: 'warn' as Tone, action: 'Open rig', href: '/admin/rigs',
+        key: `ns_${r.rig}`, tone: 'warn' as Tone, action: 'Open rig', href: '/admin/rigs', since: today,
         title: `No shift received from ${r.rig} today`, detail: r.note,
       })),
       ...returned.map(h => ({
@@ -318,21 +328,21 @@ export function useAdminOverview() {
         title: `${clientOf(h.project)} returned hole ${h.id}`, detail: h.returnReason ?? '',
       })),
       ...disputed.map(i => ({
-        key: `dis_${i.id}`, tone: 'bad' as Tone, action: 'Open invoice', href: invLink(i),
+        key: `dis_${i.id}`, tone: 'bad' as Tone, action: 'Open invoice', href: invLink(i), money: disputedAmount(i),
         title: `Invoice ${i.number}: ${(i.lineReviews ?? []).filter(r => r?.status === 'disputed').length} line(s) disputed by ${clientOf(i.project)}`,
         detail: `${money(disputedAmount(i))} held back before tax · ${i.project}`,
       })),
       ...overdue.map(i => ({
-        key: `od_${i.id}`, tone: 'warn' as Tone, action: 'Open invoice', href: invLink(i),
+        key: `od_${i.id}`, tone: 'warn' as Tone, action: 'Open invoice', href: invLink(i), money: outstanding(i),
         title: `Invoice ${i.number} is overdue · ${money(outstanding(i))}`, detail: `${i.project} · due ${i.dueDate}`,
       })),
       ...(readyToInvoice.length ? [{
-        key: 'ready', tone: 'info' as Tone, action: 'Raise invoice', href: linkFor(readyToInvoice[0]),
+        key: 'ready', tone: 'info' as Tone, action: 'Raise invoice', href: linkFor(readyToInvoice[0]), money: money_.readyValue,
         title: `${readyToInvoice.length} approved ${readyToInvoice.length === 1 ? 'hole is' : 'holes are'} ready to invoice · ${moneyL(money_.readyValue)}`,
         detail: readyToInvoice.map(h => h.id).join(', '),
       }] : []),
       ...(toSend.length ? [{
-        key: 'tosend', tone: 'info' as Tone, action: 'Open holes', href: linkFor(toSend[0]),
+        key: 'tosend', tone: 'info' as Tone, action: 'Open holes', href: linkFor(toSend[0]), money: money_.toSendValue,
         title: `${toSend.length} closed ${toSend.length === 1 ? 'hole is' : 'holes are'} not yet approved for billing · ${moneyL(money_.toSendValue)}`,
         detail: [
           toSend.some(h => isShared(h.project)) ? `${toSend.filter(h => isShared(h.project)).length} to send to the client` : '',
@@ -352,5 +362,5 @@ export function useAdminOverview() {
       projects: costing.projects ?? [], projectNews: inbox.count + inbox.returned.length,
       contractorWork: reportsWaiting.length + billsToCheck.length,
     }
-  }, [costing, inv])
+  }
 }

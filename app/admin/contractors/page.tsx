@@ -1,5 +1,6 @@
 'use client'
 
+import { DeptInbox } from '../../components/inbox'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -104,6 +105,8 @@ function ContractorsScreen() {
           </select>
           <Btn kind="primary" onClick={() => { setTab('orders'); setNewOrder(true) }}>New work order</Btn>
         </>} />
+
+      <DeptInbox depts={['contractors']} name="Contractors" />
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <Seg<Tab> value={tab} onChange={go} options={[

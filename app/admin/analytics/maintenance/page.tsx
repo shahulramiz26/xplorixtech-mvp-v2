@@ -5,7 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, 
 import { maintenance, maintenanceInsights } from '../../../../lib/analytics'
 import { money } from '../../../../lib/costing-store'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Meter, Empty, Legend, Tip, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0, n1 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, n0, n1 } from '../shared'
 
 /* MAINTENANCE — what keeps breaking, and what does it cost?
  * From the maintenance logs, set beside the hours each rig stood for its
@@ -14,7 +14,6 @@ import { useAnalytics, BoardTabs, FilterBar, InsightsCard, n0, n1 } from '../sha
 export default function MaintenanceDashboard() {
   const { state, f } = useAnalytics()
   const x = useMemo(() => maintenance(state, f), [state, f])
-  const insights = useMemo(() => maintenanceInsights(x), [x])
   const topComp = Math.max(1, ...x.components.map(c => c.count))
   const oil = x.byRig.filter(r => r.engineOil + r.hydraulicOil + r.transmissionOil > 0)
 
@@ -26,7 +25,6 @@ export default function MaintenanceDashboard() {
           : <>No maintenance logged for these filters.</>}
         right={<FilterBar />} />
       <BoardTabs />
-      <InsightsCard insights={insights} />
 
       <Grid min={170}>
         <Tile label="Maintenance logs" value={x.m.length} note={`${x.breakdowns} ${x.breakdowns === 1 ? "breakdown" : "breakdowns"}`} tone={x.breakdowns && x.breakdowns === x.m.length ? 'warn' : undefined} />

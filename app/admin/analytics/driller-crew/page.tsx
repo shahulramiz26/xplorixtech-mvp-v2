@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { ResponsiveContainer, ScatterChart, Scatter, ComposedChart, Bar, Line, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip } from 'recharts'
 import { crew, crewInsights } from '../../../../lib/analytics'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Empty, Legend, Tip, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
-import { useAnalytics, BoardTabs, FilterBar, InsightsCard, rigColour, n0, n1 } from '../shared'
+import { useAnalytics, BoardTabs, FilterBar, rigColour, n0, n1 } from '../shared'
 
 /* DRILLERS AND CREW — who is drilling well, and who needs help?
  * Every driller named on a log, on the same measures, and the crew's hours
@@ -15,7 +15,6 @@ type Sort = 'metres' | 'rop' | 'perShift' | 'own'
 export default function DrillersDashboard() {
   const { state, f } = useAnalytics()
   const c = useMemo(() => crew(state, f), [state, f])
-  const insights = useMemo(() => crewInsights(c), [c])
   const [sort, setSort] = useState<Sort>('metres')
   const rows = [...c.drillers].sort((a, b) => sort === 'own' ? a.own / Math.max(1, a.shifts) - b.own / Math.max(1, b.shifts) : b[sort] - a[sort])
   const owners = Array.from(new Set(c.drillers.map(d => d.owner)))
@@ -32,7 +31,6 @@ export default function DrillersDashboard() {
           : <>No driller named on the logs for these filters.</>}
         right={<FilterBar />} />
       <BoardTabs />
-      <InsightsCard insights={insights} />
 
       <Grid min={170}>
         <Tile label="Drillers" value={c.drillers.length} note={`${c.s.whole.length} shifts`} />

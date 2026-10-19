@@ -2,8 +2,8 @@
 
 import { ADMIN_NAME } from '../../../../lib/costing-store'
 import { MaintenanceLogsScreen } from '../../../components/log-screens'
+import { DeptInbox } from '../../../components/inbox'
 
-/* Every maintenance log in the company's record. */
 export default function AdminMaintenanceLogs() {
-  return <MaintenanceLogsScreen who={ADMIN_NAME} />
+  return <MaintenanceLogsScreen who={ADMIN_NAME} top={<DeptInbox depts={['maintenance']} name="Maintenance" />} />
 }
