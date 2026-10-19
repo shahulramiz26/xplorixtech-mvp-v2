@@ -74,7 +74,7 @@ export default function PriceTender() {
   return (
     <Page>
       <IntelTabs />
-      <PageHead question="What should we quote for this tender?" tone={res.missing > 0 ? 'warn' : 'good'}
+      <PageHead question="What has each ground and depth cost you?" tone={res.missing > 0 ? 'warn' : 'good'}
         answer={<>
           {avgQuote != null ? <>At {marginPct}% margin, quote about <b style={{ color: T.text }}>{perUnit(avgQuote)}</b> on average, {moneyL(res.price)} for {n0(pricedMetres)} m. </> : null}
           {res.missing > 0 ? <b style={{ color: T.text }}>{n0(res.missing)} m fall in ground your record has never drilled in {holeSize}; price those separately. </b> : null}
@@ -82,7 +82,7 @@ export default function PriceTender() {
         </>}
         right={<Seg value={kind} onChange={setKind} options={[{ value: 'own', label: 'Our rigs' }, { value: 'contractor', label: 'Sub-contracted' }]} />} />
 
-      <Card title="The tender" subtitle="What the tender asks for. Change any figure and the rates below follow.">
+      <Card title="Try a job" subtitle="A quick what-if. To price a real tender and keep it, use Tenders.">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
           {field('Core size', <select value={holeSize} onChange={e => setHoleSize(e.target.value)} style={inputStyle} aria-label="Core size">{Array.from(new Set([...sizes, 'NQ', 'HQ', 'PQ'])).map(s => <option key={s} value={s}>{s}{sizes.includes(s) ? '' : ' (not in your record)'}</option>)}</select>)}
           {field('Total metres', <input type="number" min={0} value={totalMetres} onChange={e => setTotal(e.target.value)} style={inputStyle} aria-label="Total metres" />)}

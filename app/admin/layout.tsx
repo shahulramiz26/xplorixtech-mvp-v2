@@ -60,7 +60,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   { title: 'Contractors', items: [{ href: '/admin/contractors', label: 'Contractors', icon: Handshake, badge: ['contractors'], also: ['/admin/intelligence/contractors'] }] },
   { title: 'Stores', items: [{ href: '/admin/inventory', label: 'Parts & inventory', icon: Boxes, badge: ['stock'] }] },
   { title: 'Finance & billing', items: [{ href: '/admin/finance', label: 'Finance & costing', icon: DollarSign, badge: ['finance', 'billing'], also: ['/admin/intelligence/money'] }] },
-  { title: 'Tenders', items: [{ href: '/admin/intelligence/pricing', label: 'Tenders', icon: Target, also: ['/admin/bid-intelligence'] }] },
+  { title: 'Tenders', items: [{ href: '/admin/tenders', label: 'Tenders', icon: Target, also: ['/admin/intelligence/pricing', '/admin/bid-intelligence'] }] },
   {
     title: 'Management',
     items: [
