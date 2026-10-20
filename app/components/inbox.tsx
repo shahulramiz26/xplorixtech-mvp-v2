@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Check, UserRound, Clock, X, ArrowRight, RotateCcw, ShieldCheck } from 'lucide-react'
+import { Check, UserRound, Clock, X, ArrowRight, RotateCcw, ShieldCheck, CalendarCheck } from 'lucide-react'
 import { useCosting, ADMIN_NAME, nowStamp, moneyL, type FindingStatus } from '../../lib/costing-store'
 import { useInventory, TODAY, addDays } from '../../lib/inventory-store'
 import { buildInbox, type InboxResult, type InboxUnit } from '../../lib/inbox'
@@ -225,30 +225,22 @@ export function InboxRows({ units, showDept = true, startOpen }: { units: InboxU
   return <>{units.map((u, i) => <InboxRow key={u.id} u={u} first={i === 0} showDept={showDept} open={open === u.id} onToggle={() => setOpen(o => o === u.id ? null : u.id)} />)}</>
 }
 
-/* A department's share of the inbox, at the top of its own screen: short,
- * one line a notification, the most urgent first. */
-export function DeptInbox({ depts, name, show = 4 }: { depts: Dept[]; name: string; show?: number }) {
+/* A department screen's own tasks, as one line: how many, how many today,
+ * and a way into Tasks already narrowed to this department. The tasks
+ * themselves live in one place, Tasks, so a screen opens on its own work. */
+export function DeptInbox({ depts, name }: { depts: Dept[]; name: string; show?: number }) {
   const inbox = useInbox()
-  const [all, setAll] = useState(false)
   const mine = inbox.open.filter(u => u.depts.some(d => depts.includes(d)))
-  const reminders = inbox.reminders.filter(u => u.depts.some(d => depts.includes(d)))
-  const act = mine.filter(u => u.severity === 'act').length
-  const list = all ? mine : mine.slice(0, show)
+  const today = mine.filter(u => u.severity === 'act' || (u.due && u.due <= TODAY)).length
+  const reminders = inbox.reminders.filter(u => u.depts.some(d => depts.includes(d))).length
   return (
-    <section aria-label={`Needs you in ${name}`} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--x-card-shadow)' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center', padding: '11px 16px', borderBottom: mine.length ? `1px solid ${T.line}` : 'none' }}>
-        <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: T.text }}>
-          {mine.length ? <>Needs you in {name} · {mine.length}{act ? <span style={{ color: T.red }}> · {act} today</span> : null}</> : <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}><ShieldCheck size={16} aria-hidden style={{ color: T.green }} />Nothing needs you in {name}</span>}
-          {reminders.length ? <span style={{ fontWeight: 400, color: T.faint, fontSize: 12.5 }}> · {reminders.length} on a reminder</span> : null}
-        </h2>
-        {mine.length > 0 && <Link href={`/admin/inbox?dept=${depts.join(',')}`} style={{ fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>Go through them one by one<ArrowRight size={13} aria-hidden /></Link>}
-      </div>
-      <InboxRows units={list} showDept={false} />
-      {mine.length > show && (
-        <button type="button" onClick={() => setAll(a => !a)} style={{ width: '100%', padding: '10px 16px', border: 'none', borderTop: `1px solid ${T.line}`, background: 'rgba(var(--x-ov),0.015)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: T.orange, cursor: 'pointer', textAlign: 'left' }}>
-          {all ? 'Show fewer' : `Show all ${mine.length}`}
-        </button>
-      )}
-    </section>
+    <Link href={`/admin/tasks?dept=${depts.join(',')}`} aria-label={`${mine.length} tasks for ${name}, ${today} due today. Open in Tasks`} className="xpl-row"
+      style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none', boxShadow: 'var(--x-card-shadow)' }}>
+      {mine.length ? <CalendarCheck size={17} aria-hidden style={{ color: T.orange }} /> : <ShieldCheck size={17} aria-hidden style={{ color: T.green }} />}
+      <span style={{ fontSize: 13.5, color: T.text }}>
+        {mine.length ? <><b>{mine.length} {mine.length === 1 ? 'task' : 'tasks'} for {name}</b>{today ? <> · <b style={{ color: 'var(--x-bad-text)' }}>{today} due today</b></> : null}{reminders ? <span style={{ color: T.faint }}> · {reminders} on a reminder</span> : null}</> : <>Nothing waiting for {name}</>}
+      </span>
+      <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, color: T.orange }}>Open in Tasks<ArrowRight size={14} aria-hidden /></span>
+    </Link>
   )
 }
