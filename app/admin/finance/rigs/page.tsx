@@ -28,18 +28,20 @@ import { checkHole, looseStandby } from '../../../../lib/money-checks'
 import { workOrderFor, contractorName, words, currentPayRate } from '../../../../lib/contracting'
 import { TODAY } from '../../../../lib/inventory-store'
 import Link from 'next/link'
+import { Card, Stat, Field, NumField, TextField, DateField, Derived, Tag, Switch, Toggle, Btn, Note, Empty, Modal, Grid, Section, th, thR, td, tdN, tableStyle, rowBorder, fm } from '../../../components/cost-ui'
+import { nextAllowedDate, SaveRow, RigCostPanel, InForce, Result, SaveDialog, OperatingPanel } from '../../../components/cost-panels'
 import { hexA } from '../../../../lib/theme'
 
 /* ==========================================================================
  * XPLORIX COSTING — one screen.
  *
  * Project -> rig -> month, then three views of the same costed data. Two
- * buttons top right: Set costs (two tabs) and Rates history.
+ * buttons top right: Adjust costs (two tabs) and Rates history.
  *
  * Sections below, in order:
  *   1  UI primitives
  *   2  The costing view (turns logs + dated rates into days)
- *   3  Set costs      — Rig cost / Operating cost. What the client pays is
+ *   3  Adjust costs   — Rig cost / Operating cost (entered on Rigs and on the project). What the client pays is
  *                       the project's contract rates, set on the Projects screen.
  *   4  Rates history
  *   5  Performance / Drillholes / Tracker
@@ -50,250 +52,6 @@ import { hexA } from '../../../../lib/theme'
  * 1  UI primitives
  * ========================================================================== */
 
-function Card({ title, subtitle, right, children, pad = true, accent }: {
-  title?: string; subtitle?: string; right?: ReactNode; children: ReactNode; pad?: boolean; accent?: string
-}) {
-  return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', borderLeft: accent ? `3px solid ${accent}` : undefined }}>
-      {title && (
-        <div style={{ padding: '11px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 11, color: C.faint, marginTop: 3 }}>{subtitle}</div>}
-          </div>
-          {right}
-        </div>
-      )}
-      <div style={pad ? { padding: 16 } : undefined}>{children}</div>
-    </div>
-  )
-}
-
-function Stat({ label, value, note, color = C.text, big }: {
-  label: string; value: string; note?: string; color?: string; big?: boolean
-}) {
-  return (
-    <div style={{ padding: '12px 14px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: big ? 21 : 17, fontWeight: 900, color, fontFamily: 'ui-monospace, monospace', lineHeight: 1.15 }}>{value}</div>
-      {note && <div style={{ fontSize: 10, color: C.faint, marginTop: 5 }}>{note}</div>}
-    </div>
-  )
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, height: 15 }}>{label}</div>
-      {children}
-      {hint && <div style={{ fontSize: 10, color: C.dim, marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
-    </div>
-  )
-}
-
-function NumField({ label, value, onChange, hint, color = C.text, suffix }: {
-  label: string; value: number; onChange: (n: number) => void; hint?: string; color?: string; suffix?: string
-}) {
-  return (
-    <Field label={label} hint={hint}>
-      <div style={{ position: 'relative' }}>
-        <input type="number" value={Number.isFinite(value) ? value : 0}
-          onChange={e => onChange(parseFloat(e.target.value) || 0)}
-          style={{ ...iStyle, color, fontWeight: 700, fontFamily: 'ui-monospace, monospace', paddingRight: suffix ? 42 : 10 }} />
-        {suffix && <span style={{ position: 'absolute', right: 9, top: 7, fontSize: 10.5, color: C.dim, pointerEvents: 'none' }}>{suffix}</span>}
-      </div>
-    </Field>
-  )
-}
-
-function TextField({ label, value, onChange, placeholder, hint }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; hint?: string
-}) {
-  return (
-    <Field label={label} hint={hint}>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={iStyle} />
-    </Field>
-  )
-}
-
-function DateField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
-  return (
-    <Field label={label} hint={hint}>
-      <input type="date" value={value} onChange={e => onChange(e.target.value)} style={{ ...iStyle }} />
-    </Field>
-  )
-}
-
-/* A value XPLORIX worked out. `onOverride` makes it typeable — the calculation
- * is a starting point, never a lock — and an overridden value keeps the manual
- * tag so a month later you can still see which figures were computed. */
-function Derived({ label, value, hint, color = C.text, overridden, onOverride, onClear }: {
-  label: string; value: string; hint?: string; color?: string
-  overridden?: number; onOverride?: (n: number) => void; onClear?: () => void
-}) {
-  const manual = overridden != null
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
-        <Tag tone={manual ? C.amber : C.dim}>{manual ? 'manual' : 'auto'}</Tag>
-      </div>
-      {manual && onOverride ? (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input type="number" value={overridden} onChange={e => onOverride(parseFloat(e.target.value) || 0)}
-            style={{ ...iStyle, color: C.amber, fontWeight: 700, fontFamily: 'ui-monospace, monospace' }} />
-          <button onClick={onClear} title="Back to the calculated value"
-            style={{ padding: '0 12px', borderRadius: 8, background: 'rgba(var(--x-ov),0.04)', border: `1px solid ${C.border}`, color: C.faint, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>Reset</button>
-        </div>
-      ) : (
-        <div style={{ ...derivedStyle, color, fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <span>{value}</span>
-          {onOverride && (
-            <button onClick={() => onOverride(0)} title="Enter this by hand"
-              style={{ background: 'none', border: 'none', color: C.dim, fontSize: 10, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>edit</button>
-          )}
-        </div>
-      )}
-      {hint && <div style={{ fontSize: 10, color: C.dim, marginTop: 4 }}>{hint}</div>}
-    </div>
-  )
-}
-
-function Tag({ children, tone = C.faint }: { children: ReactNode; tone?: string }) {
-  return (
-    <span style={{
-      fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-      padding: '2px 7px', borderRadius: 5, color: tone,
-      background: `${hexA(tone, 0x1A)}`, border: `1px solid ${hexA(tone, 0x33)}`, whiteSpace: 'nowrap',
-    }}>{children}</span>
-  )
-}
-
-/* iOS-style switch. Used where the choice is genuinely on/off — a segmented
- * control is better when two named alternatives both need naming. */
-function Switch({ on, onChange, label, hint }: {
-  on: boolean; onChange: (v: boolean) => void; label: string; hint?: string
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0' }}>
-      <button onClick={() => onChange(!on)} role="switch" aria-checked={on} style={{
-        width: 38, height: 22, borderRadius: 11, flexShrink: 0, marginTop: 1, cursor: 'pointer',
-        border: 'none', padding: 0, position: 'relative',
-        background: on ? C.orange : 'var(--x-border3)', transition: 'background 0.18s',
-      }}>
-        <span style={{
-          position: 'absolute', top: 3, left: on ? 19 : 3, width: 16, height: 16,
-          borderRadius: '50%', background: '#fff', transition: 'left 0.18s',
-          boxShadow: '0 1px 3px rgba(var(--x-shadow),0.4)',
-        }} />
-      </button>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{label}</div>
-        {hint && <div style={{ fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.5 }}>{hint}</div>}
-      </div>
-    </div>
-  )
-}
-
-/* Segmented control. Used where two named alternatives both need naming — a
- * switch is better only when the choice is genuinely on/off. */
-function Toggle<T extends string>({ options, value, onChange, labels }: {
-  options: readonly T[]; value: T; onChange: (v: T) => void; labels?: Record<string, string>
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: 4 }}>
-      {options.map(o => (
-        <button key={o} onClick={() => onChange(o)} style={{
-          flex: 1, padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          border: 'none', whiteSpace: 'nowrap', fontFamily: 'inherit',
-          background: value === o ? C.orange : 'transparent', color: value === o ? '#fff' : C.faint,
-        }}>{labels?.[o] ?? o}</button>
-      ))}
-    </div>
-  )
-}
-
-function Btn({ children, onClick, tone = 'ghost', disabled, size = 'md' }: {
-  children: ReactNode; onClick?: () => void; tone?: 'primary' | 'ghost' | 'danger'; disabled?: boolean; size?: 'sm' | 'md'
-}) {
-  const tones: Record<string, React.CSSProperties> = {
-    primary: { background: `linear-gradient(135deg, ${C.orange}, ${C.orangeD})`, color: '#fff', border: 'none' },
-    ghost: { background: 'rgba(var(--x-ov),0.04)', border: `1px solid ${C.border}`, color: C.muted },
-    danger: { background: 'color-mix(in srgb, var(--x-red) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--x-red) 22%, transparent)', color: C.red },
-  }
-  return (
-    <button onClick={onClick} disabled={disabled} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6, cursor: disabled ? 'not-allowed' : 'pointer',
-      borderRadius: 9, fontWeight: 700, fontFamily: 'inherit', opacity: disabled ? 0.45 : 1,
-      padding: size === 'sm' ? '5px 11px' : '8px 15px', fontSize: size === 'sm' ? 11.5 : 12.5,
-      whiteSpace: 'nowrap', ...tones[tone],
-    }}>{children}</button>
-  )
-}
-
-function Note({ tone = C.blue, children }: { tone?: string; children: ReactNode }) {
-  return (
-    <div style={{ padding: '9px 13px', borderRadius: 9, background: `${hexA(tone, 0x0F)}`, border: `1px solid ${hexA(tone, 0x33)}`, fontSize: 11.5, color: tone, lineHeight: 1.55 }}>{children}</div>
-  )
-}
-
-function Empty({ children }: { children: ReactNode }) {
-  return <div style={{ padding: '34px 20px', textAlign: 'center', color: C.faint, fontSize: 12.5, lineHeight: 1.7 }}>{children}</div>
-}
-
-/* Dense financial tables: numerals monospace and right aligned, so a column
- * reads as a column of figures rather than of words. */
-const th: React.CSSProperties = {
-  padding: '7px 12px', textAlign: 'left', fontSize: 10, color: C.faint, fontWeight: 700,
-  textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap',
-  borderBottom: `1px solid ${C.border}`, background: 'rgba(var(--x-ov),0.02)',
-}
-const thR: React.CSSProperties = { ...th, textAlign: 'right' }
-const td: React.CSSProperties = { padding: '7px 12px', fontSize: 12, color: C.muted, whiteSpace: 'nowrap' }
-const tdN: React.CSSProperties = { ...td, textAlign: 'right', fontFamily: 'ui-monospace, monospace' }
-const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse' }
-const rowBorder = '1px solid color-mix(in srgb, var(--x-border) 50%, transparent)'
-
-/* Metres to one decimal: a day's metres are a sum of shifts, and a sum of
- * decimals carries float noise (6.300000000000001) that must never reach the screen. */
-const fm = (m: number) => String(Math.round(m * 10) / 10)
-
-function Modal({ title, subtitle, width = 760, onClose, children, footer }: {
-  title: string; subtitle?: string; width?: number; onClose: () => void; children: ReactNode; footer?: ReactNode
-}) {
-  useEscape(onClose)
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(var(--x-shadow),0.82)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, width, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '16px 20px 13px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 12, color: C.faint, marginTop: 4 }}>{subtitle}</div>}
-          </div>
-          <button onClick={onClose} aria-label="Close" style={{ padding: 7, borderRadius: 8, background: 'rgba(var(--x-ov),0.04)', border: `1px solid ${C.border}`, color: C.faint, cursor: 'pointer', lineHeight: 0, fontFamily: 'inherit' }}>✕</button>
-        </div>
-        <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>{children}</div>
-        {footer && <div style={{ padding: '13px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>{footer}</div>}
-      </div>
-    </div>
-  )
-}
-
-function Grid({ cols, children }: { cols: number; children: ReactNode }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, gap: 12 }}>{children}</div>
-}
-
-function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{title}</div>
-        {note && <div style={{ fontSize: 11, color: C.faint, marginTop: 4, maxWidth: 640, lineHeight: 1.6, minHeight: 17 }}>{note}</div>}
-      </div>
-      {children}
-    </div>
-  )
-}
 
 /* ==========================================================================
  * 2  The costing view
@@ -334,24 +92,8 @@ function useMonthTrend(project: string, rig: string): MonthPoint[] {
  * 3  Set rates
  * ========================================================================== */
 
-type Section = 'rig' | 'operating'
+type CostSection = 'rig' | 'operating'
 
-/* Effective dates are forward-only: a new set of rates can start today or
- * later, never before the last one. That is what makes history trustworthy —
- * nothing already costed can be rewritten from behind.
- *
- * The first set is different: nothing was costed before it, so it may start on
- * any day, and it starts by default on the day the rig began work. Costs typed
- * a week into a project then cover that first week too. */
-function nextAllowedDate(latest: string | undefined): string {
-  const today = TODAY
-  if (!latest) return ''
-  // In UTC on purpose: a local midnight is the day before in UTC east of Greenwich.
-  const d = new Date(latest + 'T00:00:00Z')
-  d.setUTCDate(d.getUTCDate() + 1)
-  const after = d.toISOString().slice(0, 10)
-  return after > today ? after : today
-}
 
 function SetRatesModal({ projects, initialProject, initialRig, rigsForProject, month, onClose }: {
   projects: string[]
@@ -371,7 +113,7 @@ function SetRatesModal({ projects, initialProject, initialRig, rigsForProject, m
     const start = (state.projects ?? []).find(p => p.name === project)?.startDate
     return [logged, start].filter(Boolean).sort()[0] ?? TODAY
   }, [state.shiftLogs, state.projects, rig, project])
-  const [section, setSection] = useState<Section>('operating')
+  const [section, setSection] = useState<CostSection>('operating')
 
   const rigs = rigsForProject(project)
   useEffect(() => { if (!rigs.includes(rig)) setRig(rigs[0] ?? '') }, [rigs, rig])
@@ -380,7 +122,7 @@ function SetRatesModal({ projects, initialProject, initialRig, rigsForProject, m
   // the history can say exactly what was changed and where.
   if (!confirmed) {
     return (
-      <Modal title="Set your costs" subtitle="Which rig and project are these costs for?" width={620} onClose={onClose}
+      <Modal title="Adjust costs" subtitle="Which rig and project?" width={620} onClose={onClose}
         footer={<><Btn onClick={onClose}>Cancel</Btn>
           <Btn tone="primary" disabled={!project || !rig} onClick={() => setConfirmed(true)}>Continue</Btn></>}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -398,7 +140,8 @@ function SetRatesModal({ projects, initialProject, initialRig, rigsForProject, m
             </div>
           </Field>
           <Note tone={C.dim}>
-            Rig cost applies to this rig on every project. Operating cost applies to this rig on this project.
+            Costs are entered where they belong: the rig cost on the rig, under Rigs, and the operating cost when the rig is put on a project.
+            Here you can check and adjust both. Rig cost applies to this rig on every project; operating cost to this rig on this project.
             What the client pays is not set here: contract rates belong to the project, where the client can see and accept them.
             Tooling is not set here either — it comes from what the rig is carrying, in Parts &amp; inventory.
           </Note>
@@ -415,7 +158,7 @@ function SetRatesModal({ projects, initialProject, initialRig, rigsForProject, m
   const scope = section === 'rig' ? `${rig} · every project` : `${rig} · ${project}`
 
   return (
-    <Modal title="Set your costs" subtitle={scope} width={980} onClose={onClose}>
+    <Modal title="Adjust costs" subtitle={scope} width={980} onClose={onClose}>
       <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
 
         {/* Sidebar */}
@@ -468,230 +211,6 @@ function SideItem({ on, onClick, label }: { on: boolean; onClick: () => void; la
   )
 }
 
-function SaveRow({ onSave, label }: { onSave: () => void; label: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-      <Btn tone="primary" onClick={onSave}>{label}</Btn>
-    </div>
-  )
-}
-
-function RigCostPanel({ rig, month, versions, firstDay, onSave }: {
-  rig: string; month: string; versions: RigOwnership[]; firstDay: string; onSave: (o: RigOwnership, from: string, why: string) => void
-}) {
-  const latest = versions[0]
-  const minDate = nextAllowedDate(latest?.effectiveFrom)
-  const [f, setF] = useState<RigOwnership>(() => latest ? { ...latest, id: uid('own') } : blankOwnership(rig, minDate || firstDay))
-  const [confirm, setConfirm] = useState(false)
-  const u = (p: Partial<RigOwnership>) => setF(x => ({ ...x, ...p }))
-  const b = ownershipBreakdown(f, month)
-
-  return (
-    <div>
-      <InForce text={latest ? `${money(ownershipBreakdown(latest, month).perDay)}/day since ${fullDate(latest.effectiveFrom)}` : 'nothing set yet'} />
-
-      {/* Both columns: one-line header, then a 2x2 grid, so the two sides line
-          up on both axes. Depreciation's fourth cell is deliberately empty. */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 26, marginTop: 18, alignItems: 'start' }}>
-        <Section title="Landed cost" note="What the rig cost to put on site.">
-          <Grid cols={2}>
-            <NumField label="Basic price" value={f.basicPrice} onChange={n => u({ basicPrice: n })} suffix="₹" />
-            <NumField label="GST" value={f.gstPercent} onChange={n => u({ gstPercent: n })} suffix="%" />
-            <NumField label="Transportation" value={f.transportation} onChange={n => u({ transportation: n })} suffix="₹" />
-            <Derived label="Landed price" value={money(b.landedPrice)} color={C.orange}
-              overridden={f.landedPriceOverride} onOverride={n => u({ landedPriceOverride: n })}
-              onClear={() => u({ landedPriceOverride: undefined })} />
-          </Grid>
-        </Section>
-        <Section title="Depreciation" note="Straight line on the landed price.">
-          <Grid cols={2}>
-            <NumField label="Rate per year" value={f.depreciationRatePct} onChange={n => u({ depreciationRatePct: n })} suffix="%" />
-            <Derived label="Per year" value={money(b.depPerYear)} color={C.muted} />
-            <Derived label="Per month" value={money(b.depPerMonth)} color={C.purple}
-              overridden={f.depPerMonthOverride} onOverride={n => u({ depPerMonthOverride: n })}
-              onClear={() => u({ depPerMonthOverride: undefined })} />
-            <div />
-          </Grid>
-        </Section>
-      </div>
-
-      <div style={{ marginTop: 22 }}>
-        <Section title="Finance" note="Enter the EMI you actually pay each month.">
-          <Grid cols={4}>
-            <NumField label="EMI per month" value={f.emiPerMonth} onChange={n => u({ emiPerMonth: n })} suffix="₹" color={C.blue} />
-            <Field label="EMI ends" hint="Optional. Without it a closed loan keeps charging forever.">
-              <input type="month" value={f.emiEndsMonth ?? ''} onChange={e => u({ emiEndsMonth: e.target.value || undefined })}
-                style={{ ...iStyle }} />
-            </Field>
-            <NumField label="Insurance per year" value={f.insurancePerYear} onChange={n => u({ insurancePerYear: n })} suffix="₹" />
-            <NumField label="Other fixed / month" value={f.otherFixedPerMonth} onChange={n => u({ otherFixedPerMonth: n })} suffix="₹" />
-          </Grid>
-          {f.emiPerMonth > 0 && b.emiMonthsLeft >= 0 && (
-            <Note tone={b.emiActive ? C.blue : C.green}>
-              {b.emiActive
-                ? `${b.emiMonthsLeft} payments left after ${monthLabel(month)}. When the loan closes, ownership falls to ${money((b.perMonth - b.emi) / Math.max(1, f.expectedOperatingDays))} per operating day and every hole gets cheaper.`
-                : `The loan closed before ${monthLabel(month)}, so ownership is depreciation and insurance only.`}
-            </Note>
-          )}
-        </Section>
-      </div>
-
-      <div style={{ marginTop: 22 }}>
-        <Section title="Charging rules">
-          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '2px 14px' }}>
-            <Switch on={f.costBasis === 'cash'} onChange={v => u({ costBasis: v ? 'cash' : 'accounting' })}
-              label="Include the EMI"
-              hint="On, ownership is depreciation + EMI — how the money actually leaves the business. Off counts depreciation only." />
-            <div style={{ height: 1, background: C.border }} />
-            <Switch on={f.allocationBasis === 'expectedUnit'} onChange={v => u({ allocationBasis: v ? 'expectedUnit' : 'operatingDay' })}
-              label="Charge per metre instead of per day"
-              hint="Off, ownership lands on every day the rig is on site, so a standby day still carries it. On, it lands only on metres drilled — which makes a breakdown day look free." />
-          </div>
-          <Grid cols={4}>
-            <NumField label="Expected operating days" value={f.expectedOperatingDays} onChange={n => u({ expectedOperatingDays: n })} suffix="/mth" />
-            <NumField label="Expected metres" value={f.expectedUnitsPerMonth} onChange={n => u({ expectedUnitsPerMonth: n })} suffix="m/mth" />
-            <div /><div />
-          </Grid>
-        </Section>
-      </div>
-
-      <Result title="What XPLORIX will charge" tag="ownership"
-        pairs={[['Depreciation', money(b.depPerMonth), false], ['EMI', b.emi > 0 ? money(b.emi) : '—', b.emi === 0],
-                ['Insurance', money(b.insurancePerMonth), false], ['Other fixed', money(b.otherFixedPerMonth), b.otherFixedPerMonth === 0]]}
-        total={money(b.perMonth)} basis={b.basisLabel}
-        answer={f.allocationBasis === 'expectedUnit' ? perUnit(b.perUnit) : `${money(b.perDay)}/day`} />
-
-      <SaveRow label="Save rig cost" onSave={() => setConfirm(true)} />
-      {confirm && <SaveDialog minDate={minDate} defaultFrom={firstDay} replacing={latest ? `${money(ownershipBreakdown(latest, month).perDay)}/day` : 'nothing'}
-        onCancel={() => setConfirm(false)} onSave={(from, why) => { onSave(f, from, why); setConfirm(false) }} />}
-    </div>
-  )
-}
-
-function InForce({ text }: { text: string }) {
-  return (
-    <div style={{ fontSize: 11, color: C.faint }}>
-      Currently in force: <span style={{ color: C.text, fontFamily: 'ui-monospace, monospace' }}>{text}</span>
-    </div>
-  )
-}
-
-function Result({ title, tag, pairs, total, basis, answer }: {
-  title: string; tag: string; pairs: [string, string, boolean][]; total: string; basis: string; answer: string
-}) {
-  return (
-    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>{title}</span>
-        <Tag tone={C.purple}>{tag}</Tag>
-      </div>
-      <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
-        {pairs.map(([k, v, dim]) => (
-          <div key={k} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-            <span style={{ fontSize: 11, color: C.faint }}>{k}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: dim ? C.dim : C.text, fontFamily: 'ui-monospace, monospace' }}>{v}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ height: 1, background: C.border, margin: '13px 0' }} />
-      <div style={{ fontSize: 13, color: C.muted, fontFamily: 'ui-monospace, monospace', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-        <span>{total}</span><span style={{ color: C.dim }}>{basis}</span><span style={{ color: C.dim }}>=</span>
-        <span style={{ color: C.purple, fontWeight: 900, fontSize: 18 }}>{answer}</span>
-      </div>
-    </div>
-  )
-}
-
-/* Date and reason are asked at the moment of saving, not while you are
- * entering numbers. Forward-only: a new set of rates starts today or later,
- * never before the last one, so nothing already costed can be rewritten. */
-function SaveDialog({ minDate, defaultFrom, replacing, onCancel, onSave }: {
-  minDate: string; defaultFrom: string; replacing: string; onCancel: () => void; onSave: (from: string, why: string) => void
-}) {
-  const [from, setFrom] = useState(minDate || defaultFrom)
-  const [why, setWhy] = useState(minDate ? '' : 'First costs for this rig')
-  const tooEarly = !from || (!!minDate && from < minDate)
-  return (
-    <Modal title="When do these rates start?" subtitle={minDate ? `Replacing ${replacing}` : 'The first costs for this rig'} width={520} onClose={onCancel}
-      footer={<><Btn onClick={onCancel}>Cancel</Btn>
-        <Btn tone="primary" disabled={tooEarly || !why.trim()} onClick={() => onSave(from, why.trim())}>Save rates</Btn></>}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <DateField label="New rates start" value={from} onChange={setFrom} />
-        <TextField label="Why" value={why} onChange={setWhy} placeholder="e.g. committee reclassification, fuel revision"
-          hint="Shows in Rates history, so a year from now the change explains itself." />
-        {!from
-          ? <Note tone={C.red}>Choose the day these rates start.</Note>
-          : tooEarly
-          ? <Note tone={C.red}>Rates can only start on {fullDate(minDate)} or later — earlier work keeps the rate it was done under.</Note>
-          : !minDate
-          ? <Note tone={C.dim}>These are the first costs for this rig. Every shift from {fullDate(from)} on is costed at them; anything before carries no cost.</Note>
-          : <Note tone={C.dim}>Work before {fullDate(from)} keeps the rate it was done under. Nothing already costed changes.</Note>}
-      </div>
-    </Modal>
-  )
-}
-
-function OperatingPanel({ rig, project, versions, firstDay, onSave }: {
-  rig: string; project: string; versions: OperatingRate[]; firstDay: string; onSave: (o: OperatingRate, from: string, why: string) => void
-}) {
-  const latest = versions[0]
-  const minDate = nextAllowedDate(latest?.effectiveFrom)
-  const [f, setF] = useState<OperatingRate>(() => latest ? { ...latest, id: uid('op') } : blankOperating(rig, project, minDate || firstDay))
-  const [confirm, setConfirm] = useState(false)
-  const u = (p: Partial<OperatingRate>) => setF(x => ({ ...x, ...p }))
-  const per = f.chargePerMetre ? '₹/m' : ''
-
-  return (
-    <div>
-      <InForce text={latest ? `fuel ₹${latest.fuelPricePerLitre}/L, labour ${money(latest.labourRate)} since ${fullDate(latest.effectiveFrom)}` : 'nothing set yet'} />
-
-      <div style={{ marginTop: 14 }}>
-        <Note tone={C.dim}>
-          Fuel, water, additives, metres and crew count come from the driller&apos;s log. Repairs come from the maintenance log.
-          Tooling comes from what each rig is carrying — its starting kit plus everything issued since — and is charged
-          against the ground the log recorded. Only the rates below are set here.
-        </Note>
-      </div>
-
-      <div style={{ marginTop: 18 }}>
-        <Section title="Unit prices" note="Consumption comes from the log; these turn it into rupees.">
-          <Grid cols={3}>
-            <NumField label="Fuel" value={f.fuelPricePerLitre} onChange={n => u({ fuelPricePerLitre: n })} suffix="₹/L" color={C.amber} />
-            <NumField label="Water" value={f.waterPricePerLitre} onChange={n => u({ waterPricePerLitre: n })} suffix="₹/L" />
-            <NumField label="Additives" value={f.additivePricePerKg} onChange={n => u({ additivePricePerKg: n })} suffix="₹/kg" />
-          </Grid>
-        </Section>
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <Section title="Labour">
-          <Grid cols={3}>
-            <NumField label="Labour cost" value={f.labourRate} onChange={n => u({ labourRate: n })}
-              suffix={per || '₹'} color={C.blue} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per shift'} />
-            <NumField label="Lodging cost" value={f.lodgingRate} onChange={n => u({ lodgingRate: n })}
-              suffix={per || '₹'} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per night'} />
-            <NumField label="Transportation cost" value={f.transportRate} onChange={n => u({ transportRate: n })}
-              suffix={per || '₹/day'} hint={f.chargePerMetre ? 'per metre drilled' : 'per day on site'} />
-          </Grid>
-        </Section>
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <Section title="Charging rules">
-          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '2px 14px' }}>
-            <Switch on={f.chargePerMetre} onChange={v => u({ chargePerMetre: v })}
-              label="Charge per metre instead of per day"
-              hint="Off, labour follows the crew count in the log and a standby day still costs. On, the three rates above are charged against metres drilled and crew count stops affecting cost." />
-          </div>
-        </Section>
-      </div>
-
-      <SaveRow label="Save operating cost" onSave={() => setConfirm(true)} />
-      {confirm && <SaveDialog minDate={minDate} defaultFrom={firstDay} replacing={latest ? `fuel ₹${latest.fuelPricePerLitre}/L` : 'nothing'}
-        onCancel={() => setConfirm(false)} onSave={(from, why) => { onSave(f, from, why); setConfirm(false) }} />}
-    </div>
-  )
-}
 
 /* One row per tender line: a size, a formation, a rate. Adjustments hang off
  * their own row because that is how the tender writes them. */
@@ -2297,12 +1816,12 @@ function CostingScreen() {
           <h1 style={{ fontSize: 26, fontWeight: 900, color: C.text, margin: 0 }}>Rig by rig</h1>
           <p style={{ fontSize: 13, color: C.faint, marginTop: 5, maxWidth: 660, lineHeight: 1.6 }}>
             What each hole cost, what it can be billed for, and what it made. Metres, hours, crew and fuel come from the
-            driller&apos;s log, repairs from the maintenance log, tooling from what each rig is carrying — the only things
-            set here are rates.
+            driller&apos;s log, repairs from the maintenance log, tooling from what each rig is carrying. The rig cost is entered
+            on each rig and the operating cost on each project; check or adjust them here.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn size="sm" onClick={() => setShowRates(true)}>⚙ Set costs</Btn>
+          <Btn size="sm" onClick={() => setShowRates(true)}>⚙ Adjust costs</Btn>
           <Btn size="sm" onClick={() => setShowHistory(true)}>↺ Rates history</Btn>
         </div>
       </div>
@@ -2329,6 +1848,24 @@ function CostingScreen() {
           <Arrow dir="▶" onClick={() => setMonth(shiftMonth(month, 1))} />
         </div>
       </div>
+
+      {rig && !bought(rig) && (() => {
+        /* An own rig with a cost missing is costed without it: say so, and say
+         * where it is entered, rather than show a cost a metre that looks whole. */
+        const noRig = !state.ownership.some(o => o.rig === rig)
+        const noOp = !state.operating.some(o => o.rig === rig && o.project === project)
+        if (!noRig && !noOp) return null
+        const pid = (state.projects ?? []).find(p => p.name === project)?.id
+        const missing = noRig && noOp ? 'its rig cost and its operating cost' : noRig ? 'its rig cost (price or hire, EMI, insurance)' : 'its operating cost on this project (fuel, crew, lodging, transport)'
+        return (
+          <Note tone={C.amber}>
+            <b>Costs not set for {rigCode(rig)}: cost a metre is not complete.</b> It leaves out {missing}.{' '}
+            {noRig && <Link href="/admin/rigs" style={{ color: C.orange, fontWeight: 700, textDecoration: 'none' }}>Set the rig cost in Rigs</Link>}
+            {noRig && noOp && ' · '}
+            {noOp && pid && <Link href={`/admin/projects/${pid}?tab=team`} style={{ color: C.orange, fontWeight: 700, textDecoration: 'none' }}>Set the operating cost on the project</Link>}
+          </Note>
+        )
+      })()}
 
       <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
         {TABS.map(t => (

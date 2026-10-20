@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, X } from 'lucide-react'
@@ -11,11 +11,12 @@ import {
 import { TODAY, addDays } from '../../../../lib/inventory-store'
 import { projectById, projectStats, holeSeriesStart, contractOf, eventsFor, structureWords, day, whenIn, type ProjectHole } from '../../../../lib/projects'
 import { financeLink } from '../../../../lib/admin-overview'
-import { words, contractorOf, workOrderProgress } from '../../../../lib/contracting'
+import { words, contractorOf, workOrderProgress, whoDrills, WHO_DRILLS_LABEL } from '../../../../lib/contracting'
 import {
   Page, Card, Tile, Grid, Split, Seg, Btn, Note, Modal, Field, Switch, Status, Empty, inputStyle, T, display,
 } from '../../../components/kit'
 import { RateSchedule, RateEditor, ratesUsable } from '../../../components/rate-card'
+import { OperatingCostModal, operatingLine } from '../../../components/cost-panels'
 import { ProjectStatusTag, SharedTag, ChangeList, HolesTable, AddHolesModal, Fact } from '../../../components/project-ui'
 
 /* ONE PROJECT — the contract and everything agreed under it.
@@ -74,8 +75,9 @@ function RatesModal({ project, current, minDate, onClose, onSave }: {
 
 // ── pick rigs or people ───────────────────────────────────────────────────
 
-function Roster({ title, subtitle, items, pool, busy, addLabel, allowNew, newHint = 'Or type a new name', onChange }: {
+function Roster({ title, subtitle, items, pool, busy, addLabel, allowNew, newHint = 'Or type a new name', detail, onChange }: {
   title: string; subtitle?: string; items: string[]; pool: string[]; busy: Record<string, string>
+  detail?: (x: string) => ReactNode
   addLabel: string; allowNew?: boolean; newHint?: string; onChange: (next: string[], what: { added?: string; removed?: string }) => void
 }) {
   const [adding, setAdding] = useState(false)
@@ -87,7 +89,8 @@ function Roster({ title, subtitle, items, pool, busy, addLabel, allowNew, newHin
       {items.length === 0 && !adding && <Empty>None yet.</Empty>}
       {items.map((x, i) => (
         <div key={x} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 18px', borderTop: i ? `1px solid ${T.line}` : undefined }}>
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{x}</span>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: T.text, minWidth: 90 }}>{x}</span>
+          {detail && <div style={{ flex: 1, minWidth: 0 }}>{detail(x)}</div>}
           <button type="button" onClick={() => onChange(items.filter(y => y !== x), { removed: x })} aria-label={`Take ${x} off the project`}
             style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: T.faint, cursor: 'pointer', fontSize: 12.5, fontFamily: 'inherit' }}>
             <X size={13} /> Take off
@@ -130,6 +133,7 @@ export default function ProjectPage() {
   const [fresh, setFresh] = useState<Set<string>>(new Set())
   const [addHoles, setAddHoles] = useState(false)
   const [depthOf, setDepthOf] = useState<ProjectHole | null>(null)
+  const [opCost, setOpCost] = useState<string | null>(null)
   const [depth, setDepth] = useState('')
   const [rates, setRates] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -171,6 +175,7 @@ export default function ProjectPage() {
   // Contractors' rigs on this project, beside our own.
   const orders = state.workOrders.filter(o => o.project === p.name && o.status === 'active')
   const theirRigs = orders.flatMap(o => o.rigs)
+  const who = whoDrills(state, p.name)
   const w = words(state.wording)
   const contractorsLink = `/admin/contractors?tab=orders&project=${encodeURIComponent(p.name)}`
   const latest = c.versions[0]
@@ -242,8 +247,10 @@ export default function ProjectPage() {
           <Grid min={200}>
             <Tile label="Metres drilled" value={`${n0(stats.drilled)} m`} note={stats.target ? `of ${n0(stats.target)} m · ${n0(stats.toGo)} m on open holes` : 'No quantity set'} />
             <Tile label="Holes" value={stats.holes.length} note={`${stats.counts.drilling} drilling · ${stats.counts.planned} planned · ${stats.counts.done} finished`} />
-            <Tile label="On site" value={p.rigs.length ? p.rigs.join(', ') : theirRigs.length ? `${theirRigs.length} ${w.outLower} rigs` : 'No rig'}
-              note={theirRigs.length && p.rigs.length ? `plus ${theirRigs.length} ${w.outLower} ${theirRigs.length === 1 ? 'rig' : 'rigs'} · ${p.supervisors.length} supervisors, ${p.drillers.length} drillers` : `${p.supervisors.length} supervisors, ${p.drillers.length} drillers`}
+            <Tile label={`On site · ${WHO_DRILLS_LABEL[who.kind].toLowerCase()}`} value={p.rigs.length ? p.rigs.join(', ') : theirRigs.length ? `${theirRigs.length} ${w.outLower} rigs` : 'No rig'}
+              note={theirRigs.length && p.rigs.length
+                ? `plus ${who.contractors.map(c => `${c.name}: ${c.rigs.join(', ')}`).join('; ')}${who.ownMetres + who.contractorMetres > 0 ? ` · ${Math.round(who.contractorShare * 100)}% of metres by contractors` : ''}`
+                : `${p.supervisors.length} supervisors, ${p.drillers.length} drillers`}
               tone={p.rigs.length || theirRigs.length || p.status !== 'active' ? undefined : 'warn'} />
             <Tile label="Contract rates" value={c.current ? structureWords(c.current) : 'Not set'} tone={c.current ? (c.waiting ? 'warn' : undefined) : 'bad'}
               note={c.waiting ? `A change is waiting for ${client}` : c.current ? `In force since ${fullDate(c.current.effectiveFrom)}` : 'Finance cannot bill this project yet'} />
@@ -342,7 +349,7 @@ export default function ProjectPage() {
           )}
 
           <div style={{ fontSize: 12.5, color: T.faint, lineHeight: 1.6, maxWidth: 820 }}>
-            These are the rates the client pays. Your own costs — rig, fuel, crew, repairs — stay in Finance under Set costs, and are never part of the project the client sees.
+            These are the rates the client pays. Your own costs are never shown to the client: the rig cost is set on each rig under Rigs, and each rig's operating cost (fuel, crew, lodging, transport) under Rigs and crew on this project.
           </div>
         </>
       )}
@@ -350,7 +357,21 @@ export default function ProjectPage() {
       {tab === 'team' && (
         <>
           <Roster title={orders.length ? w.ownRigs : 'Rigs'} subtitle="A rig can be on one running project at a time." items={p.rigs} pool={rigPool(state).map(r => r.rig)} busy={busy.rig}
-            addLabel="Assign a rig" allowNew newHint="Or type a new rig's name or number" onChange={roster('rigs', 'rig', 'rig')} />
+            addLabel="Assign a rig" allowNew newHint="Or type a new rig's name or number"
+            detail={rig => {
+              const line = operatingLine(state, rig, p.name)
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 }}>
+                  {line ? <span style={{ color: T.muted }}>Operating cost: {line}</span> : <Status tone="warn">Operating cost not set</Status>}
+                  <button type="button" onClick={() => setOpCost(rig)} style={link}>{line ? 'Change' : 'Set it'}</button>
+                </div>
+              )
+            }}
+            onChange={(next, what) => {
+              roster('rigs', 'rig', 'rig')(next, what)
+              // A rig's running cost depends on the site, so it is asked the moment the rig joins.
+              if (what.added && !operatingLine(state, what.added, p.name)) setOpCost(what.added)
+            }} />
           <Card title={w.outRigs} pad={false}
             subtitle="Rigs a contractor brings under a work order. Their checked shifts count in the same record as your own."
             right={<Btn size="sm" href={contractorsLink}>{orders.length ? 'Open work orders' : 'Bring in a contractor'}</Btn>}>
@@ -414,6 +435,8 @@ export default function ProjectPage() {
           </Field>
         </Modal>
       )}
+
+      {opCost && <OperatingCostModal rig={opCost} project={p.name} onClose={() => setOpCost(null)} />}
 
       {rates && <RatesModal project={p} current={c.versions[0]} minDate={minDate} onClose={() => setRates(false)}
         onSave={r => { proposeRates(p.name, r); setRates(false) }} />}

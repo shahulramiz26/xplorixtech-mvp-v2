@@ -12,6 +12,7 @@ import {
   Page, Head, Card, Tile, Grid, Btn, Table, Status, Note, DepthBar, Modal, Field, inputStyle,
   th, thR, td, tdR, rowLine, T, display, type Tone,
 } from '../../components/kit'
+import { RigCostModal, rigCostLine } from '../../components/cost-panels'
 
 /* RIGS — the company's fleet, and what each rig is doing today.
  *
@@ -29,6 +30,7 @@ export default function RigsPage() {
   const { state, saveRig } = useCosting()
   const [edit, setEdit] = useState<RigRecord | null>(null)
   const [showRetired, setShowRetired] = useState(false)
+  const [costFor, setCostFor] = useState<string | null>(null)
   const register = state.rigRegister ?? []
   const live = useMemo(() => new Map(o.rigs.filter(r => !r.contractor).map(r => [r.rig, r])), [o.rigs])
   const drillersOn = (rig: string) => (state.crew ?? []).filter(c => c.active && c.rig === rig && c.role === 'Driller').map(c => c.name)
@@ -61,8 +63,8 @@ export default function RigsPage() {
           <Table>
             <thead>
               <tr>
-                <th style={th}>Rig</th><th style={th}>Type and sizes</th><th style={th}>Today</th><th style={th}>Project and hole</th><th style={th}>Hole depth</th>
-                <th style={th}>Drillers</th><th style={thR}>This month</th><th style={th} />
+                <th style={th}>Rig</th><th style={th}>Type and sizes</th><th style={th}>Today</th><th style={th}>Project and hole</th>
+                <th style={th}>Drillers</th><th style={th}>Rig cost</th><th style={thR}>This month</th><th style={th} />
               </tr>
             </thead>
             <tbody>
@@ -87,10 +89,18 @@ export default function RigsPage() {
                       {l?.project ? <>
                         <div style={{ color: T.text }}>{l.hole ?? 'No hole'}</div>
                         <div style={{ fontSize: 11.5, color: T.faint, marginTop: 3 }}>{projectCode(l.project)} · {l.project}</div>
+                        {l.hole && <div style={{ marginTop: 6, maxWidth: 170 }}><DepthBar drilled={l.holeDrilled} planned={l.holePlanned} /></div>}
                       </> : <span style={{ color: T.dim }}>On no project</span>}
                     </td>
-                    <td style={td}>{l?.hole ? <DepthBar drilled={l.holeDrilled} planned={l.holePlanned} /> : <span style={{ color: T.dim }}>—</span>}</td>
                     <td style={{ ...td, whiteSpace: 'normal', minWidth: 120, maxWidth: 170 }}>{drillers.length ? drillers.join(', ') : <span style={{ color: T.dim }}>None set</span>}</td>
+                    <td style={td}>
+                      {(() => { const c = rigCostLine(state, r.rig); return (
+                        <button type="button" onClick={() => setCostFor(r.rig)} aria-label={`Rig cost of ${r.rig}`}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                          {c ? <><div style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{c}</div><div style={{ fontSize: 11.5, color: T.orange, marginTop: 3, fontWeight: 600 }}>Change</div></>
+                            : <Status tone="warn">Not set · add</Status>}
+                        </button>) })()}
+                    </td>
                     <td style={tdR}>
                       {l?.monthDays ? <>
                         <div style={{ color: T.text, fontWeight: 600 }}>{num(l.monthMetres)} m</div>
@@ -122,7 +132,13 @@ export default function RigsPage() {
         </Note>
       )}
 
-      {edit && <RigModal r={edit} taken={register.filter(x => x.id !== edit.id).map(x => x.rig.toUpperCase())} onClose={() => setEdit(null)} onSave={x => { saveRig(x); setEdit(null) }} />}
+      {edit && <RigModal r={edit} taken={register.filter(x => x.id !== edit.id).map(x => x.rig.toUpperCase())} onClose={() => setEdit(null)} onSave={x => {
+        const isNew = !register.some(y => y.id === x.id)
+        saveRig(x); setEdit(null)
+        // A new rig's next step is what it costs: asked once, here, not later in Finance.
+        if (isNew && !rigCostLine(state, x.rig)) setCostFor(x.rig)
+      }} />}
+      {costFor && <RigCostModal rig={costFor} hired={register.find(x => x.rig === costFor)?.owned === false} onClose={() => setCostFor(null)} />}
     </Page>
   )
 }
@@ -157,6 +173,7 @@ function RigModal({ r, taken, onClose, onSave }: { r: RigRecord; taken: string[]
         </div>
       </div>
       <div style={{ marginTop: 14 }}><Field label="Notes"><input style={inputStyle} value={x.notes ?? ''} onChange={e => set('notes', e.target.value || undefined)} /></Field></div>
+      {!r.rig && <div style={{ marginTop: 14, fontSize: 12.5, color: T.faint, lineHeight: 1.6 }}>Next you enter its rig cost: price or hire, EMI, depreciation and insurance. It follows the rig to every project. Fuel and crew are set on each project.</div>}
     </Modal>
   )
 }
