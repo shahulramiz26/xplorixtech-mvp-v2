@@ -1890,6 +1890,42 @@ const SEED_FINDING_STATUS: Record<string, FindingStatus> = {
   },
 }
 
+/* Earlier answers, so the Scorecard has a history to score: what XPLORIX
+ * found from July to September, who answered it, how fast, and what was set
+ * aside as not relevant and why. Demo data. */
+const PAST: [string, string, string, string, 'done' | 'dismissed', string?][] = [
+  // found on, answered on, dept, title, answer, reason when set aside
+  ['2026-07-03', '2026-07-05', 'data', 'RIG-001 night shift not logged', 'done'],
+  ['2026-07-06', '2026-07-10', 'billing', 'Invoice INV-0001 to send for approval', 'done'],
+  ['2026-07-09', '2026-07-16', 'stock', 'HQ Core Lifter below minimum stock', 'done'],
+  ['2026-07-11', '2026-07-14', 'maintenance', 'RIG-002 service due at 250 engine hours', 'done'],
+  ['2026-07-14', '2026-07-17', 'finance', 'RIG-001 fuel 22% above its own normal', 'dismissed', 'Long rod string at depth; expected'],
+  ['2026-07-18', '2026-07-24', 'operations', 'Site A: next holes not released by the client', 'done'],
+  ['2026-07-21', '2026-07-24', 'data', '3 shifts with no core recovery entered', 'done'],
+  ['2026-07-25', '2026-08-04', 'stock', 'Water Swivel Spares sitting in the store 40 days', 'dismissed', 'Kept as a spare on purpose'],
+  ['2026-07-28', '2026-07-29', 'billing', '2 closed holes not yet sent for approval', 'done'],
+  ['2026-08-02', '2026-08-02', 'contractors', '4 contractor shifts waiting to be checked', 'done'],
+  ['2026-08-05', '2026-08-08', 'maintenance', 'RIG-003: hydraulic hose replaced twice in a week', 'done'],
+  ['2026-08-08', '2026-08-12', 'billing', 'Invoice INV-0001 is overdue', 'done'],
+  ['2026-08-10', '2026-08-11', 'data', 'Day and night shift identical on RIG-002', 'done'],
+  ['2026-08-13', '2026-08-16', 'crew', 'Driller on 21 days without a rest day', 'done'],
+  ['2026-08-16', '2026-08-23', 'stock', 'PW Casing order 10 days late', 'done'],
+  ['2026-08-18', '2026-08-18', 'contractors', 'Bill CP/26-27/041 claims more than the record', 'done'],
+  ['2026-08-20', '2026-08-21', 'operations', 'CQ-01 drills 30% slower than RIG-003', 'dismissed', 'New crew settling in; reviewed with the contractor'],
+  ['2026-08-24', '2026-08-25', 'billing', 'Client standby on Site B on no invoice', 'done'],
+  ['2026-08-27', '2026-08-28', 'data', '1 shift with metres above the rig\'s best day', 'done'],
+  ['2026-08-30', '2026-09-01', 'maintenance', 'RIG-001 service due at 250 engine hours', 'done'],
+  ['2026-09-02', '2026-09-02', 'contractors', '6 contractor shifts waiting to be checked', 'done'],
+  ['2026-09-03', '2026-09-04', 'stock', 'Water Swivel Spares being ordered while 1 sits at Site C', 'done'],
+  ['2026-09-06', '2026-09-07', 'data', 'RIG-003 night shift not logged', 'done'],
+  ['2026-09-08', '2026-09-09', 'finance', 'Tooling cost on RIG-002 up 18% this week', 'dismissed', 'Very hard ground this week; expected'],
+  ['2026-09-10', '2026-09-11', 'billing', 'Ready-to-invoice holes waiting 5 days', 'done'],
+]
+const PAST_STATUS: Record<string, FindingStatus> = Object.fromEntries(PAST.map(([found, at, dept, title, status, note], i) => [
+  `past:h${i + 1}`,
+  { status, note, by: 'Admin User', at: `${at}T10:00`, ids: [], found: { title, dept, on: found, items: [{ id: `past:h${i + 1}`, title }] } } as FindingStatus,
+]))
+
 function initial(): State {
   const base = {
     shiftLogs: SEED_SHIFT_LOGS, maintenance: SEED_MAINTENANCE,
@@ -1900,7 +1936,7 @@ function initial(): State {
     contractors: SEED_CONTRACTORS, workOrders: SEED_WORK_ORDERS, contractorReports: SEED_CONTRACTOR_REPORTS,
     wording: 'standard' as Wording,
     users: SEED_USERS,
-    findingStatus: SEED_FINDING_STATUS,
+    findingStatus: { ...PAST_STATUS, ...SEED_FINDING_STATUS },
     rigRegister: SEED_RIGS, crew: SEED_CREW,
   }
   const demo = seedInvoices(base, SEED_PROJECTS[0].name, SEED_PROJECTS[0].client)
@@ -1937,7 +1973,9 @@ function emptyState(): State {
 /* A browser that saved its state before a seed plan existed still gets that
  * plan; anything the user set himself wins over the seed. */
 function withSeedPlans(s: State): State {
-  return { ...s, holePlans: { ...SEED_HOLE_PLANS, ...(s.holePlans ?? {}) } }
+  /* A demo browser saved before the answer history existed still gets it. */
+  const history = IS_DEMO ? PAST_STATUS : {}
+  return { ...s, holePlans: { ...SEED_HOLE_PLANS, ...(s.holePlans ?? {}) }, findingStatus: { ...history, ...(s.findingStatus ?? {}) } }
 }
 
 export const uid = (p: string) => `${p}_${Date.now()}_${Math.floor(Math.random() * 9999)}`
