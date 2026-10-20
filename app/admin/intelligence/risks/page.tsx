@@ -11,7 +11,7 @@ import {
   T, tint, Page, PageHead, Card, Tile, Grid, Seg, Btn, Status, Table, Empty,
   th, thR, td, tdR, tdStrong, rowLine, type Tone,
 } from '../../../components/kit'
-import { SwotGrid, Basis } from '../../../components/outlook'
+import { Basis } from '../../../components/outlook'
 import { useIntel, IntelTabs, n0 } from '../shared'
 
 /* ==========================================================================
@@ -32,6 +32,17 @@ const CHANCES: Likelihood[] = ['High', 'Medium', 'Low']
 const SIZES: ScoredRisk['size'][] = ['Small', 'Medium', 'Large']
 const band = (score: number): { tone: Tone; word: string } => score >= 6 ? { tone: 'bad', word: 'Act now' } : score >= 3 ? { tone: 'warn', word: 'Plan for it' } : { tone: 'neutral', word: 'Watch' }
 const cellColour = (score: number) => score >= 6 ? tint(T.red, 13) : score >= 3 ? tint(T.amber, 13) : 'rgba(var(--x-ov),0.03)'
+
+const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+/* "Now", or a date like "22 Sep", placed on the four lanes. */
+function laneOf(when: string, thisMonth: string, nextMonth: string): 'Now' | 'This month' | 'Next month' | 'Later' {
+  const m = /^(\d{1,2}) (\w{3})/.exec(when)
+  if (!m) return 'Now'
+  const mi = MON3.indexOf(m[2]) + 1
+  if (mi === Number(thisMonth.slice(5, 7))) return 'This month'
+  if (mi === Number(nextMonth.slice(5, 7))) return 'Next month'
+  return 'Later'
+}
 
 export default function RiskAnalysis() {
   const { state, f } = useIntel()
@@ -100,21 +111,41 @@ export default function RiskAnalysis() {
             </div>
           </Card>
 
-          <Card title="By area" subtitle="Where the risks are." pad={false}>
-            <Table>
-              <thead><tr><th style={th}>Area</th><th style={thR}>Risks</th><th style={thR}>Act now</th><th style={thR}>At stake</th><th style={th}>Biggest</th></tr></thead>
-              <tbody>
-                {areas.map(a => (
-                  <tr key={a.area} className="xpl-row" onClick={() => a.count && setArea(a.area)} style={{ borderBottom: rowLine, cursor: a.count ? 'pointer' : 'default' }}>
-                    <td style={tdStrong}>{RISK_AREA_LABEL[a.area]}</td>
-                    <td style={tdR}>{a.count || '—'}</td>
-                    <td style={{ ...tdR, color: a.now ? T.text : T.muted, fontWeight: a.now ? 700 : 400 }}>{a.now || '—'}</td>
-                    <td style={tdR}>{a.money ? moneyL(a.money) : '—'}</td>
-                    <td style={{ ...td, whiteSpace: 'normal', fontSize: 12.5 }}>{a.top ? a.top.title : <span style={{ color: T.faint }}>Nothing found</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+          <Card title="Money at stake, by area" subtitle="Each bar is the money the risks in that area put at stake. Red is the part that needs action now.">
+            <div style={{ display: 'grid', gap: 12 }}>
+              {(() => {
+                const top = Math.max(1, ...areas.map(a => a.money))
+                return areas.filter(a => a.count).sort((x, y) => y.money - x.money).map(a => {
+                  const nowMoney = all.filter(r => r.area === a.area && r.score >= 6).reduce((t, r) => t + (r.impact ?? 0), 0)
+                  return (
+                    <button key={a.area} type="button" onClick={() => setArea(a.area)} style={{ display: 'grid', gap: 5, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <span style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: T.text }}>
+                        <b>{RISK_AREA_LABEL[a.area]}</b>
+                        <span>{a.money ? moneyL(a.money) : 'Not in money'} · {a.count} {a.count === 1 ? 'risk' : 'risks'}{a.now ? <b style={{ color: 'var(--x-bad-text)' }}> · {a.now} now</b> : null}</span>
+                      </span>
+                      <span aria-hidden style={{ position: 'relative', height: 12, borderRadius: 99, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}>
+                        <span style={{ position: 'absolute', inset: 0, width: `${(a.money / top) * 100}%`, background: tint(T.amber, 70), borderRadius: 99 }} />
+                        <span style={{ position: 'absolute', inset: 0, width: `${(nowMoney / top) * 100}%`, background: T.red, borderRadius: 99 }} />
+                      </span>
+                    </button>
+                  )
+                })
+              })()}
+            </div>
+            <div style={{ marginTop: 18, paddingTop: 14, borderTop: rowLine }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 10 }}>When they land</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+                {(['Now', 'This month', 'Next month', 'Later'] as const).map(lane => {
+                  const inLane = numbered.filter(r => laneOf(r.when, f.thisMonth, f.nextMonth) === lane)
+                  return (
+                    <div key={lane} style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 10, padding: 8, minHeight: 70, display: 'flex', flexWrap: 'wrap', gap: 5, alignContent: 'flex-start' }}>
+                      <span style={{ width: '100%', fontSize: 11.5, fontWeight: 700, color: T.muted }}>{lane} · {inLane.length}</span>
+                      {inLane.map(r => <a key={r.key} href={`#risk-${r.n}`} title={r.title} style={{ minWidth: 24, height: 24, padding: '0 6px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', background: r.score >= 6 ? T.red : r.score >= 3 ? T.amber : 'var(--x-muted)', textDecoration: 'none' }}>{r.n}</a>)}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </Card>
         </div>
 
@@ -191,12 +222,6 @@ export default function RiskAnalysis() {
         </Card>
       )}
 
-      {f.rigs.length > 0 && (
-        <>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginTop: 4 }}>The wider picture for {nextName}</div>
-          <SwotGrid swot={f.swot} empty={{ weaknesses: 'Nothing is costing you today.', threats: 'Nothing found that can go wrong next month.' }} />
-        </>
-      )}
 
       <Basis lines={[
         'Holes and plan: the forecast walks each rig forward hole by hole. A rig with no planned hole left is idle, and an idle rig still costs its crew and ownership.',
