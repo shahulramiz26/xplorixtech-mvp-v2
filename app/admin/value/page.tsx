@@ -145,7 +145,7 @@ export default function ValuePage() {
                   <span style={{ fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>{moneyL(l.money)}</span>
                 </div>
               ))}
-              {of('open').length > 8 && <div style={{ padding: '10px 18px', borderTop: rowLine, fontSize: 12.5, color: T.muted }}>and {of('open').length - 8} more: every one is on the <Link href="/admin/dashboard" style={{ color: T.orange, fontWeight: 600 }}>Dashboard</Link>.</div>}
+              {of('open').length > 8 && <div style={{ padding: '10px 18px', borderTop: rowLine, fontSize: 12.5, color: T.muted }}>and {of('open').length - 8} more: every one is in <Link href="/admin/tasks?dept=all" style={{ color: T.orange, fontWeight: 600 }}>Tasks</Link>.</div>}
             </>
           )}
         </Card>

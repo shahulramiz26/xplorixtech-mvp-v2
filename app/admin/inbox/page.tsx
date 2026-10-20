@@ -17,7 +17,7 @@ import { Page, T, tint, display, inputStyle } from '../../components/kit'
  * the figures behind it and the four answers. "Skip" puts it at the back of
  * the round, it does not drop it: the round only ends when every story has
  * been answered (done, handed on, a reminder date, or set aside with a
- * reason). Keys: D done, H hand to, R remind, N not relevant, → skip.
+ * reason). Keys: D done, R remind, N not relevant, → skip.
  * ========================================================================== */
 
 const btn: React.CSSProperties = {
@@ -63,7 +63,6 @@ function Review() {
     const onKey = (e: KeyboardEvent) => {
       if (mode !== 'none' || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName ?? '')) return
       if (e.key === 'd' || e.key === 'D') answer({ status: 'done' })
-      else if (e.key === 'h' || e.key === 'H') setMode('hand')
       else if (e.key === 'r' || e.key === 'R') setMode('remind')
       else if (e.key === 'n' || e.key === 'N') setMode('dismiss')
       else if (e.key === 'ArrowRight') skip()
@@ -77,7 +76,7 @@ function Review() {
   return (
     <Page>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/admin/dashboard" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', minHeight: 44, color: T.text, fontWeight: 600, textDecoration: 'none' }}><ArrowLeft size={16} aria-hidden />Back to the list</Link>
+        <Link href="/admin/tasks?dept=all" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', minHeight: 44, color: T.text, fontWeight: 600, textDecoration: 'none' }}><ArrowLeft size={16} aria-hidden />Back to Tasks</Link>
         <div style={{ flex: '1 1 320px', maxWidth: 560, display: 'grid', gap: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, gap: 10 }}>
             <span style={{ fontWeight: 600, color: T.text }}>{Math.min(done + (current ? 1 : 0), total)} of {total} · {scope}</span>
@@ -91,7 +90,7 @@ function Review() {
         <section style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: '30px 28px', display: 'grid', gap: 10, maxWidth: 760 }}>
           <h1 style={{ margin: 0, fontFamily: display, fontSize: 24, color: T.text }}>{total ? 'Every story in this round is answered' : `Nothing open for ${scope}`}</h1>
           <p style={{ margin: 0, color: T.muted, lineHeight: 1.6 }}>{total ? `${done} answered. Reminders come back on their date; anything new appears in the list the moment the record shows it.` : 'New findings appear in the list the moment the record shows them.'}</p>
-          <Link href="/admin/dashboard" style={{ ...btn, justifySelf: 'start', background: T.orange, color: '#fff', border: 'none' }}>Back to the list</Link>
+          <Link href="/admin/tasks?dept=all" style={{ ...btn, justifySelf: 'start', background: T.orange, color: '#fff', border: 'none' }}>Back to Tasks</Link>
         </section>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, alignItems: 'flex-start' }}>
@@ -141,7 +140,6 @@ function Review() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {current.href && <Link href={current.href} style={{ ...btn, background: T.orange, color: '#fff', border: 'none' }}>Open it<ArrowRight size={15} aria-hidden /></Link>}
                 <button type="button" style={btn} onClick={() => answer({ status: 'done' })}><Check size={16} aria-hidden style={{ color: T.green }} />Done <span style={key}>D</span></button>
-                <button type="button" style={btn} onClick={() => setMode('hand')}><UserRound size={15} aria-hidden />Hand to… <span style={key}>H</span></button>
                 <button type="button" style={btn} onClick={() => setMode('remind')}><Clock size={15} aria-hidden />Remind me… <span style={key}>R</span></button>
                 <button type="button" style={btn} onClick={() => setMode('dismiss')}><X size={15} aria-hidden />Not relevant <span style={key}>N</span></button>
                 <button type="button" style={{ ...btn, border: 'none', background: 'transparent', color: T.muted, marginLeft: 'auto' }} onClick={skip}>Skip for now, it stays in the round <span style={key}>→</span></button>
