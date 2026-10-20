@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
-  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, PiggyBank, CalendarDays,
+  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
 } from 'lucide-react'
 import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
@@ -65,7 +65,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: 'Management',
     items: [
-      { href: '/admin/value', label: 'Value', icon: PiggyBank },
+      { href: '/admin/value', label: 'Scorecard', icon: Gauge },
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/intelligence/months', label: 'Outlook', icon: CalendarRange, also: ['/admin/intelligence/risks'] },
     ],
