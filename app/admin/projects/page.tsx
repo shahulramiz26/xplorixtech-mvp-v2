@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { DeptInbox } from '../../components/inbox'
 import Link from 'next/link'
 import { ChevronRight, MapPin } from 'lucide-react'
 import { useCosting, fullDate } from '../../../lib/costing-store'
 import { projectStats, contractOf, contractorInbox, structureWords, eventsFor, whenIn } from '../../../lib/projects'
-import { Page, Head, Grid, Tile, Btn, Card, Empty, DepthBar, Status, T } from '../../components/kit'
+import { Page, Head, Grid, Tile, Btn, Card, Empty, DepthBar, Status, Seg, T, type Tone } from '../../components/kit'
+import { whoDrills, WHO_DRILLS_LABEL, type WhoDrills } from '../../../lib/contracting'
 import { ProjectStatusTag, SharedTag } from '../../components/project-ui'
 
 /* PROJECTS — one record per project, and the only one.
@@ -16,6 +18,8 @@ import { ProjectStatusTag, SharedTag } from '../../components/project-ui'
  * belong to Parts & inventory, which knows what each rig is carrying. */
 
 const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const WHO_TONE: Record<WhoDrills, Tone> = { own: 'good', mixed: 'info', contractor: 'warn', none: 'neutral' }
+type Filter = 'all' | WhoDrills
 
 export default function ProjectsPage() {
   const { state } = useCosting()
@@ -23,7 +27,10 @@ export default function ProjectsPage() {
   const inbox = contractorInbox(state)
   const order = { active: 0, 'on-hold': 1, completed: 2 }
   const rows = [...projects].sort((a, b) => order[a.status] - order[b.status] || a.code.localeCompare(b.code))
-    .map(p => ({ p, stats: projectStats(state, p), contract: contractOf(state, p.name), last: eventsFor(state, p.name)[0] }))
+    .map(p => ({ p, stats: projectStats(state, p), contract: contractOf(state, p.name), last: eventsFor(state, p.name)[0], who: whoDrills(state, p.name) }))
+  const [filter, setFilter] = useState<Filter>('all')
+  const count = (k: WhoDrills) => rows.filter(r => r.who.kind === k).length
+  const shown = rows.filter(r => filter === 'all' || r.who.kind === filter)
   const live = rows.filter(r => r.p.status === 'active')
   const waiting = rows.filter(r => r.contract.waiting)
   const fromClient = inbox.unseen.length
@@ -44,9 +51,20 @@ export default function ProjectsPage() {
           note={waiting.length ? 'Rate changes not yet accepted' : fromClient ? `${fromClient} new from the client` : 'Nothing waiting'} />
       </Grid>
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12.5, color: T.faint, fontWeight: 600 }}>Who drills</span>
+        <Seg<Filter> value={filter} onChange={setFilter} options={[
+          { value: 'all', label: `All · ${rows.length}` },
+          { value: 'own', label: `Own rigs only · ${count('own')}` },
+          { value: 'mixed', label: `Own and contractors · ${count('mixed')}` },
+          { value: 'contractor', label: `Contractors only · ${count('contractor')}` },
+        ]} />
+      </div>
+
       <Card pad={false}>
         {rows.length === 0 && <Empty>No projects yet. Create the first one to start logging shifts against it.</Empty>}
-        {rows.map(({ p, stats, contract, last }, i) => {
+        {rows.length > 0 && shown.length === 0 && <Empty>No project like this.</Empty>}
+        {shown.map(({ p, stats, contract, last, who }, i) => {
           const news = inbox.unseen.filter(e => e.project === p.name).length
           return (
             <Link key={p.id} href={`/admin/projects/${p.id}`} className="xpl-row xpl-prow" style={{
@@ -57,6 +75,7 @@ export default function ProjectsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 14.5, fontWeight: 700, color: T.text }}>{p.name}</span>
                   <ProjectStatusTag status={p.status} />
+                  <Status tone={WHO_TONE[who.kind]}>{WHO_DRILLS_LABEL[who.kind]}</Status>
                 </div>
                 <div style={{ fontSize: 12.5, color: T.muted, marginTop: 5 }}>{p.code} · {p.client}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: T.faint, marginTop: 3 }}><MapPin size={12} />{p.location}</div>
@@ -69,9 +88,17 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.6 }}>
-                <div><span style={{ color: T.text, fontWeight: 600 }}>{p.rigs.length ? p.rigs.join(', ') : 'No rig'}</span></div>
-                <div style={{ color: T.faint }}>{p.supervisors.length + p.drillers.length} people on site</div>
+              <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.6, minWidth: 0 }}>
+                {who.kind === 'none' && <div style={{ color: T.text, fontWeight: 600 }}>No rig</div>}
+                {who.own.length > 0 && <div><span style={{ color: T.faint }}>Own: </span><span style={{ color: T.text, fontWeight: 600 }}>{who.own.join(', ')}</span></div>}
+                {who.contractors.map(c => (
+                  <div key={c.name}><span style={{ color: T.faint }}>{c.name}: </span><span style={{ color: T.text, fontWeight: 600 }}>{c.rigs.join(', ')}</span></div>
+                ))}
+                <div style={{ color: T.faint }}>
+                  {who.kind === 'mixed' && who.ownMetres + who.contractorMetres > 0
+                    ? `${Math.round(who.contractorShare * 100)}% of metres by contractors`
+                    : `${p.supervisors.length + p.drillers.length} people on site`}
+                </div>
               </div>
 
               <div style={{ minWidth: 0 }}>

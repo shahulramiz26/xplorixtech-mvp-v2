@@ -78,7 +78,7 @@ function Finance() {
         </>}
         right={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn href="/admin/finance/rigs"><FileText size={14} aria-hidden />Rig by rig</Btn>
-          <Btn href="/admin/finance/rigs?setup=costs"><Settings2 size={14} aria-hidden />Set costs</Btn>
+          <Btn href="/admin/finance/rigs?setup=costs"><Settings2 size={14} aria-hidden />Adjust costs</Btn>
         </div>} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: 14 }}>

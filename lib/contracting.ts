@@ -833,3 +833,35 @@ export function reportToDraft(r: ContractorReport): ShiftLog {
     fuelLitres: r.extra?.fuelLitres ?? 0, waterLitres: r.extra?.waterLitres ?? 0, additivesKg: r.extra?.additivesKg ?? 0,
   }
 }
+
+/* ── Who drills a project ────────────────────────────────────────────────
+ *
+ *   own         only the company's own rigs
+ *   mixed       own rigs and at least one contractor's
+ *   contractor  only contractors, under work orders
+ *   none        nobody yet
+ *
+ * Rigs come from the project's own roster and its work orders; metres from
+ * the shift logs, so a rig that has left still counts for what it drilled. */
+export type WhoDrills = 'own' | 'mixed' | 'contractor' | 'none'
+export const WHO_DRILLS_LABEL: Record<WhoDrills, string> = {
+  own: 'Own rigs only', mixed: 'Own rigs and contractors', contractor: 'Contractors only', none: 'No rig yet',
+}
+export function whoDrills(state: ContractingState & { projects?: { name: string; rigs: string[] }[] }, project: string) {
+  const orders = (state.workOrders ?? []).filter(w => w.project === project)
+  const roster = (state.projects ?? []).find(p => p.name === project)?.rigs ?? []
+  const logs = state.shiftLogs.filter(l => l.project === project && !l.segmentOf)
+  const contractorRigs = new Set(orders.flatMap(o => o.rigs))
+  const own = Array.from(new Set([...roster, ...logs.filter(l => !l.contractor).map(l => l.rig)])).filter(r => !contractorRigs.has(r)).sort()
+  const byContractor = new Map<string, string[]>()
+  orders.forEach(o => {
+    const name = contractorName(state, o.contractorId)
+    byContractor.set(name, Array.from(new Set([...(byContractor.get(name) ?? []), ...o.rigs])).sort())
+  })
+  const contractors = Array.from(byContractor.entries()).map(([name, rigs]) => ({ name, rigs }))
+  const ownMetres = logs.filter(l => !l.contractor).reduce((s, l) => s + l.metresDrilled, 0)
+  const contractorMetres = logs.filter(l => !!l.contractor).reduce((s, l) => s + l.metresDrilled, 0)
+  const kind: WhoDrills = own.length && contractors.length ? 'mixed' : own.length ? 'own' : contractors.length ? 'contractor' : 'none'
+  const total = ownMetres + contractorMetres
+  return { kind, own, contractors, ownMetres, contractorMetres, contractorShare: total ? contractorMetres / total : 0 }
+}

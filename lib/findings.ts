@@ -293,6 +293,24 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
     })
   }
 
+  /* An own rig on a running project with no rig cost or no operating cost is
+   * costed without it, so every cost a metre and margin for it reads too low. */
+  ;(state.projects ?? []).filter(p => p.status === 'active').forEach(p => (p.rigs ?? []).forEach(rig => {
+    if ((state.workOrders ?? []).some(w => w.project === p.name && w.rigs.includes(rig))) return
+    const noRig = !state.ownership.some(o => o.rig === rig)
+    const noOp = !state.operating.some(o => o.rig === rig && o.project === p.name)
+    if (!noRig && !noOp) return
+    const drilled = logs.some(l => l.rig === rig && l.project === p.name && !l.contractor)
+    push({
+      id: `finance:no-cost:${rig}:${p.name}:${noRig ? 'r' : ''}${noOp ? 'o' : ''}`, dept: 'finance', severity: drilled ? 'act' : 'plan',
+      title: `${rig} on ${p.name} has no ${noRig && noOp ? 'rig or operating cost' : noRig ? 'rig cost' : 'operating cost'}`,
+      detail: `Its cost a metre leaves out ${noRig && noOp ? 'the rig itself, fuel and crew' : noRig ? 'the rig itself (price or hire, EMI, insurance)' : 'fuel, crew, lodging and transport'}, so its margin reads too high${drilled ? ' on every shift already logged' : ''}.`,
+      action: noRig ? 'Enter the rig cost on the rig, under Rigs.' : 'Enter the operating cost under Rigs and crew on the project.',
+      owner: ownerOf('finance'), rig, project: p.name, tag: 'Costs not set',
+      href: noRig ? '/admin/rigs' : `/admin/projects/${p.id}?tab=team`,
+    })
+  }))
+
   // ── billing and client ─────────────────────────────────────────────────
   ;(state.rateProposals ?? []).filter(p => p.status === 'waiting').forEach(p => push({
     id: `billing:rate:${p.id}`, dept: 'billing', severity: 'plan',

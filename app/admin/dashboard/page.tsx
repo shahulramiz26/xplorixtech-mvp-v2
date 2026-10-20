@@ -37,7 +37,7 @@ function StartHere() {
     { done: (state.rigRegister ?? []).length > 0, title: 'Add your rigs', detail: 'Each rig once: its name as written on the log, its type and core sizes.', href: '/admin/rigs', action: 'Open Rigs' },
     { done: (state.crew ?? []).length > 0, title: 'Add your drillers and supervisors', detail: 'So they can be picked on projects and drill logs.', href: '/admin/people', action: 'Open Drillers & crew' },
     { done: state.projects.length > 0, title: 'Create your first project', detail: 'The client, the contract rates, the rigs and crew on it, and the holes to drill.', href: '/admin/projects/new', action: 'New project' },
-    { done: state.ownership.length + state.operating.length > 0, title: 'Enter what each rig costs', detail: 'Fuel, crew and the rig itself, under Finance, Set costs.', href: '/admin/finance/rigs?setup=costs', action: 'Set costs' },
+    { done: state.ownership.length + state.operating.length > 0, title: 'Enter what each rig costs', detail: 'The rig cost on each rig under Rigs; fuel and crew when a rig is put on a project.', href: '/admin/rigs', action: 'Open Rigs' },
     { done: inv.catalogue.length > 0, title: 'Count what is on each rig', detail: 'Can wait. Needed for parts cost on each metre and stock warnings.', href: '/admin/inventory', action: 'Open Stores' },
   ]
   return (
