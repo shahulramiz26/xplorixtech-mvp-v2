@@ -37,7 +37,11 @@ function Tasks() {
   const params = useSearchParams()
   const inbox = useInbox()
   const deptParam = params.get('dept')
-  const dept = (deptParam && (deptParam === 'all' || DEPTS.some(d => d.key === deptParam)) ? deptParam : null) as 'all' | Dept | null
+  /* One department, or a department screen's own set ("operations,geology"),
+   * which shows in the first one's colour. */
+  const group = (deptParam ?? '').split(',').filter(k => DEPTS.some(d => d.key === k)) as Dept[]
+  const dept = (deptParam === 'all' ? 'all' : group[0] ?? null) as 'all' | Dept | null
+  const inGroup = (ds: Dept[]) => dept === 'all' || ds.some(d => (group.length ? group : [dept as Dept]).includes(d))
   const [view, setView] = useState<View>('week')
   const [anchor, setAnchor] = useState(TODAY)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -69,7 +73,7 @@ function Tasks() {
     )
   }
 
-  const mine = all.filter(t => dept === 'all' || t.u.depts.includes(dept))
+  const mine = all.filter(t => inGroup(t.u.depts))
   const colorOf = (t: TaskItem) => dept === 'all' ? DEPT_COLOR[t.u.dept] ?? T.orange : DEPT_COLOR[dept] ?? T.orange
   const open = mine.find(t => t.u.id === openId) ?? null
   // The week runs from the chosen day for seven days, so today is always first and nothing past is in the way.
@@ -86,7 +90,7 @@ function Tasks() {
         <div>
           <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: 10 }}>
             {dept !== 'all' && <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, background: DEPT_COLOR[dept] }} />}
-            Tasks · {dept === 'all' ? 'All departments' : deptLabel(dept)}
+            Tasks · {dept === 'all' ? 'All departments' : group.map(d => deptLabel(d)).join(' and ')}
           </h1>
           <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>
             {mine.filter(t => t.date <= TODAY).length} for today{late ? `, ${late} of them late` : ''} · {mine.length} in all. A dashed task has no date in the record; XPLORIX suggests the day.
@@ -102,7 +106,7 @@ function Tasks() {
               <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => setView(v)} style={{ minHeight: 32, padding: '0 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, background: view === v ? tint(T.orange, 14) : 'transparent', color: view === v ? T.text : T.muted, fontWeight: view === v ? 700 : 500, textTransform: 'capitalize' }}>{v}</button>
             ))}
           </div>
-          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${dept}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 13px', borderRadius: 9, background: T.orange, color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>
+          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${group.join(',')}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 13px', borderRadius: 9, background: T.orange, color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>
         </div>
       </div>
 
