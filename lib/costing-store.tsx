@@ -1,5 +1,6 @@
 'use client'
 
+import { SEED_RIGS, SEED_CREW, type RigRecord, type CrewMember } from './registers'
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import {
   normFormation as groundOf, TODAY, toolingFor,
@@ -1097,19 +1098,21 @@ export const PEOPLE = {
  * keeps no separate list: a rig or a person exists once it has been named on
  * a project (or, for a rig, given its costs in Finance). The demo company
  * also has the spare fleet and crew above. */
-export function rigPool(state: { projects: ProjectRecord[]; ownership: RigOwnership[] }): { rig: string; type: string }[] {
+export function rigPool(state: { projects: ProjectRecord[]; ownership: RigOwnership[]; rigRegister?: RigRecord[] }): { rig: string; type: string }[] {
   const known = new Map<string, string>()
-  if (IS_DEMO) FLEET.forEach(f => known.set(f.rig, f.type))
+  ;(state.rigRegister ?? []).filter(r => r.state !== 'retired').forEach(r => known.set(r.rig, r.type))
+  if (IS_DEMO && !(state.rigRegister ?? []).length) FLEET.forEach(f => known.set(f.rig, f.type))
   const add = (rig: string) => { if (rig && !known.has(rig)) known.set(rig, 'Core') }
   state.projects.forEach(p => p.rigs.forEach(add))
   state.ownership.forEach(o => add(o.rig))
   return Array.from(known, ([rig, type]) => ({ rig, type })).sort((a, b) => a.rig.localeCompare(b.rig, undefined, { numeric: true }))
 }
-export function peoplePool(state: { projects: ProjectRecord[]; users: AppUser[] }): { supervisors: string[]; drillers: string[] } {
+export function peoplePool(state: { projects: ProjectRecord[]; users: AppUser[]; crew?: CrewMember[] }): { supervisors: string[]; drillers: string[] } {
   const uniq = (list: string[]) => Array.from(new Set(list.filter(Boolean)))
+  const crew = (state.crew ?? []).filter(c => c.active)
   return {
-    supervisors: uniq([...(IS_DEMO ? PEOPLE.supervisors : []), ...state.projects.flatMap(p => p.supervisors), ...state.users.filter(u => u.role === 'supervisor').map(u => u.name)]),
-    drillers: uniq([...(IS_DEMO ? PEOPLE.drillers : []), ...state.projects.flatMap(p => p.drillers)]),
+    supervisors: uniq([...crew.filter(c => c.role === 'Supervisor').map(c => c.name), ...(IS_DEMO ? PEOPLE.supervisors : []), ...state.projects.flatMap(p => p.supervisors), ...state.users.filter(u => u.role === 'supervisor').map(u => u.name)]),
+    drillers: uniq([...crew.filter(c => c.role === 'Driller').map(c => c.name), ...(IS_DEMO ? PEOPLE.drillers : []), ...state.projects.flatMap(p => p.drillers)]),
   }
 }
 
@@ -1840,6 +1843,9 @@ interface State {
   /* What people did with each XPLORIX Intelligence finding (lib/findings.ts),
    * by the finding's id. A finding with no entry is open. */
   findingStatus: Record<string, FindingStatus>
+  // The company's own rigs and people (lib/registers.ts).
+  rigRegister: RigRecord[]
+  crew: CrewMember[]
 }
 
 export interface FindingStatus {
@@ -1895,6 +1901,7 @@ function initial(): State {
     wording: 'standard' as Wording,
     users: SEED_USERS,
     findingStatus: SEED_FINDING_STATUS,
+    rigRegister: SEED_RIGS, crew: SEED_CREW,
   }
   const demo = seedInvoices(base, SEED_PROJECTS[0].name, SEED_PROJECTS[0].client)
   /* Two days of client standby on Site B that were on no hole, billed on
@@ -1923,7 +1930,7 @@ function emptyState(): State {
   return {
     shiftLogs: [], maintenance: [], ownership: [], operating: [], clientRates: [], holeStatus: {}, invoices: [],
     holePlans: {}, projects: [], projectEvents: [], rateProposals: [], contractors: [], workOrders: [],
-    contractorReports: [], contractorBills: [], wording: 'standard', users: [], findingStatus: {},
+    contractorReports: [], contractorBills: [], wording: 'standard', users: [], findingStatus: {}, rigRegister: [], crew: [],
   }
 }
 
@@ -2004,6 +2011,9 @@ interface CtxValue {
   markBillPaid: (id: string) => void
   setWording: (w: Wording) => void
   setFindingStatus: (id: string, st: FindingStatus | null) => void
+  saveRig: (r: RigRecord) => void
+  saveCrew: (c: CrewMember) => void
+  removeCrew: (id: string) => void
   resetAll: () => void
   /* True once the state on screen is the real one: read from this browser in
    * the demo, or from the server when a database is connected. */
@@ -2295,6 +2305,9 @@ function CostingRoot({ children }: { children: ReactNode }) {
     ...s, contractorBills: s.contractorBills.map(b => b.id !== id || !b.approved ? b : { ...b, status: 'paid', paidAt: nowStamp() }),
   }))
   const setWording: CtxValue['setWording'] = wording => setState(s => ({ ...s, wording }))
+  const saveRig: CtxValue['saveRig'] = x => setState(s => ({ ...s, rigRegister: upsert(s.rigRegister ?? [], x) }))
+  const saveCrew: CtxValue['saveCrew'] = x => setState(s => ({ ...s, crew: upsert(s.crew ?? [], x) }))
+  const removeCrew: CtxValue['removeCrew'] = id => setState(s => ({ ...s, crew: (s.crew ?? []).filter(c => c.id !== id) }))
 
   // Plain helper functions elsewhere read the project list through mirrors;
   // bring them into step before anything below renders.
@@ -2308,7 +2321,7 @@ function CostingRoot({ children }: { children: ReactNode }) {
       createProject, updateProject, planHoles, proposeRates, withdrawProposal, ownerAnswerRates, markProjectSeen,
       saveShiftLog, deleteShiftLog, saveMaintenance, deleteMaintenance, saveUser, removeUser,
       saveContractor, saveWorkOrder, addReports, saveReport, acceptReport, returnReport, reopenReport, deleteReport,
-      saveBill, approveBill, returnBill, reopenBill, markBillPaid, setWording, setFindingStatus,
+      saveBill, approveBill, returnBill, reopenBill, markBillPaid, setWording, setFindingStatus, saveRig, saveCrew, removeCrew,
       resetAll: () => { if (local) setState(initial()) },
       ready: local ? loaded : sync.ready, mode: sync.mode,
     }}>{children}</CostingContext.Provider>

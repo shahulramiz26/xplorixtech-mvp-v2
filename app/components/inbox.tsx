@@ -68,7 +68,7 @@ const actBtn: React.CSSProperties = {
 
 /* The four answers, and Open. Kept against the story, so answering it
  * here answers it on every screen. */
-export function UnitActions({ u }: { u: InboxUnit }) {
+export function UnitActions({ u, moveWord = 'Remind me…' }: { u: InboxUnit; moveWord?: string }) {
   const mark = useMark()
   const [mode, setMode] = useState<'none' | 'hand' | 'remind' | 'dismiss'>('none')
   const [text, setText] = useState('')
@@ -80,8 +80,7 @@ export function UnitActions({ u }: { u: InboxUnit }) {
           <button type="button" style={actBtn} onClick={() => mark(u, null)}><RotateCcw size={13} aria-hidden />{u.state === 'reminder' ? 'Bring back now' : 'Reopen'}</button>
         ) : mode === 'none' ? <>
           <button type="button" style={actBtn} onClick={() => mark(u, { status: 'done' })}><Check size={14} aria-hidden style={{ color: T.green }} />Done</button>
-          <button type="button" style={actBtn} onClick={() => { setMode('hand'); setText(u.state === 'handed' ? u.status?.to ?? '' : '') }}><UserRound size={13} aria-hidden />Hand to…</button>
-          <button type="button" style={actBtn} onClick={() => setMode('remind')}><Clock size={13} aria-hidden />Remind me…</button>
+          <button type="button" style={actBtn} onClick={() => setMode('remind')}><Clock size={13} aria-hidden />{moveWord}</button>
           <button type="button" style={{ ...actBtn, color: T.muted }} onClick={() => { setMode('dismiss'); setText('') }}><X size={13} aria-hidden />Not relevant</button>
           {u.href && <Link href={u.href} style={{ ...actBtn, background: tint(T.orange, 10), borderColor: tint(T.orange, 30), color: 'var(--x-text)' }}>Open<ArrowRight size={13} aria-hidden /></Link>}
         </> : mode === 'remind' ? <>

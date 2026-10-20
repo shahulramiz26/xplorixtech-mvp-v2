@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
-  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, PiggyBank,
+  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, PiggyBank, CalendarDays,
 } from 'lucide-react'
 import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
@@ -47,12 +47,13 @@ import { IS_DEMO, COMPANY_NAME } from '../../lib/company'
  * the account that set XPLORIX up. */
 type NavItem = { href: string; label: string; icon: React.ElementType; badge?: 'all' | Dept[]; also?: string[]; sample?: true; owner?: true }
 const NAV: { title: string | null; items: NavItem[] }[] = [
-  { title: null, items: [{ href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 'all', also: ['/admin/inbox'] }] },
+  { title: null, items: [{ href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard }, { href: '/admin/tasks', label: 'Tasks', icon: CalendarDays, badge: 'all', also: ['/admin/inbox'] }] },
   {
     title: 'Operations',
     items: [
       { href: '/admin/projects', label: 'Projects & holes', icon: FolderOpen, badge: ['operations', 'geology'], also: ['/admin/intelligence/holes'] },
       { href: '/admin/rigs', label: 'Rigs', icon: Truck },
+      { href: '/admin/people', label: 'Drillers & crew', icon: HardHat },
       { href: '/admin/logs/drill', label: 'Drill logs', icon: Activity, badge: ['data', 'crew', 'safety'], also: ['/admin/intelligence/drill-logs'] },
       { href: '/admin/logs/maintenance', label: 'Maintenance', icon: Wrench, badge: ['maintenance'] },
     ],
@@ -98,6 +99,7 @@ const SHELL_CSS = `
   .xpl-nav:hover { background: rgba(var(--x-ov),0.04); color: var(--x-text) !important; }
   .xpl-hit:hover { background: rgba(var(--x-ov),0.05); }
   .xpl-narrow { display: none; }
+  @media (max-width: 760px) { .xpl-week { grid-template-columns: minmax(0, 1fr) !important; } .xpl-week > section { min-height: 0 !important; } }
   @media (max-width: 760px) { .xpl-runway { grid-template-columns: minmax(0, 1fr) auto !important; } .xpl-runway > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; } }
   @media (max-width: 640px) { .xpl-clamp { white-space: normal !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } }
   @media (max-width: 640px) { .xpl-wide { display: none !important; } .xpl-narrow { display: block; } }
@@ -276,8 +278,8 @@ function Shell({ children }: { children: React.ReactNode }) {
                             </span>
                           </Link>
                         ))}
-                      <Link href="/admin/dashboard" style={{ display: 'block', padding: '11px 14px', borderTop: `1px solid ${T.line}`, fontSize: 13, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>
-                        {actNow.length > 7 ? `All ${actNow.length}, and the rest of the list →` : 'The whole list →'}
+                      <Link href="/admin/tasks?dept=all" style={{ display: 'block', padding: '11px 14px', borderTop: `1px solid ${T.line}`, fontSize: 13, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>
+                        {actNow.length > 7 ? `All ${actNow.length}, in Tasks →` : 'Open Tasks →'}
                       </Link>
                     </div>
                   </>
