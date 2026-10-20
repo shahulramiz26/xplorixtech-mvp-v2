@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { money, moneyL, monthLabel, monthOf } from '../../../../lib/costing-store'
 import { daysBetween } from '../../../../lib/inventory-store'
@@ -11,6 +11,9 @@ import {
   th, thR, td, tdR, tdStrong, rowLine, type Tone,
 } from '../../../components/kit'
 import { Timeline, TimelineKey, RangeBar, Basis, type Lane } from '../../../components/outlook'
+import { ForecastBars, Waterfall, Tornado, WarningCard, shortMoney, type Metric } from '../../../components/outlook-charts'
+import { monthSeries, bridge, levers, whatIf, earlyWarnings, type WhatIf } from '../../../../lib/outlook-analytics'
+import { buildRiskRegister } from '../../../../lib/intelligence'
 import { useIntel, IntelTabs, n0 } from '../shared'
 
 /* ==========================================================================
@@ -317,32 +320,140 @@ function NextMonth({ f }: { f: Forecast }) {
 }
 
 export default function MonthsPage() {
-  const { f } = useIntel()
+  const { state, inv, f } = useIntel()
   const [tab, setTab] = useState<Tab>('this')
+  const [metric, setMetric] = useState<Metric>('margin')
+  const [bridgeTab, setBridgeTab] = useState<'this' | 'next'>('this')
+  const [w, setW] = useState<WhatIf>({ speed: 0, rate: 0, cost: 0, downDays: 0, idleFilled: false })
   const thisName = monthLabel(f.thisMonth), nextName = monthLabel(f.nextMonth)
-  const t = f.thisMonthTotal
+  const points = useMemo(() => monthSeries(state, inv, f), [state, inv, f])
+  const warnings = useMemo(() => earlyWarnings(state, inv, f.today), [state, inv, f.today])
+  const lv = useMemo(() => levers(f), [f])
+  const risks = useMemo(() => buildRiskRegister(f, state), [f, state])
+  const cur = points.find(p => p.kind === 'current'), next = points.find(p => p.kind === 'forecast')
+  const prev = points.filter(p => p.kind === 'actual').pop()
+  const b1 = prev && cur ? bridge(prev, cur) : null
+  const b2 = cur && next ? bridge(cur, next) : null
+  const sim = whatIf(f, w)
+  const worse = warnings.filter(x => x.state === 'worse')
+  const short = shortMoney
+  const tName = thisName.split(' ')[0], nName = nextName.split(' ')[0]
 
+  if (f.rigs.length === 0) return <Page><IntelTabs /><PageHead question="What is coming?" answer="No rig has logged a shift in the last 14 days, so there is nothing to forecast from yet." /></Page>
+
+  const biggest = b1 ? [['more metres', b1.volume], ['the rate a metre', b1.rate], ['the cost a metre', b1.cost]].sort((a, b) => Math.abs(b[1] as number) - Math.abs(a[1] as number))[0] : null
   return (
     <Page>
       <IntelTabs />
-      <PageHead
-        question={tab === 'this' ? `How will ${thisName} close?` : `What is coming in ${nextName}?`}
-        tone={tab === 'this' ? (f.rest.idleDays ? 'warn' : 'good') : f.headline.tone}
-        answer={f.rigs.length === 0 ? 'No rig has logged a shift in the last 14 days, so there is nothing to forecast from yet.'
-          : tab === 'this'
-            ? <>{thisName.split(' ')[0]} is on course for {n0(t.metres)} m and {moneyL(t.revenue)} billed, with a margin of {Math.round(t.marginPct)}%. {n0(f.mtd.metres)} m is already in the logs; the range for the month is {n0(t.low)} to {n0(t.high)} m.</>
-            : f.headline.text}
-        right={<Seg<Tab> options={[{ value: 'this', label: thisName.split(' ')[0] }, { value: 'next', label: nextName.split(' ')[0] }]} value={tab} onChange={setTab} />} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Outlook</h1>
+          <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Forecast, what drives it, what could change it, and what is starting to turn. From your own record, as of {shortDate(f.today)}.</p>
+        </div>
+        <nav aria-label="On this page" className="xpl-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[['#forecast', 'Forecast'], ['#drivers', 'Drivers'], ['#scenarios', 'Scenarios'], ['#warnings', 'Early warnings'], ['#risks', 'Risks'], ['#detail', 'Month in detail']].map(([h, l]) => (
+            <a key={h} href={h} style={{ fontSize: 12.5, fontWeight: 600, color: T.text, textDecoration: 'none', padding: '6px 11px', borderRadius: 99, border: `1px solid ${T.border}`, background: T.card }}>{l}</a>
+          ))}
+        </nav>
+      </div>
 
-      {f.rigs.length === 0 ? <Card><Empty>Nothing to forecast from yet. The forecast starts once a rig has logged shifts.</Empty></Card>
-        : tab === 'this' ? <ThisMonth f={f} /> : <NextMonth f={f} />}
+      <section aria-label="Summary" style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 16, padding: '18px 22px', display: 'grid', gap: 10 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', opacity: 0.7 }}>THE SHORT VERSION</span>
+        {cur && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{tName} closes at about {n0(cur.metres)} m and a {short(cur.margin)} margin</b> ({Math.round(f.thisMonthTotal.marginPct)}%), between {short(cur.low?.margin ?? cur.margin)} if every rig drills at its slowest and {short(cur.high?.margin ?? cur.margin)} at its best.{prev && biggest ? <> That is {cur.margin >= prev.margin ? 'up' : 'down'} {short(Math.abs(cur.margin - prev.margin))} on {MONTHS[Number(prev.month.slice(5, 7)) - 1]}, mostly from {biggest[0]}.</> : null}</p>}
+        {next && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{nName} is forecast at {short(next.margin)}</b> on {n0(next.metres)} m. The biggest thing that could move it: {lv[0].label.toLowerCase()}, worth up to {short(Math.max(Math.abs(lv[0].low), Math.abs(lv[0].high)))}.</p>}
+        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}>{worse.length ? <><b>Turning the wrong way:</b> {worse.map(x => x.label.toLowerCase()).join(', ')}.</> : <><b>No measure is turning the wrong way</b> over the last two weeks.</>}{risks[0] ? <> First risk to act on: {risks[0].title.replace(/\.$/, '')}.</> : null}</p>
+      </section>
 
-      {f.rigs.length > 0 && (
-        <Basis lines={f.basis} note={<>
-          This is a projection from your own records, not a trained model. It updates every time a shift is logged, a hole is planned, a rate is changed or stock is received.
-          Learning from past projects, ground and core comes with AI prediction, which is in development.
-        </>} />
-      )}
+      <div id="forecast" style={{ scrollMarginTop: 80 }}>
+        <Card title="Forecast" subtitle={`The months as they closed, ${tName} so far plus the days to come, and ${nName}. The black whisker is the range from each rig's slowest to its best month.`}
+          right={<Seg<Metric> value={metric} onChange={setMetric} options={[{ value: 'margin', label: 'Margin' }, { value: 'revenue', label: 'Billing' }, { value: 'metres', label: 'Metres' }]} />}>
+          <ForecastBars points={points} metric={metric} />
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: T.muted, marginTop: 6 }}>
+            <Key fill="var(--x-muted)" label="Closed" /><Key fill={T.orange} label="Logged this month" /><Key hatch label="Forecast" /><span>│ Slowest to best</span>
+          </div>
+        </Card>
+      </div>
+
+      <div id="drivers" style={{ scrollMarginTop: 80 }}>
+        {(b1 || b2) && (() => {
+          const b = bridgeTab === 'next' && b2 ? b2 : (b1 ?? b2)!
+          return (
+            <Card title={`Why margin moves: ${MONTHS[Number(b.from.month.slice(5, 7)) - 1]} to ${MONTHS[Number(b.to.month.slice(5, 7)) - 1]}`} subtitle="Three steps that add up exactly: more or fewer metres, the rate a metre, and the cost a metre. Green helped, red cost you."
+              right={b1 && b2 ? <Seg<'this' | 'next'> value={bridgeTab} onChange={setBridgeTab} options={[{ value: 'this', label: `${MONTHS[Number(b1.from.month.slice(5, 7)) - 1].slice(0, 3)} → ${tName.slice(0, 3)}` }, { value: 'next', label: `${tName.slice(0, 3)} → ${nName.slice(0, 3)}` }]} /> : undefined}>
+              <div style={{ maxWidth: 980 }}><Waterfall b={b} /></div>
+            </Card>
+          )
+        })()}
+      </div>
+
+      <div id="scenarios" style={{ scrollMarginTop: 80 }}>
+        <Card title={`What could change ${nName}`} subtitle="Each bar is one thing that can happen, worked out from your rigs' own speed and costs. The longest bar matters most.">
+          <Tornado levers={lv} base={next?.margin ?? 0} />
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: rowLine, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 20, alignItems: 'center' }}>
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>Try your own</div>
+              <Slider label="Drilling speed" unit="%" min={-30} max={30} value={w.speed} onChange={v => setW({ ...w, speed: v })} />
+              <Slider label="Client rate a metre" unit="%" min={-15} max={15} value={w.rate} onChange={v => setW({ ...w, rate: v })} />
+              <Slider label="Cost a metre" unit="%" min={-20} max={20} value={w.cost} onChange={v => setW({ ...w, cost: v })} />
+              <Slider label="Rig-days lost" unit=" days" min={0} max={30} value={w.downDays} onChange={v => setW({ ...w, downDays: v })} />
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: T.text }}><input type="checkbox" checked={w.idleFilled} onChange={e => setW({ ...w, idleFilled: e.target.checked })} />The client releases holes for every idle rig-day</label>
+              <button type="button" onClick={() => setW({ speed: 0, rate: 0, cost: 0, downDays: 0, idleFilled: false })} style={{ justifySelf: 'start', background: 'none', border: 'none', padding: 0, color: T.orange, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5 }}>Back to the forecast</button>
+            </div>
+            <div style={{ display: 'grid', gap: 10, padding: 18, borderRadius: 14, background: Math.abs(sim.margin - sim.base) < 1 ? 'rgba(var(--x-ov),0.04)' : sim.margin > sim.base ? tint(T.green, 8) : tint(T.red, 7) }}>
+              <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{nName} margin, with these changes</span>
+              <span style={{ fontFamily: display, fontSize: 34, fontWeight: 700, color: T.text }}>{short(sim.margin)}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: Math.abs(sim.margin - sim.base) < 1 ? T.muted : sim.margin > sim.base ? 'var(--x-good-text)' : 'var(--x-bad-text)' }}>{Math.abs(sim.margin - sim.base) < 1 ? 'The forecast as it stands. Move a slider.' : `${sim.margin > sim.base ? '+' : '−'}${short(Math.abs(sim.margin - sim.base))} against the forecast`}</span>
+              <span style={{ fontSize: 12.5, color: T.muted }}>{n0(sim.metres)} m · billing {short(sim.revenue)} · cost {short(sim.cost)} · {Math.round(sim.marginPct)}% margin</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div id="warnings" style={{ scrollMarginTop: 80 }}>
+        <Card title="Early warnings" subtitle="Six weeks of each measure. A measure is flagged when its last two weeks are 5% or more the wrong side of the four before.">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(230px, 100%), 1fr))', gap: 12 }}>
+            {[...warnings].sort((a, b) => Number(b.state === 'worse') - Number(a.state === 'worse')).map(x => <WarningCard key={x.key} w={x} />)}
+          </div>
+        </Card>
+      </div>
+
+      <div id="risks" style={{ scrollMarginTop: 80 }}>
+        <Card title="Top risks" subtitle="From the risk register, most pressing first." right={<Link href="/admin/intelligence/risks" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Full risk register →</Link>} pad={false}>
+          {risks.slice(0, 5).map((r, i) => (
+            <div key={r.key} style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', gap: 14, alignItems: 'center', padding: '12px 18px', borderTop: i ? rowLine : 'none' }}>
+              <span style={{ width: 30, height: 30, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#fff', background: r.score >= 6 ? T.red : r.score >= 3 ? T.amber : 'var(--x-muted)' }}>{r.score}</span>
+              <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{r.title}</div><div style={{ fontSize: 12, color: T.faint }}>{r.likelihood} chance · {r.when} · {r.action}</div></div>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>{r.impact != null ? moneyL(r.impact) : '—'}</span>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      <div id="detail" style={{ scrollMarginTop: 80, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+        <h2 style={{ margin: 0, fontFamily: display, fontSize: 20, color: T.text }}>Month in detail</h2>
+        <Seg<Tab> options={[{ value: 'this', label: tName }, { value: 'next', label: nName }]} value={tab} onChange={setTab} />
+      </div>
+      {tab === 'this' ? <ThisMonth f={f} /> : <NextMonth f={f} />}
+
+      <Basis lines={f.basis} note={<>
+        This is a projection from your own records, not a trained model. It updates every time a shift is logged, a hole is planned, a rate is changed or stock is received.
+        Prediction that learns from past projects, ground and core is in development.
+      </>} />
     </Page>
+  )
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+function Key({ fill, hatch, label }: { fill?: string; hatch?: boolean; label: string }) {
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span aria-hidden style={{ width: 14, height: 10, borderRadius: 2, background: hatch ? `repeating-linear-gradient(45deg, ${tint(T.orange, 55)} 0 3px, ${tint(T.orange, 15)} 3px 6px)` : fill, border: hatch ? `1px dashed ${T.orange}` : 'none' }} />{label}</span>
+}
+
+function Slider({ label, unit, min, max, value, onChange }: { label: string; unit: string; min: number; max: number; value: number; onChange: (v: number) => void }) {
+  return (
+    <label style={{ display: 'grid', gap: 4 }}>
+      <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.text }}><span>{label}</span><b>{value > 0 && unit === '%' ? '+' : ''}{value}{unit}</b></span>
+      <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--x-orange)' }} />
+    </label>
   )
 }
