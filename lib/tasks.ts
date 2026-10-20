@@ -9,8 +9,8 @@ import type { InboxUnit } from './inbox'
  *   moved      someone moved it to a day ("Move to…")
  *   late       it was due before today and is still open: shown on today
  *   suggested  the record gives no date, so XPLORIX suggests one: act-now
- *              today, plan-for-it spread over the coming working days so no
- *              day is overloaded, watch on the next Monday's review.
+ *              today; plan-for-it, then watch, spread over the coming working
+ *              days so no day is overloaded.
  * A suggested day is marked as suggested, never shown as a deadline.
  * ========================================================================== */
 
@@ -19,7 +19,6 @@ export interface TaskItem { u: InboxUnit; date: string; when: When; lateFrom?: s
 
 const isWeekend = (d: string) => { const w = new Date(`${d}T00:00:00Z`).getUTCDay(); return w === 0 || w === 6 }
 const nextWorkday = (d: string) => { let x = addDays(d, 1); while (isWeekend(x)) x = addDays(x, 1); return x }
-const nextMonday = (d: string) => { let x = addDays(d, 1); while (new Date(`${x}T00:00:00Z`).getUTCDay() !== 1) x = addDays(x, 1); return x }
 
 export function placeTasks(open: InboxUnit[], reminders: InboxUnit[], today: string, perDay = 4): TaskItem[] {
   const out: TaskItem[] = []
@@ -31,15 +30,18 @@ export function placeTasks(open: InboxUnit[], reminders: InboxUnit[], today: str
     else undated.push(u)
   })
   undated.filter(u => u.severity === 'act').forEach(u => out.push({ u, date: today, when: 'suggested' }))
-  // Plan: the biggest money first, a few a working day.
+  /* Plan, then watch: the biggest money first, at most a few a working day,
+   * so no day is buried. */
   let d = nextWorkday(today)
   const count = (x: string) => out.filter(t => t.date === x).length
-  undated.filter(u => u.severity === 'plan').sort((a, b) => (b.money ?? 0) - (a.money ?? 0)).forEach(u => {
+  const queue = [
+    ...undated.filter(u => u.severity === 'plan').sort((a, b) => (b.money ?? 0) - (a.money ?? 0)),
+    ...undated.filter(u => u.severity === 'watch').sort((a, b) => (b.money ?? 0) - (a.money ?? 0)),
+  ]
+  queue.forEach(u => {
     while (count(d) >= perDay) d = nextWorkday(d)
     out.push({ u, date: d, when: 'suggested' })
   })
-  const review = nextMonday(today)
-  undated.filter(u => u.severity === 'watch').forEach(u => out.push({ u, date: review, when: 'suggested' }))
   return out
 }
 

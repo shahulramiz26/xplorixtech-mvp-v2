@@ -4,13 +4,14 @@ import { useState, useMemo, useCallback, Fragment, ReactNode, Suspense } from 'r
 import { useSearchParams } from 'next/navigation'
 import { Page, useEscape } from '../../components/kit'
 import { StoresOverview } from './overview'
+import { RigCountCard, ValuationSetting } from './rig-count'
 import {
   useInventory, TODAY, FORMATIONS, CATEGORIES, costPerMetre, toolingPerMetre,
   normFormation, poValue, poStatus, poReceivedValue, poStoreValue, poOpenReorderValue,
   qtyReceived, qtyInStore, qtyNeverDelivered, qtyFaulty, qtyToReorder,
   poHasSomethingToReorder, poHasSomethingToReceive, rateOfLine,
   openReorders, REORDER_STATUS_LABEL, REORDER_OPEN_STATUSES, DELAY_REASONS,
-  stockInStore, buildAlerts, supplierPerformance, supplierInsight,
+  stockInStore, buildAlerts, countLosses, supplierPerformance, supplierInsight,
   rigHoldings, toolingRatesFor, toolingFor, terrainRows, groundMix, TERRAIN_MIN_SAMPLE,
   formationUse, FORMATION_USES, FORMATION_USE_LABEL,
   daysBetween, addDays, projectCode, isLiveProject, money, moneyL, perMetre,
@@ -747,8 +748,10 @@ function StoreTab() {
         else out[log.rig].push({ itemId: u.itemId, qty: u.qty ?? 0 })
       })
     })
+    // A recount that came up short: lost or used without being logged.
+    Object.keys(out).forEach(rig => countLosses(state.rigCounts ?? [], rig, project).forEach(l => out[rig].push(l)))
     return out
-  }, [cost.shiftLogs, project])
+  }, [cost.shiftLogs, project, state.rigCounts])
 
   const rigs = useMemo(() =>
     RIGS.map(rig => {
@@ -774,26 +777,26 @@ function StoreTab() {
         </Chain>
       </div>
 
+      <RigCountCard />
+
       {/* ── The shelf ── */}
       <Card title="On the shelf" pad={false}
         subtitle={`${shelfRows.length} lines, ${money(shelfValue)}. Nothing here is costing a hole anything yet.`}
         right={
           <div style={{ display: 'flex', gap: 8 }}>
             <Btn size="sm" onClick={() => setAddingStock(true)}>Add existing stock</Btn>
-            <Btn size="sm" tone="primary" onClick={() => setAddingKit(true)}>Assign starting kit</Btn>
           </div>
         }>
         {shelfRows.length === 0 ? (
           <div style={{ padding: 36, textAlign: 'center' }}>
             <p style={{ fontSize: 13, color: C.muted, fontWeight: 600, marginBottom: 8 }}>The shelf is empty for {projectCode(project)}.</p>
             <p style={{ fontSize: 12, color: C.faint, lineHeight: 1.7, maxWidth: 460, margin: '0 auto 20px' }}>
-              Parts a rig needs to start drilling go on with <strong style={{ color: C.orange }}>Assign starting kit</strong>.
+              Parts already on a rig are counted with <strong style={{ color: C.orange }}>First count</strong> above.
               Parts already sitting in the store go on with <strong style={{ color: C.text }}>Add existing stock</strong>.
               Anything received against a purchase order appears here on its own.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <Btn onClick={() => setAddingStock(true)}>Add existing stock</Btn>
-              <Btn tone="primary" onClick={() => setAddingKit(true)}>Assign starting kit</Btn>
             </div>
           </div>
         ) : (
@@ -853,7 +856,7 @@ function StoreTab() {
           <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
             On the rigs
             <span style={{ fontSize: 11, color: C.faint, fontWeight: 400, marginLeft: 10 }}>
-              {projectCode(project)} — starting kit plus everything issued since
+              {projectCode(project)}: what was counted on the rig, plus everything issued since
             </span>
           </div>
           {rigs.map(({ rig, lines, tooling, total, metres }) => {
@@ -877,7 +880,7 @@ function StoreTab() {
                 subtitle={`${money(total)} of parts on this rig, ${metres.toLocaleString('en-IN')} m drilled`}
                 accent={C.blue}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
-                  <Stat label="Starting kit" value={moneyL(lines.reduce((s, l) => s + l.kitValue, 0))} color={C.purple} />
+                  <Stat label="Counted on the rig" value={moneyL(lines.reduce((s, l) => s + l.kitValue, 0))} color={C.purple} />
                   <Stat label="Issued since" value={moneyL(lines.reduce((s, l) => s + l.issuedValue, 0))} color={C.amber} />
                   <Stat label="Tooling cost" value={rateRange} color={C.orange} note="per metre, soft ground to hardest" />
                   <Stat label="Spent per metre" value={metres > 0 ? perMetre(spent) : '—'} color={C.muted} note="cash out ÷ metres so far" />
@@ -905,7 +908,7 @@ function StoreTab() {
                       <th style={th}>Part number</th><th style={th}>Item</th>
                       <th style={th}>Used in</th>
                       <th style={thR}>Life</th>
-                      <th style={thR}>Starting kit</th>
+                      <th style={thR}>Counted</th>
                       <th style={thR}>Issued</th>
                       <th style={thR}>Total qty</th>
                       <th style={thR}>Scrapped</th>
@@ -1840,8 +1843,8 @@ function InventoryScreen() {
     cost.shiftLogs.filter(l => l.rig === rig && l.project === project).forEach(l => (l.partsUsed ?? []).forEach(u => {
       const e = out.find(x => x.itemId === u.itemId); if (e) e.qty += u.qty ?? 0; else out.push({ itemId: u.itemId, qty: u.qty ?? 0 })
     }))
-    return out
-  }, [cost.shiftLogs])
+    return [...out, ...countLosses(state.rigCounts ?? [], rig, project)]
+  }, [cost.shiftLogs, state.rigCounts])
 
   const alerts = useMemo(() => buildAlerts(state.pos, state.catalogue, TODAY, COMPLETED_PROJECTS, burn, state.alerts, state.suppliers), [state.pos, state.catalogue, state.alerts, state.suppliers, burn])
   const urgent = alerts.filter(a => a.level === 'urgent').length
@@ -1864,6 +1867,7 @@ function InventoryScreen() {
           <p style={{ fontSize: 13, color: C.muted, marginTop: 5, maxWidth: 760, lineHeight: 1.55 }}>{TAB_NOTE[tab]}</p>
         </div>
       )}
+      {tab === 'Catalogue' && <ValuationSetting />}
       {tab === 'Catalogue' && <CatalogueTab onEdit={setEditPart} onImport={() => setImporting(true)} />}
       {tab === 'Orders' && <OrdersTab onReceive={setReceiving} onCreate={() => setEditPO(blankPO())} onEdit={setEditPO} onRaiseReorder={setRaising} onReceiveReorder={(po, reorder) => setReplacing({ po, reorder })} />}
       {tab === 'Stock by site' && <StoreTab />}

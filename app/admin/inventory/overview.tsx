@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useInventory, TODAY, COMPLETED_PROJECTS, PROJECTS, moneyL, type RigBurn } from '../../../lib/inventory-store'
 import { runways, orderStages, stockBySite, type RunwayRow } from '../../../lib/stores-overview'
 import { DeptInbox } from '../../components/inbox'
+import { RigCountCard } from './rig-count'
 import { PageHead, Card, Table, Empty, Status, T, tint, display, th, thR, td, tdR, tdStrong, rowLine, type Tone } from '../../components/kit'
 
 /* ==========================================================================
@@ -84,6 +85,8 @@ export function StoresOverview({ burn, rigsOn, used, go }: {
           </>
         )}
       </Card>
+
+      <RigCountCard />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(460px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
         <Card title="Orders in flight" subtitle="From draft to the store." right={<button type="button" onClick={() => go('Orders')} style={linkBtn}>Open orders →</button>}>
