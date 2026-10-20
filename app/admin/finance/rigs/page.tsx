@@ -1192,114 +1192,109 @@ function CPUChart({ days, rate, clientRate, month }: {
       ? [{ label: 'Rate achieved', rate, tone: C.blue }]
       : []
 
-  const W = 1000, H = 260, PL = 66, PR = 116, PT = 22, PB = 34
-  const maxV = Math.max(
-    ...pts.map(p => p.cpu!),
-    ...days.map(d => d.mtdCPU ?? 0),
-    ...ceilings.map(c => c.rate),
-  ) * 1.08
-  const x = (i: number) => PL + (i / Math.max(1, days.length - 1)) * (W - PL - PR)
+  /* Each day is one bar: what a metre cost (bottom, in the colour of the
+   * ground it cut) and the margin left on it (green, on top). The whole bar
+   * is what the client paid for that metre, so a thin green cap is a day that
+   * barely paid, and red above the bar is a day that lost money. */
+  /* Cost bars in shades of one blue, deeper for harder ground, so green can
+   * only mean margin and red can only mean a loss. */
+  const SHADE: Record<string, string> = { Soft: '#93c5fd', Medium: '#60a5fa', Hard: '#3b82f6', 'Very Hard': '#1e40af' }
+  const earned = (d: DayCostMTD) => d.units > 0 ? d.revenue / d.units : 0
+  const W = 1000, H = 280, PL = 56, PR = 16, PT = 26, PB = 34
+  const maxV = Math.max(...days.map(d => Math.max(d.cpu ?? 0, earned(d))), ...ceilings.map(c => c.rate)) * 1.1 || 1
+  const slot = (W - PL - PR) / Math.max(1, days.length)
+  const bw = Math.min(30, slot * 0.62)
+  const cx = (i: number) => PL + slot * (i + 0.5)
   const y = (val: number) => PT + (1 - val / maxV) * (H - PT - PB)
-
-  const mtdPts = days.map((d, i) => d.mtdCPU == null ? null : { i, v: d.mtdCPU }).filter(Boolean) as { i: number; v: number }[]
-  const mtd = mtdPts.map((p, k) => `${k === 0 ? 'M' : 'L'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')
-  const mtdArea = mtdPts.length
-    ? `${mtd} L${x(mtdPts[mtdPts.length - 1].i).toFixed(1)},${(H - PB).toFixed(1)} L${x(mtdPts[0].i).toFixed(1)},${(H - PB).toFixed(1)} Z`
-    : ''
-
-  const band = (W - PL - PR) / Math.max(1, days.length - 1)
   const hd = hover != null ? days[hover] : null
 
-  return (
-    <Card title="What a metre costs, against what the ground pays"
-      subtitle={ceilings.length > 1
-        ? `${monthLabel(month)} · a dashed line per formation the contract prices, at ${mainSize}. Each point is coloured by the ground that day cut.`
-        : `${monthLabel(month)} · points are single days, the line is month to date.`}
-      pad={false}>
-      <div style={{ padding: '18px 20px 8px', overflowX: 'auto', position: 'relative' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 640, height: 'auto', display: 'block' }}
-          onMouseLeave={() => setHover(null)}>
-          <defs>
-            <linearGradient id="mtdFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={C.orange} stopOpacity={0.20} />
-              <stop offset="100%" stopColor={C.orange} stopOpacity={0} />
-            </linearGradient>
-          </defs>
+  // By ground: the month's cost a metre against what that ground paid.
+  const byGround = Object.keys(SHADE).map(f => {
+    const ds = days.filter(d => d.cpu != null && dominantGround(d) === f)
+    const units = ds.reduce((t, d) => t + d.units, 0)
+    return { f, tone: SHADE[f], units, cost: units ? ds.reduce((t, d) => t + d.total, 0) / units : 0, paid: units ? ds.reduce((t, d) => t + d.revenue, 0) / units : 0 }
+  }).filter(g => g.units > 0)
+  const gMax = Math.max(1, ...byGround.map(g => Math.max(g.cost, g.paid)))
+  const lost = days.filter(d => d.cpu != null && d.cpu > earned(d) && earned(d) > 0).length
+  const idle = days.filter(d => d.cpu == null).length
 
-          {/* Quieter grid than before — the rules are there to be read against,
-              not to be looked at. */}
+  return (
+    <Card title="What a metre cost, and what was left on it"
+      subtitle={`${monthLabel(month)} · each bar is one day: the cost of a metre, with the margin on top. The full bar is what the client paid for it.`}
+      pad={false}>
+      {byGround.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, padding: '16px 20px 4px' }}>
+          {byGround.map(g => {
+            const m = g.paid - g.cost
+            return (
+              <div key={g.f} style={{ display: 'grid', gap: 6, padding: '10px 12px', borderRadius: 10, background: `${hexA(g.tone, 0x10)}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12.5 }}>
+                  <b style={{ color: C.text, display: "inline-flex", alignItems: "center", gap: 6 }}><span aria-hidden style={{ width: 10, height: 10, borderRadius: 3, background: g.tone }} />{g.f}</b>
+                  <span style={{ color: C.muted }}>{Math.round(g.units)} m</span>
+                </div>
+                <div aria-hidden style={{ position: 'relative', height: 14, borderRadius: 4, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, width: `${(g.paid / gMax) * 100}%`, background: hexA(C.green, 0x55) }} />
+                  <div style={{ position: 'absolute', inset: 0, width: `${(Math.min(g.cost, g.paid || g.cost) / gMax) * 100}%`, background: g.tone }} />
+                </div>
+                <div style={{ fontSize: 12, color: C.text }}>
+                  Cost <b>₹{Math.round(g.cost).toLocaleString('en-IN')}</b> · paid <b>₹{Math.round(g.paid).toLocaleString('en-IN')}</b> ·{' '}
+                  <b style={{ color: m >= 0 ? 'var(--x-good-text)' : 'var(--x-bad-text)' }}>{m >= 0 ? 'kept' : 'lost'} ₹{Math.abs(Math.round(m)).toLocaleString('en-IN')}</b> a metre
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <div style={{ padding: '12px 20px 8px', overflowX: 'auto', position: 'relative' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 640, height: 'auto', display: 'block' }} onMouseLeave={() => setHover(null)}>
           {[0, 0.25, 0.5, 0.75, 1].map(fr => {
             const val = maxV * (1 - fr)
             return (
               <g key={fr}>
-                <line x1={PL} x2={W - PR} y1={y(val)} y2={y(val)} stroke={C.border} strokeWidth={1} opacity={0.45} />
-                <text x={PL - 10} y={y(val) + 4} textAnchor="end" fill={C.dim} fontSize={10.5} fontFamily="ui-monospace, monospace">
-                  {Math.round(val / 1000)}k
-                </text>
+                <line x1={PL} x2={W - PR} y1={y(val)} y2={y(val)} stroke={C.border} strokeWidth={1} opacity={0.4} />
+                <text x={PL - 8} y={y(val) + 4} textAnchor="end" fill={C.dim} fontSize={10.5}>{val >= 1000 ? `₹${Math.round(val / 1000)}k` : '0'}</text>
               </g>
             )
           })}
-
-          {/* One ceiling per formation, labelled in the right margin so the
-              labels never sit on top of the data. */}
-          {ceilings.map(c => (
-            <g key={c.label}>
-              <line x1={PL} x2={W - PR} y1={y(c.rate)} y2={y(c.rate)} stroke={c.tone} strokeWidth={1.5} strokeDasharray="7 6" opacity={0.85} />
-              <text x={W - PR + 9} y={y(c.rate) + 3} fill={c.tone} fontSize={10.5} fontWeight={700}>{c.label}</text>
-              <text x={W - PR + 9} y={y(c.rate) + 15} fill={c.tone} fontSize={10} opacity={0.7} fontFamily="ui-monospace, monospace">
-                {Math.round(c.rate).toLocaleString('en-IN')}
-              </text>
-            </g>
-          ))}
-
-          {hover != null && (
-            <line x1={x(hover)} x2={x(hover)} y1={PT} y2={H - PB} stroke={C.muted} strokeWidth={1} opacity={0.3} />
-          )}
-
-          {mtdArea && <path d={mtdArea} fill="url(#mtdFill)" />}
-          {mtd && <path d={mtd} fill="none" stroke={C.orange} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />}
-
           {days.map((d, i) => {
             const on = hover === i
+            const base = H - PB
             if (d.cpu == null) {
               return (
-                <g key={i}>
-                  <line x1={x(i)} x2={x(i)} y1={H - PB - 14} y2={H - PB} stroke={C.red} strokeWidth={1.5} opacity={on ? 0.9 : 0.5} />
-                  <circle cx={x(i)} cy={H - PB} r={on ? 5 : 3} fill={C.red} opacity={on ? 1 : 0.7} />
+                <g key={i} opacity={on ? 1 : 0.85}>
+                  <rect x={cx(i) - bw / 2} y={base - 4} width={bw} height={4} rx={2} fill={C.red} />
+                  <text x={cx(i)} y={base - 9} textAnchor="middle" fill={C.red} fontSize={10} fontWeight={700}>0 m</text>
                 </g>
               )
             }
-            const ground = dominantGround(d)
-            const tone = ground ? (FORMATION_TONE[ground] ?? C.muted) : C.muted
+            const g = dominantGround(d)
+            const tone = g ? (SHADE[g] ?? C.muted) : C.muted
+            const e = earned(d)
+            const top = Math.max(d.cpu, e)
             return (
-              <circle key={i} cx={x(i)} cy={y(d.cpu)} r={on ? 6.5 : 4.5}
-                fill={tone} fillOpacity={on ? 1 : 0.9}
-                stroke={on ? C.text : C.bg} strokeWidth={on ? 1.5 : 1} />
+              <g key={i} opacity={hover == null || on ? 1 : 0.55}>
+                <rect x={cx(i) - bw / 2} y={y(d.cpu)} width={bw} height={base - y(d.cpu)} rx={3} fill={tone} />
+                {e > d.cpu && <rect x={cx(i) - bw / 2} y={y(e)} width={bw} height={y(d.cpu) - y(e)} rx={3} fill={C.green} opacity={0.75} />}
+                {e > 0 && e < d.cpu && <rect x={cx(i) - bw / 2} y={y(d.cpu)} width={bw} height={y(e) - y(d.cpu)} fill={C.red} opacity={0.9} />}
+                {on && <text x={cx(i)} y={y(top) - 7} textAnchor="middle" fill={C.text} fontSize={10.5} fontWeight={700}>{e ? `${Math.round(((e - d.cpu) / e) * 100)}%` : ''}</text>}
+              </g>
             )
           })}
-
-          {days.map((d, i) => (i % Math.ceil(days.length / 12) === 0
-            ? <text key={i} x={x(i)} y={H - 12} textAnchor="middle" fill={C.dim} fontSize={10}>{d.date.slice(8)}</text> : null))}
-
+          {days.map((d, i) => (i % Math.ceil(days.length / 16) === 0
+            ? <text key={`t${i}`} x={cx(i)} y={H - 12} textAnchor="middle" fill={C.dim} fontSize={10}>{Number(d.date.slice(8))}</text> : null))}
           {days.map((_, i) => (
-            <rect key={`h${i}`} x={x(i) - band / 2} y={PT} width={band} height={H - PT - PB}
-              fill="transparent" onMouseEnter={() => setHover(i)} style={{ cursor: 'pointer' }} />
+            <rect key={`h${i}`} x={cx(i) - slot / 2} y={PT} width={slot} height={H - PT - PB} fill="transparent" onMouseEnter={() => setHover(i)} style={{ cursor: 'pointer' }} />
           ))}
         </svg>
-
-        {hd && <ChartTip d={hd} rate={rate} left={((x(hover!) - PL) / (W - PL - PR)) * 100} />}
+        {hd && <ChartTip d={hd} rate={rate} left={((cx(hover!) - PL) / (W - PL - PR)) * 100} />}
       </div>
       <div style={{ display: 'flex', gap: 18, padding: '4px 20px 16px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <Legend color={C.orange} label="Month to date" line />
-        {Object.entries(FORMATION_TONE)
-          .filter(([f]) => days.some(d => dominantGround(d) === f))
-          .map(([f, tone]) => <Legend key={f} color={tone} label={f} />)}
-        <Legend color={C.red} label="Nothing drilled" />
-        {ceilings.length > 0 && (
-          <span style={{ fontSize: 10.5, color: C.dim, marginLeft: 'auto' }}>
-            Dashed lines are the client rate for each formation
-          </span>
-        )}
+        {Object.entries(SHADE).filter(([f]) => days.some(d => dominantGround(d) === f)).map(([f, tone]) => <Legend key={f} color={tone} label={`Cost, ${f.toLowerCase()} ground`} />)}
+        <Legend color={C.green} label="Margin left" />
+        <Legend color={C.red} label="Lost, or nothing drilled" />
+        <span style={{ fontSize: 11.5, color: C.muted, marginLeft: 'auto' }}>
+          {lost ? `${lost} ${lost === 1 ? 'day' : 'days'} cost more than they paid. ` : 'Every drilling day paid for itself. '}{idle ? `${idle} ${idle === 1 ? 'day' : 'days'} drilled nothing.` : ''}
+        </span>
       </div>
     </Card>
   )

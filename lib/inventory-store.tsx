@@ -257,7 +257,44 @@ export interface RigKitEntry {
   project: string
   rig: string
   addedBy: string
-  lines: { itemId: string; qty: number; rate: number }[]
+  /* qty is in new-part equivalents: two half-worn bits are one bit's worth of
+   * life. `pieces` and `condition` keep what was actually counted. */
+  lines: { itemId: string; qty: number; rate: number; pieces?: number; condition?: Condition }[]
+  /* count: the first count when the rig joined XPLORIX
+   * learned: a part the drill log used that the rig was never given, confirmed as already on the rig
+   * recount: found on a monthly recount, more than XPLORIX expected */
+  source?: 'count' | 'learned' | 'recount'
+}
+
+/* How worn a part already on the rig is when it is counted, as the share of
+ * its life left. Rough on purpose: nobody measures a bit's crown on day one. */
+export type Condition = 'new' | 'half' | 'worn'
+export const CONDITION_LIFE: Record<Condition, number> = { new: 1, half: 0.5, worn: 0.15 }
+export const CONDITION_LABEL: Record<Condition, string> = { new: 'New', half: 'Half used', worn: 'Nearly worn' }
+
+/* A recount: what XPLORIX expected on the rig, against what was there. Less
+ * than expected is lost or used without being logged, and is treated as used. */
+export interface RigCount {
+  id: string
+  date: string
+  project: string
+  rig: string
+  by: string
+  lines: { itemId: string; expected: number; counted: number }[]
+}
+
+/* Stock already on rigs when a company joins: charged to the metres it
+ * drills at today's rate, or treated as already paid for. */
+export type Valuation = 'charge' | 'paid'
+
+/* Parts a recount found missing, per rig and project: added to what the
+ * drill logs say was used. */
+export function countLosses(counts: RigCount[], rig: string, project: string): { itemId: string; qty: number }[] {
+  const out: Record<string, number> = {}
+  counts.filter(c => c.rig === rig && c.project === project).forEach(c => c.lines.forEach(l => {
+    if (l.counted < l.expected) out[l.itemId] = (out[l.itemId] ?? 0) + (l.expected - l.counted)
+  }))
+  return Object.entries(out).map(([itemId, qty]) => ({ itemId, qty }))
 }
 
 export interface PurchaseOrder {
@@ -1212,7 +1249,7 @@ SEED_POS.find(p => p.id === 'po6')?.transfers.push({ id: 'po6_tr1', date: '2026-
  * after the first log and the early days of the month read free. */
 export const SEED_RIG_KIT: RigKitEntry[] = [
   {
-    id: 'rk_seed_1', date: '2026-05-28', addedBy: 'Store',
+    id: 'rk_seed_1', date: '2026-05-28', addedBy: 'Store', source: 'count',
     project: 'Site A - North Field', rig: 'RIG-001',
     lines: [
       { itemId: 't08', qty: 2, rate: 22000 },
@@ -1224,7 +1261,7 @@ export const SEED_RIG_KIT: RigKitEntry[] = [
     ],
   },
   {
-    id: 'rk_seed_2', date: '2026-05-28', addedBy: 'Store',
+    id: 'rk_seed_2', date: '2026-05-28', addedBy: 'Store', source: 'count',
     project: 'Site A - North Field', rig: 'RIG-002',
     lines: [
       { itemId: 't08', qty: 1, rate: 22000 },
@@ -1234,7 +1271,7 @@ export const SEED_RIG_KIT: RigKitEntry[] = [
     ],
   },
   {
-    id: 'rk_seed_3', date: '2026-05-28', addedBy: 'Store',
+    id: 'rk_seed_3', date: '2026-05-28', addedBy: 'Store', source: 'count',
     project: 'Site B - South Ridge', rig: 'RIG-003',
     lines: [
       { itemId: 't08', qty: 1, rate: 22000 },
@@ -1267,18 +1304,20 @@ interface State {
   rigKit: RigKitEntry[]
   storeStock: StoreStockEntry[]
   alerts: AlertSettings
+  rigCounts: RigCount[]
+  valuation: Valuation
 }
 
 function initial(): State {
   return {
     catalogue: SEED_CATALOGUE, suppliers: SEED_SUPPLIERS, pos: SEED_POS,
-    rigKit: SEED_RIG_KIT, storeStock: [], alerts: DEFAULT_ALERTS,
+    rigKit: SEED_RIG_KIT, storeStock: [], alerts: DEFAULT_ALERTS, rigCounts: [], valuation: 'charge',
   }
 }
 
 export const seedInventoryState = () => initial()
 function emptyInventory(): State {
-  return { catalogue: [], suppliers: [], pos: [], rigKit: [], storeStock: [], alerts: DEFAULT_ALERTS }
+  return { catalogue: [], suppliers: [], pos: [], rigKit: [], storeStock: [], alerts: DEFAULT_ALERTS, rigCounts: [], valuation: 'charge' }
 }
 
 let seq = 0
@@ -1301,6 +1340,8 @@ interface Ctx {
   addTransfer: (poId: string, t: Omit<Transfer, 'id'>) => void
   addStoreStock: (e: Omit<StoreStockEntry, 'id'>) => void
   addRigKit: (e: Omit<RigKitEntry, 'id'>) => void
+  addRigCount: (c: Omit<RigCount, 'id'>, found?: Omit<RigKitEntry, 'id'>) => void
+  setValuation: (v: Valuation) => void
   saveAlertSettings: (s: AlertSettings) => void
   resetAll: () => void
 }
@@ -1401,6 +1442,11 @@ function InventoryRoot({ children }: { children: ReactNode }) {
       addTransfer: (poId, t) => onPO(poId, p => ({ ...p, transfers: [...p.transfers, { ...t, id: uid('tr') }] })),
       addStoreStock: e => setState(s => ({ ...s, storeStock: [...s.storeStock, { ...e, id: uid('ss') }] })),
       addRigKit: e => setState(s => ({ ...s, rigKit: [...s.rigKit, { ...e, id: uid('rk') }] })),
+      addRigCount: (c, found) => setState(s => ({
+        ...s, rigCounts: [...(s.rigCounts ?? []), { ...c, id: uid('rc') }],
+        rigKit: found && found.lines.length ? [...s.rigKit, { ...found, id: uid('rk') }] : s.rigKit,
+      })),
+      setValuation: v => setState(s => ({ ...s, valuation: v })),
       saveAlertSettings: a => setState(s => ({ ...s, alerts: a })),
       resetAll: () => setState(initial()),
     }}>{children}</InvCtx.Provider>

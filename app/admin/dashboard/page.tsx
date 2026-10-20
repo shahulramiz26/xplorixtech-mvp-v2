@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { CalendarDays, ArrowRight } from 'lucide-react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts'
 import { moneyL, perUnit, monthLabel, shiftMonth, useCosting } from '../../../lib/costing-store'
-import { useInventory, TODAY, PROJECTS, COMPLETED_PROJECTS, RIGS } from '../../../lib/inventory-store'
+import { useInventory, TODAY, PROJECTS, COMPLETED_PROJECTS, RIGS, countLosses } from '../../../lib/inventory-store'
 import { IS_DEMO } from '../../../lib/company'
 import { useAdminOverview, financeLink } from '../../../lib/admin-overview'
 import { companyToday } from '../../../lib/company-overview'
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       costing.shiftLogs.filter(l => l.rig === rig && l.project === project && !l.contractor).forEach(l => (l.partsUsed ?? []).forEach(u => {
         const e = out.find(x => x.itemId === u.itemId); if (e) e.qty += u.qty ?? 0; else out.push({ itemId: u.itemId, qty: u.qty ?? 0 })
       }))
-      return out
+      return [...out, ...countLosses(inv.rigCounts ?? [], rig, project)]
     }
     const rigsOn = (p: string) => RIGS.filter(r => costing.shiftLogs.some(l => l.rig === r && l.project === p) || inv.rigKit.some(k => k.rig === r && k.project === p))
     const sites = stockBySite(inv.pos, inv.catalogue, inv.rigKit, PROJECTS, COMPLETED_PROJECTS, rigsOn, used, TODAY, inv.alerts)
