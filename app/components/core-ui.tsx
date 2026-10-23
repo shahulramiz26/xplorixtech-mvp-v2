@@ -21,7 +21,7 @@ export const CORE_COLOURS = {
   block: '#3E7BFA',
 }
 
-export const photoSrc = (t: CoreTray & { photo?: string }) => t.photo ?? `/core/photos/${t.hole}/${t.file}`
+export const photoSrc = (t: CoreTray & { photo?: string }, big = false) => t.photo ?? `/core/photos/${t.hole}/${big && t.hd ? t.hd : t.file}`
 export const pct = (n: number) => `${Math.round(n)}%`
 export const m1 = (n: number) => `${n.toFixed(1)} m`
 export const dep = (a: number, b: number) => `${a.toFixed(2)}–${b.toFixed(2)} m`
@@ -65,7 +65,7 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
   return (
     <div style={{ position: 'relative', width: '100%', lineHeight: 0, borderRadius: compact ? 6 : 10, overflow: 'hidden', background: '#111', cursor: adding ? 'crosshair' : 'default' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photoSrc(tray)} alt={`Core tray ${tray.no}, ${dep(tray.from, tray.to)}`} style={{ width: '100%', height: 'auto', display: 'block', imageRendering: compact ? 'auto' : 'auto' }} />
+      <img src={photoSrc(tray, !compact)} alt={`Core tray ${tray.no}, ${dep(tray.from, tray.to)}`} style={{ width: '100%', height: 'auto', display: 'block', imageRendering: compact ? 'auto' : 'auto' }} />
       <svg ref={svg} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" onClick={click}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} role="img" aria-label="What the photo step found">
         {show.rows && tray.rows.map((r, i) => (
@@ -187,66 +187,6 @@ export function AlphaChart({ alphas, sets, height = 120 }: { alphas: number[]; s
 
 /* The strip log: core columns beside drilling columns, one row per metre. */
 export interface StripDrill { from: number; to: number; rate: number; normal: number; driller: string; shift: string; date: string; downtime: number; reason: string; drillerRec: number }
-export function StripLog({ rows, drill, trays, hole, pxPerM = 6 }: { rows: IntervalResult[]; drill: StripDrill[]; trays: CoreTray[]; hole: string; pxPerM?: number }) {
-  const { review, index } = useCore()
-  if (!rows.length) return null
-  const top = Math.floor(Math.min(rows[0].from, ...drill.map(d => d.from))), bottom = Math.ceil(Math.max(rows[rows.length - 1].to, ...drill.map(d => d.to)))
-  const H = (bottom - top) * pxPerM
-  const y = (d: number) => (d - top) * pxPerM
-  const drillers = Array.from(new Set(drill.map(d => d.driller)))
-  const dCol = (n: string) => ['#3E7BFA', '#E5487F', '#22A06B', '#F5A524', '#8E4EC6', '#12A594'][drillers.indexOf(n) % 6]
-  const cols: { key: string; label: string; sub: string; w: number; draw: () => ReactNode }[] = [
-    { key: 'class', label: 'Class', sub: 'photo', w: 34, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from)} width={34} height={Math.max(1, y(r.to) - y(r.from))} fill={classHex(r.cls, index?.classes)}><title>{r.from}–{r.to} m · {className(review, r.cls)}</title></rect>) },
-    { key: 'colour', label: 'Colour', sub: 'photo', w: 26, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from)} width={26} height={Math.max(1, y(r.to) - y(r.from))} fill={r.hex} />) },
-    { key: 'rec', label: 'Recovery', sub: '0–100%', w: 70, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from) + 0.5} width={(r.recovery / 100) * 70} height={Math.max(1, y(r.to) - y(r.from) - 1)} fill={recColour(r.recovery)}><title>{r.from}–{r.to} m · recovery {pct(r.recovery)}</title></rect>) },
-    { key: 'rqd', label: 'RQD', sub: '0–100%', w: 70, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from) + 0.5} width={(r.rqd / 100) * 70} height={Math.max(1, y(r.to) - y(r.from) - 1)} fill={rqdColour(r.rqd)}><title>{r.from}–{r.to} m · RQD {pct(r.rqd)}</title></rect>) },
-    { key: 'ff', label: 'Fractures', sub: 'per m, 0–20', w: 60, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from) + 0.5} width={Math.min(1, r.ff / 20) * 60} height={Math.max(1, y(r.to) - y(r.from) - 1)} fill="#8E4EC6"><title>{r.from}–{r.to} m · {r.ff.toFixed(1)} fractures/m</title></rect>) },
-    { key: 'gsi', label: 'GSI proxy', sub: '0–100', w: 60, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from) + 0.5} width={(r.gsi / 100) * 60} height={Math.max(1, y(r.to) - y(r.from) - 1)} fill="#12A594"><title>{r.from}–{r.to} m · GSI {r.gsi}</title></rect>) },
-    { key: 'wth', label: 'Weathering', sub: 'grade 1–5', w: 50, draw: () => rows.map(r => <rect key={r.from} x={0} y={y(r.from) + 0.5} width={(r.weathering / 5) * 50} height={Math.max(1, y(r.to) - y(r.from) - 1)} fill="#C2733A"><title>{r.from}–{r.to} m · weathering grade {r.weathering}</title></rect>) },
-    { key: 'rate', label: 'Drill rate', sub: 'm/h · | normal', w: 70, draw: () => drill.map(d => <g key={d.from}><rect x={0} y={y(d.from) + 0.5} width={Math.min(1, d.rate / 3) * 70} height={Math.max(1, y(d.to) - y(d.from) - 1)} fill={d.rate > d.normal * 1.2 ? T.red : T.bar}><title>{d.from}–{d.to} m · {d.rate.toFixed(2)} m/h (normal {d.normal.toFixed(2)})</title></rect><line x1={Math.min(1, d.normal / 3) * 70} x2={Math.min(1, d.normal / 3) * 70} y1={y(d.from)} y2={y(d.to)} stroke={T.text} strokeWidth={1} /></g>) },
-    { key: 'driller', label: 'Driller', sub: 'shift log', w: 26, draw: () => drill.map(d => <rect key={d.from} x={0} y={y(d.from)} width={26} height={Math.max(1, y(d.to) - y(d.from) - 0.5)} fill={dCol(d.driller)}><title>{d.date} {d.shift} · {d.driller}</title></rect>) },
-    { key: 'down', label: 'Stops', sub: 'hours', w: 40, draw: () => drill.map(d => d.downtime > 0 ? <rect key={d.from} x={0} y={y(d.from) + 0.5} width={Math.min(1, d.downtime / 12) * 40} height={Math.max(1, y(d.to) - y(d.from) - 1)} fill={T.amber}><title>{d.downtime} h · {d.reason}</title></rect> : null) },
-  ]
-  const slot = (c: { label: string; sub: string; w: number }) => Math.max(c.w, c.label.length * 6.6, c.sub.length * 5.2) + 12
-  const W = 48 + cols.reduce((s, c) => s + slot(c), 0) + 70
-  const ticks: number[] = []
-  for (let d = Math.ceil(top / 10) * 10; d <= bottom; d += 10) ticks.push(d)
-  return (
-    <div style={{ overflowX: 'auto' }}>
-      <svg width={W} height={H + 44} style={{ display: 'block' }} role="img" aria-label="Strip log: core beside drilling">
-        <g transform="translate(0,40)">
-          {ticks.map(d => <g key={d}><line x1={40} x2={W - 70} y1={y(d)} y2={y(d)} stroke={T.line} /><text x={34} y={y(d) + 4} fontSize={10.5} textAnchor="end" fill={T.faint}>{d}</text></g>)}
-        </g>
-        {cols.reduce<{ x: number; els: ReactNode[] }>((acc, c) => {
-          acc.els.push(
-            <g key={c.key} transform={`translate(${acc.x},0)`}>
-              <text x={0} y={13} fontSize={11} fontWeight={700} fill={T.text}>{c.label}</text>
-              <text x={0} y={27} fontSize={9.5} fill={T.faint}>{c.sub}</text>
-              <g transform="translate(0,40)"><rect x={0} y={0} width={c.w} height={H} fill={tint(T.faint, 8)} />{c.draw()}</g>
-            </g>,
-          )
-          acc.x += slot(c)
-          return acc
-        }, { x: 48, els: [] }).els}
-        <g transform={`translate(${W - 64},0)`}>
-          <text x={0} y={13} fontSize={11} fontWeight={700} fill={T.text}>Trays</text>
-          <g transform="translate(0,40)">
-            {trays.map(t => (
-              <Link key={t.id} href={`/admin/geology/trays/${t.id}`}>
-                <rect x={0} y={y(t.from)} width={56} height={Math.max(2, y(t.usedTo) - y(t.from) - 1)} rx={2} fill={review.checked[t.id] ? tint(T.green, 30) : tint(T.amber, 25)} stroke={review.checked[t.id] ? T.green : T.amber} strokeWidth={0.8}>
-                  <title>Tray {t.no} · {dep(t.from, t.usedTo)} · {review.checked[t.id] ? 'checked' : 'waiting'}</title>
-                </rect>
-                {y(t.usedTo) - y(t.from) > 11 && <text x={28} y={y(t.from) + (y(t.usedTo) - y(t.from)) / 2 + 3.5} fontSize={9.5} textAnchor="middle" fill={T.text}>T{t.no}</text>}
-              </Link>
-            ))}
-          </g>
-        </g>
-      </svg>
-      <div style={{ fontSize: 11.5, color: T.faint, marginTop: 6 }}>Drillers: {drillers.map(d => <span key={d} style={{ marginRight: 12, whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 2, background: dCol(d), marginRight: 4 }} />{d}</span>)} · {hole}</div>
-    </div>
-  )
-}
-
 export const CLASS_HEX = ['#3b3f45', '#6b5b4b', '#8c6a46', '#7d7f80', '#b19e86', '#c9cbc6', '#5b7a6a', '#a0574a']
 export function classHex(id: number, centres?: { hex: string }[]) { return id < 0 ? 'transparent' : centres?.[id]?.hex ?? CLASS_HEX[id % CLASS_HEX.length] }
 

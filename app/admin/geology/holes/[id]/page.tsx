@@ -9,7 +9,8 @@ import { rqdClass, gsiClass, jointSets, discing, WEATHERING } from '../../../../
 import { shiftCore, stripDrill, factors } from '../../../../../lib/core/drill-link'
 import { toCsv, download } from '../../../../../lib/core/export'
 import { Page, PageHead, Grid, Tile, Card, Btn, Seg, Table, Status, Empty, Note, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../../components/kit'
-import { StripLog, TrayPhoto, AlphaChart, Bar, recColour, rqdColour, pct, DemoPhotos, Swatch, classHex } from '../../../../components/core-ui'
+import { TrayPhoto, AlphaChart, Bar, recColour, rqdColour, pct, DemoPhotos, Swatch, classHex } from '../../../../components/core-ui'
+import { StripLog } from '../../../../components/strip-log'
 import { CoreFactors } from '../../../../components/core-factors'
 
 /* HOLE LOG — what the core says about one hole, and why.
@@ -78,7 +79,7 @@ export default function HoleLog() {
 
       {tab === 'log' && (
         <>
-          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos. Right: from the shift logs. Hover a bar for its numbers; click a tray to check it.">
+          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos. Right: from the shift logs. Move along the log to read every track at one depth; click to open that tray.">
             <StripLog rows={h.rows} drill={view.drill} trays={h.trays} hole={hole} />
           </Card>
           <CoreFactors factors={view.f} note={`${hole} only. Each shift is compared with shifts in the same ground in this hole. A pattern to check, not proof of a cause.`} />

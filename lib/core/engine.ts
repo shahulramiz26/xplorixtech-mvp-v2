@@ -259,8 +259,10 @@ function columns(p: Pixels, L: Float64Array, y0: number, y1: number, x0: number,
  * pale still has grain; tray plastic does not. */
 function markEmpty(cols: Col[]) {
   const n = cols.length
-  // Tray plastic is near white and flat; pale core is less bright and has grain.
-  const raw = cols.map(c => c.lum > 220 && c.sat < 0.11 && c.tex < 13)
+  // Tray plastic is near white and flat; pale core is a little less bright and has grain.
+  // Measured on clean full-size photos: empty tray reads 242–252, pale
+  // smooth core up to about 238 — so the bar sits just above core.
+  const raw = cols.map(c => c.lum > 241 && c.sat < 0.11 && c.tex < 13)
   // Hold a run only if it is at least 10 px (about 3 cm) long; fill 1–2 px holes inside one.
   let i = 0
   while (i < n) {

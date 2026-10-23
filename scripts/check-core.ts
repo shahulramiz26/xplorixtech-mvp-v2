@@ -21,7 +21,7 @@ const ok = (name: string, got: number | boolean, want: number | boolean, tol = 0
 
 /* ── 1. a drawn tray ─────────────────────────────────────────────────────
  * 5 rows of 1 m on a 400 × 150 photo: grey core with grain, black divider
- * walls, white tray plastic where there is no core. */
+ * walls, white tray plastic where there is no core (about 247, as measured on full-size NVCL photos). */
 function drawTray() {
   const W = 400, H = 150, rows = 5, rh = H / rows
   const data = new Uint8ClampedArray(W * H * 4)
@@ -35,7 +35,7 @@ function drawTray() {
   // divider walls between rows
   for (let r = 1; r < rows; r++) for (let y = Math.round(r * rh) - 1; y <= Math.round(r * rh) + 1; y++) for (let x = 0; x < W; x++) set(x, y, [25, 25, 25])
   // empty channel: row 2 from x 200 to 260 (missing core), and the end of the last row (tray unused)
-  const white = (r: number, x0: number, x1: number) => { for (let y = Math.round(r * rh) + 2; y < Math.round((r + 1) * rh) - 2; y++) for (let x = x0; x < x1; x++) { const g = 238 + Math.round((rnd() - 0.5) * 6); set(x, y, [g, g, g + 2]) } }
+  const white = (r: number, x0: number, x1: number) => { for (let y = Math.round(r * rh) + 2; y < Math.round((r + 1) * rh) - 2; y++) for (let x = x0; x < x1; x++) { const g = 247 + Math.round((rnd() - 0.5) * 6); set(x, y, [g, g, g + 2]) } }
   white(2, 200, 260)
   white(4, 300, 400)
   // breaks: a dark line across the core, square (lean 0) or leaning
