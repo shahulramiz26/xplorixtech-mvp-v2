@@ -10,6 +10,7 @@ import { money, perUnit, COMPANY_NAME } from '../../../../lib/costing-store'
 import { useClient, CLIENT_HOLE } from '../../../../lib/client-view'
 import { num, downloadCsv, type HoleShift } from '../../../../lib/client-record'
 import { projectHoles, day } from '../../../../lib/projects'
+import { PHOTO_SHIFTS } from '../../../../lib/core/photo-summary'
 import {
   Page, PageHead, Card, Tile, Grid, Split, Btn, Table, Status, Note, Modal, Field, Empty, inputStyle,
   th, thR, td, tdR, tdStrong, rowLine, T, tint,
@@ -198,6 +199,7 @@ export default function ClientHole() {
           )}
         </Card>
       </Split>
+      <ClientCore hole={hole.id} />
 
       <Card title="Stops on this hole" subtitle={`${standbyH} h standby, charged when a full day is lost · ${ownH} h ${COMPANY_NAME}'s own, never charged`} pad={false}>
         {stops.length === 0 ? <Empty>No stops recorded on this hole.</Empty> : (
@@ -323,5 +325,34 @@ function Back() {
     <Link href="/client/holes" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.faint, textDecoration: 'none' }}>
       <ArrowLeft size={13} /> All holes
     </Link>
+  )
+}
+
+/* Core quality from the tray photos: what the client most wants from a hole
+ * besides metres. Per shift, measured on the photos. */
+function ClientCore({ hole }: { hole: string }) {
+  const rows = Object.entries(PHOTO_SHIFTS).filter(([, p]) => p.hole === hole).map(([id, p]) => ({ id, ...p })).sort((a, b) => a.from - b.from)
+  if (!rows.length) return null
+  const L = rows.reduce((s, r) => s + r.photographed, 0)
+  const rec = rows.reduce((s, r) => s + r.recovery * r.photographed, 0) / L
+  const rqd = rows.reduce((s, r) => s + r.rqd * r.photographed, 0) / L
+  const low = rows.filter(r => r.recovery < 85)
+  return (
+    <Card title="Core quality, from the tray photos" subtitle={`${n1(L)} m of core photographed: recovery ${rec.toFixed(0)}%, RQD ${rqd.toFixed(0)}%. Measured on each tray photo; figures can change once ${COMPANY_NAME}'s geologist has checked every tray.`} pad={false}>
+      <Table>
+        <thead><tr><th style={th}>Depth</th><th style={thR}>Core recovery</th><th style={thR}>RQD</th><th style={thR}>Fractures a metre</th></tr></thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.id} style={{ borderBottom: rowLine }}>
+              <td style={tdStrong}>{r.from}–{r.to} m</td>
+              <td style={{ ...tdR, color: r.recovery < 85 ? T.red : T.muted }}>{r.recovery.toFixed(0)}%</td>
+              <td style={tdR}>{r.rqd.toFixed(0)}%</td>
+              <td style={tdR}>{r.ff.toFixed(1)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {low.length > 0 && <div style={{ padding: '10px 18px', fontSize: 12.5, color: T.muted }}>{low.length} stretch{low.length > 1 ? 'es' : ''} under 85% recovery. Ask us for the tray photos.</div>}
+    </Card>
   )
 }

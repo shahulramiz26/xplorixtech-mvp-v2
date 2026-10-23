@@ -11,6 +11,7 @@ import { useAdminOverview, financeLink } from '../../../lib/admin-overview'
 import { companyToday } from '../../../lib/company-overview'
 import { stockBySite } from '../../../lib/stores-overview'
 import { num } from '../../../lib/client-record'
+import { photoTotal } from '../../../lib/core/photo-summary'
 import { useInbox } from '../../components/inbox'
 import {
   Page, Card, Btn, Table, Status, Legend, Tip, Delta, Empty,
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
   const lastMonth = monthLabel(shiftMonth(o.month, -1)).split(' ')[0]
   const prevPerDay = o.prev.rigDays ? o.prev.metres / o.dayOfMonth : 0
   const groundMax = Math.max(1, ...c.lithology.map(g => g.month))
+  const core = useMemo(() => photoTotal(costing.shiftLogs), [costing.shiftLogs])
   const dueToday = inbox.open.filter(u => u.severity === 'act').length
 
   return (
@@ -99,6 +101,7 @@ export default function AdminDashboard() {
         <Kpi label="Drillers on shift" value={String(c.today.drillers)} note="Your own, named on today's logs" href="/admin/people" />
         <Kpi label="Downtime today" value={`${num(c.today.downtime)} h`} note={`${num(c.today.ownDowntime)} h your side or the contractor's, the rest client standby`} bad={c.today.ownDowntime > 0} />
         <Kpi label="Cost a metre today" value={c.today.cpm != null ? perUnit(c.today.cpm) : '—'} note="Your own rigs, all-in" href="/admin/finance" />
+        {core && <Kpi label="Core recovery, tray photos" value={`${core.recovery.toFixed(0)}%`} note={`Drill logs say ${core.driller.toFixed(0)}% · RQD ${core.rqd.toFixed(0)}% · ${num(core.metres)} m photographed`} href="/admin/geology" bad={core.recovery < 90} />}
         <Kpi label="Stock you hold" value={moneyL(stock.store + stock.rigs)} note={`${moneyL(stock.store)} in stores, ${moneyL(stock.rigs)} on rigs`} href="/admin/inventory" />
       </div>
 

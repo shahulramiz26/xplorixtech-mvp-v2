@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ResponsiveContainer, ScatterChart, Scatter, ComposedChart, Bar, Line, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip } from 'recharts'
 import { crew, crewInsights } from '../../../../lib/analytics'
 import { Page, PageHead, Card, Tile, Grid, Split, Table, Empty, Legend, Tip, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
+import { photoBy } from '../../../../lib/core/photo-summary'
 import { useAnalytics, BoardTabs, FilterBar, rigColour, n0, n1 } from '../shared'
 
 /* DRILLERS AND CREW — who is drilling well, and who needs help?
@@ -15,6 +16,7 @@ type Sort = 'metres' | 'rop' | 'perShift' | 'own'
 export default function DrillersDashboard() {
   const { state, f } = useAnalytics()
   const c = useMemo(() => crew(state, f), [state, f])
+  const photo = useMemo(() => new Map(photoBy(c.s.whole, l => l.driller ?? '').map(g => [g.key, g])), [c.s.whole])
   const [sort, setSort] = useState<Sort>('metres')
   const rows = [...c.drillers].sort((a, b) => sort === 'own' ? a.own / Math.max(1, a.shifts) - b.own / Math.max(1, b.shifts) : b[sort] - a[sort])
   const owners = Array.from(new Set(c.drillers.map(d => d.owner)))
@@ -40,11 +42,11 @@ export default function DrillersDashboard() {
       </Grid>
 
       {c.drillers.length === 0 ? <Card><Empty>Nothing to show for these filters.</Empty></Card> : <>
-        <Card title="Drillers" subtitle="Click a heading to sort. Own stops are hours lost on that driller's shifts to your side's causes." pad={false}>
+        <Card title="Drillers" subtitle="Click a heading to sort. Core, photos is measured on the tray photos of that driller's shifts. Own stops are hours lost to your side's causes." pad={false}>
           <Table>
             <thead><tr>
               <th style={th}>Driller</th><th style={th}>Rig</th><th style={thR}>Shifts</th>
-              {head('metres', 'Metres')}{head('rop', 'm an hour')}{head('perShift', 'm a shift')}<th style={thR}>Core</th>{head('own', 'Own stops')}
+              {head('metres', 'Metres')}{head('rop', 'm an hour')}{head('perShift', 'm a shift')}<th style={thR} title="What the driller wrote in the drill log">Core, log</th><th style={thR} title="Measured on the tray photos">Core, photos</th><th style={thR}>RQD</th>{head('own', 'Own stops')}
             </tr></thead>
             <tbody>
               {rows.map(d => (
@@ -52,7 +54,8 @@ export default function DrillersDashboard() {
                   <td style={tdStrong}>{d.name}</td>
                   <td style={td}>{d.rigs.join(', ')}{d.owner !== 'Own' && <span style={{ color: T.faint }}> · {d.owner}</span>}</td>
                   <td style={tdR}>{d.shifts}</td><td style={tdR}>{n1(d.metres)}</td><td style={tdR}>{d.rop.toFixed(2)}</td><td style={tdR}>{n1(d.perShift)}</td>
-                  <td style={tdR}>{d.metres ? `${d.recovery.toFixed(1)}%` : '—'}</td><td style={tdR}>{d.own ? `${n1(d.own)} h` : '—'}</td>
+                  <td style={tdR}>{d.metres ? `${d.recovery.toFixed(1)}%` : '—'}</td>
+                  {(() => { const p = photo.get(d.name); return <><td style={{ ...tdR, color: p && p.recovery < 90 ? T.red : T.muted }}>{p ? `${p.recovery.toFixed(1)}%` : '—'}</td><td style={tdR}>{p ? `${p.rqd.toFixed(0)}%` : '—'}</td></> })()}<td style={tdR}>{d.own ? `${n1(d.own)} h` : '—'}</td>
                 </tr>
               ))}
             </tbody>
