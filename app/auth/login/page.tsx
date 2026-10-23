@@ -45,10 +45,11 @@ export default function LoginPage() {
       return
     }
     await new Promise(r => setTimeout(r, 800))
-    // One company account, four kinds of login. The Company Admin creates the
+    // One company account, five kinds of login. The Company Admin creates the
     // other three from the Users screen.
     const home: Record<string, string> = {
-      admin: '/admin/dashboard',
+      admin: '/admin/dashboard?view=admin',
+      geologist: '/admin/geology?view=geologist',
       supervisor: '/supervisor/today',
       contractor: '/contractor',
       client: '/client',
@@ -149,6 +150,7 @@ export default function LoginPage() {
                 onFocus={onFocus} onBlur={onBlur}>
                 <option value="" style={{ background:'#FFFFFF' }}>Select Role</option>
                 <option value="admin" style={{ background:'#FFFFFF' }}>Company Admin</option>
+                <option value="geologist" style={{ background:'#FFFFFF' }}>Geologist</option>
                 <option value="supervisor" style={{ background:'#FFFFFF' }}>Supervisor</option>
                 <option value="contractor" style={{ background:'#FFFFFF' }}>Contractor</option>
                 <option value="client" style={{ background:'#FFFFFF' }}>Client</option>

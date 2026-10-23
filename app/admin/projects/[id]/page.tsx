@@ -9,6 +9,7 @@ import {
   type ClientRate, type ProjectRecord, type ProjectStatus, loginOfClient,
 } from '../../../../lib/costing-store'
 import { TODAY, addDays } from '../../../../lib/inventory-store'
+import { PHOTO_SOURCES } from '../../../../lib/core/sources'
 import { projectById, projectStats, holeSeriesStart, contractOf, eventsFor, structureWords, day, whenIn, type ProjectHole } from '../../../../lib/projects'
 import { financeLink } from '../../../../lib/admin-overview'
 import { words, contractorOf, workOrderProgress, whoDrills, WHO_DRILLS_LABEL } from '../../../../lib/contracting'
@@ -29,6 +30,8 @@ import { ProjectStatusTag, SharedTag, ChangeList, HolesTable, AddHolesModal, Fac
  *
  * On a shared project a rate change is a proposal the client must accept;
  * everything else takes effect at once and the client is notified. */
+
+const PHOTO_HOLES = new Set(PHOTO_SOURCES.map(x => x.hole))
 
 type Tab = 'overview' | 'holes' | 'rates' | 'team' | 'changes'
 const TABS: { value: Tab; label: string }[] = [
@@ -197,14 +200,15 @@ export default function ProjectPage() {
     : { kind: 'shared', title: `Stopped sharing with ${client}`, detail: 'The project is no longer visible in the client login.' })
 
   const holeAction = (h: ProjectHole) => {
+    const core = PHOTO_HOLES.has(h.id) && <Link href={`/admin/geology/holes/${h.id}`} style={{ ...link, textDecoration: 'none' }}>Core log</Link>
     if (h.status === 'planned') return (
       <span style={{ display: 'inline-flex', gap: 14 }}>
         <button style={link} onClick={() => { setDepthOf(h); setDepth(String(h.planned ?? '')) }}>Change depth</button>
         <button style={{ ...link, color: T.faint }} onClick={() => planHoles(p.name, [{ id: h.id, plan: null }], 'contractor', { kind: 'hole', title: `${h.id} taken off the plan`, detail: `${h.planned} m had been planned` })}>Remove</button>
       </span>
     )
-    if (h.status === 'drilling') return <button style={link} onClick={() => { setDepthOf(h); setDepth(String(h.planned ?? '')) }}>Change depth</button>
-    return <Link href={financeLink({ project: p.name, rig: h.rig ?? '', month: monthOf(h.end ?? h.start ?? TODAY), tab: 'Drillholes' })} style={{ ...link, textDecoration: 'none' }}>Open in Finance</Link>
+    if (h.status === 'drilling') return <span style={{ display: 'inline-flex', gap: 14 }}>{core}<button style={link} onClick={() => { setDepthOf(h); setDepth(String(h.planned ?? '')) }}>Change depth</button></span>
+    return <span style={{ display: 'inline-flex', gap: 14 }}>{core}<Link href={financeLink({ project: p.name, rig: h.rig ?? '', month: monthOf(h.end ?? h.start ?? TODAY), tab: 'Drillholes' })} style={{ ...link, textDecoration: 'none' }}>Open in Finance</Link></span>
   }
 
   return (

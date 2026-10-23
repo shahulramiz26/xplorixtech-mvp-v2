@@ -7,7 +7,9 @@ import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
+  Layers, Camera, Mountain, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill,
 } from 'lucide-react'
+import { CoreProvider, useCore } from '../../lib/core/store'
 import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
 import { deptLabel, type Dept } from '../../lib/findings'
@@ -79,6 +81,36 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
     ],
   },
 ]
+/* The geologist's half of XPLORIX. Same company, same projects and holes,
+ * same shift logs; a menu of its own. */
+const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
+  { title: null, items: [{ href: '/admin/geology', label: 'Geology today', icon: Layers }] },
+  {
+    title: 'Core',
+    items: [
+      { href: '/admin/geology/holes', label: 'Hole logs', icon: Drill, also: ['/admin/geology/trays'] },
+      { href: '/admin/geology/review', label: 'Review trays', icon: ScanSearch },
+      { href: '/admin/geology/photos', label: 'Add photos', icon: Camera },
+    ],
+  },
+  {
+    title: 'Interpretation',
+    items: [
+      { href: '/admin/geology/rock-mass', label: 'Rock mass', icon: Mountain },
+      { href: '/admin/geology/classes', label: 'Rock classes', icon: PaletteIcon },
+      { href: '/admin/geology/export', label: 'Export', icon: Download },
+    ],
+  },
+  {
+    title: 'Shared with drilling',
+    items: [
+      { href: '/admin/projects', label: 'Projects & holes', icon: FolderOpen },
+      { href: '/admin/tasks?dept=geology', label: 'Core quality tasks', icon: CalendarDays, badge: ['geology'] },
+    ],
+  },
+  { title: 'Help', items: [{ href: '/admin/geology/method', label: 'How it works', icon: BookOpen }] },
+]
+
 /* Screens with no menu entry: still guarded, still found by search. */
 const HIDDEN: NavItem[] = [
   { href: '/admin/reports', label: 'Performance reports', icon: FileText, sample: true },
@@ -86,7 +118,7 @@ const HIDDEN: NavItem[] = [
   { href: '/admin/crew', label: 'Crew & jobs', icon: HardHat, sample: true },
   { href: '/admin/billing', label: 'Plans and billing', icon: CreditCard, sample: true },
 ]
-const ALL = [...NAV.flatMap(g => g.items), ...HIDDEN]
+const ALL = [...NAV.flatMap(g => g.items), ...GEO_NAV.flatMap(g => g.items).filter(i => i.href.startsWith('/admin/geology')), ...HIDDEN]
 /* The menu for this company and this person. */
 function menuFor(demo: boolean, owner: boolean) {
   return NAV.map(g => ({ ...g, items: g.items.filter(i => (demo || !i.sample) && (owner || !i.owner)) })).filter(g => g.items.length > 0)
@@ -131,12 +163,27 @@ function Shell({ children }: { children: React.ReactNode }) {
     .sort((a, b) => Math.max(...[b.href, ...(b.also ?? [])].filter(within).map(h => h.length)) - Math.max(...[a.href, ...(a.also ?? [])].filter(within).map(h => h.length)))[0]
   const demo = IS_DEMO
   const owner = session.status === 'in' && !!session.user.owner
-  const menu = menuFor(demo, owner)
+  /* Two workspaces: Drilling (the contractor) and Geology (the geologist).
+   * A geologist's login sees only Geology and what it shares with drilling. */
+  const [geoOnly, setGeoOnly] = useState(false)
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get('view')
+    try {
+      if (v === 'geologist') localStorage.setItem('xplorix_view', 'geologist')
+      if (v === 'admin') localStorage.removeItem('xplorix_view')
+      setGeoOnly(localStorage.getItem('xplorix_view') === 'geologist')
+    } catch { setGeoOnly(v === 'geologist') }
+  }, [pathname])
+  const geology = geoOnly || pathname.startsWith('/admin/geology')
+  const core = useCore()
+  const waitingTrays = core.index ? core.index.holes.reduce((s, h) => s + h.trays, 0) + core.review.uploads.length - Object.keys(core.review.checked).length : 0
+  const menu = geology ? GEO_NAV : menuFor(demo, owner)
   // A screen on sample data, opened by its address in a real company: say so instead of showing someone else's numbers.
   const blocked = !!current && ((current.sample && !demo) || (current.owner && !owner))
 
   const actNow = inbox.open.filter(u => u.severity === 'act')
-  const badge = (b: NavItem['badge']) => !b ? 0 : b === 'all' ? actNow.length : actNow.filter(u => u.depts.some(d => b.includes(d))).length
+  const badge = (b: NavItem['badge'], href?: string) => href === '/admin/geology/review' ? Math.max(0, waitingTrays)
+    : !b ? 0 : b === 'all' ? actNow.length : actNow.filter(u => u.depts.some(d => b.includes(d))).length
 
   // Ctrl K or ⌘ K opens search from anywhere; so does "/" when not typing.
   useEffect(() => {
@@ -176,13 +223,23 @@ function Shell({ children }: { children: React.ReactNode }) {
             style={{ color: T.faint, background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={18} /></button>
         </div>
 
+        {!geoOnly && (
+          <div role="tablist" aria-label="Workspace" style={{ margin: '10px 10px 2px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, padding: 3, borderRadius: 9, background: T.bg, border: `1px solid ${T.border}` }}>
+            {([['Drilling', '/admin/dashboard', !geology], ['Geology', '/admin/geology', geology]] as const).map(([label, href, on]) => (
+              <Link key={label} href={href} role="tab" aria-selected={on} style={{
+                textAlign: 'center', padding: '6px 0', borderRadius: 6, fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+                background: on ? 'color-mix(in srgb, var(--x-orange) 16%, transparent)' : 'transparent', color: on ? T.text : T.faint,
+              }}>{label}</Link>
+            ))}
+          </div>
+        )}
         <nav className="flex-1 overflow-y-auto" style={{ padding: '8px 10px 14px', scrollbarWidth: 'none' }}>
           {menu.map((g, gi) => (
             <div key={g.title ?? 'top'} style={{ marginTop: gi === 0 ? 4 : 11 }}>
               {g.title && <div style={{ fontSize: 11.5, fontWeight: 600, color: T.dim, padding: '0 10px 5px' }}>{g.title}</div>}
               {g.items.map(item => {
-                const active = lit?.href === item.href
-                const n = badge(item.badge)
+                const active = lit?.href === item.href || (item.href.includes('?') && pathname === item.href.split('?')[0] && geology)
+                const n = badge(item.badge, item.href)
                 return (
                   <Link key={item.href} href={item.href} className={active ? '' : 'xpl-nav'} aria-current={active ? 'page' : undefined} style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '6.5px 10px', borderRadius: 8, marginBottom: 1,
@@ -215,10 +272,10 @@ function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px 2px 4px' }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'var(--x-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12.5, color: T.text }}>A</div>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'var(--x-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12.5, color: T.text }}>{geoOnly ? 'P' : 'A'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.status === 'in' ? session.user.name : 'Admin User'}</div>
-              <div style={{ fontSize: 11.5, color: T.faint }}>Company admin</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.status === 'in' ? session.user.name : geoOnly ? core.review.reviewer.replace(/ \(geologist\)$/, '') : 'Admin User'}</div>
+              <div style={{ fontSize: 11.5, color: T.faint }}>{geoOnly ? 'Geologist' : 'Company admin'}</div>
             </div>
             {session.status === 'in'
               ? <button type="button" onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className="xpl-hit" style={{ padding: 7, color: T.faint, borderRadius: 8, display: 'flex', background: 'none', border: 'none', cursor: 'pointer' }}><LogOut size={15} /></button>
@@ -313,6 +370,7 @@ function Shell({ children }: { children: React.ReactNode }) {
  * Enter. Holes and projects open Finance already on the right rig and month. */
 function Palette({ onClose }: { onClose: () => void }) {
   const o = useAdminOverview()
+  const core = useCore()
   const router = useRouter()
   const [q, setQ] = useState('')
   const [at, setAt] = useState(0)
@@ -327,8 +385,9 @@ function Palette({ onClose }: { onClose: () => void }) {
       kind: 'Hole', label: h.id, sub: `${h.project} · ${h.rig} · ${Math.round(h.drilled)} m`,
       href: financeLink({ project: h.project, rig: h.rig, month: monthOf(h.end ?? h.start), tab: h.status === 'drilling' ? 'Performance' : 'Drillholes' }),
     }))
-    return [...pages, ...rigs, ...projects, ...holes]
-  }, [o.rigs, o.holes, o.projects])
+    const cores = (core.index?.holes ?? []).map(h => ({ kind: 'Core', label: h.hole, sub: `hole log · ${h.trays} tray photos`, href: `/admin/geology/holes/${h.hole}` }))
+    return [...pages, ...rigs, ...projects, ...holes, ...cores]
+  }, [o.rigs, o.holes, o.projects, core.index])
 
   const hits = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -390,7 +449,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <CurrencyProvider>
       <CostingProvider>
         <ThemeScope />
-        <Guard role="admin"><InboxProvider><Shell>{children}</Shell></InboxProvider></Guard>
+        <Guard role="admin"><CoreProvider><InboxProvider><Shell>{children}</Shell></InboxProvider></CoreProvider></Guard>
       </CostingProvider>
     </CurrencyProvider>
   )

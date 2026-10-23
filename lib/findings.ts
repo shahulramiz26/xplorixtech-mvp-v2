@@ -12,6 +12,7 @@ import { buildForecast, type Forecast, type RiskArea } from './forecast'
 import { auditRecord, missingShifts, type LogAudit } from './log-checks'
 import { standbyLedger, checkHole } from './money-checks'
 import { buyCheck, lifeGaps } from './stock-checks'
+import { PHOTO_SHIFTS, type ShiftPhoto } from './core/photo-summary'
 
 /* ==========================================================================
  * FINDINGS — one list of what needs doing, for every department
@@ -381,6 +382,31 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       detail: `Under the usual 90% contract band, while the hole is still being drilled (${Math.round(h.drilled)} m).`,
       action: 'Check core lifters, run length and drilling speed now, before more metres are drilled at this recovery.',
       owner: 'Site in-charge', rig: h.rig, project: h.project, href: '/admin/intelligence/drill-logs',
+    })
+  })
+
+  // ── core quality from the tray photos ───────────────────────────────────
+  // Shifts whose core, measured on the tray photo, came up short; and holes
+  // where the driller's written recovery is well above what the photos show.
+  const byHole = new Map<string, { l: ShiftLog; p: ShiftPhoto }[]>()
+  logs.forEach(l => { const p = PHOTO_SHIFTS[l.id]; if (p && l.holeNumber) byHole.set(l.holeNumber, [...(byHole.get(l.holeNumber) ?? []), { l, p }]) })
+  byHole.forEach((list, hole) => {
+    const low = list.filter(x => x.p.recovery < 85).sort((a, b) => a.p.recovery - b.p.recovery)
+    if (low.length) push({
+      id: `geology:photo-low:${hole}:${low.map(x => x.l.id).join(',')}`, dept: 'geology', severity: low[0].p.recovery < 80 ? 'act' : 'plan',
+      title: `${hole}: ${low.length} shift${low.length > 1 ? 's' : ''} under 85% core on the tray photos`,
+      detail: `Worst ${low[0].p.from}–${low[0].p.to} m: ${Math.round(low[0].p.recovery)}% on the photo, RQD ${Math.round(low[0].p.rqd)}%, against ${Math.round(low[0].p.driller)}% written in the drill log (${low[0].l.driller}, ${low[0].l.date} ${low[0].l.shift.toLowerCase()}).`,
+      action: 'Look at the trays, mark lost or sampled core, then talk to the crew about lifters, run length and speed in this ground.',
+      owner: 'Geologist', rig: low[0].l.rig, project: low[0].l.project, href: `/admin/geology/holes/${hole}`,
+    })
+    const L = list.reduce((s, x) => s + x.p.photographed, 0)
+    const gap = L ? list.reduce((s, x) => s + (x.p.driller - x.p.recovery) * x.p.photographed, 0) / L : 0
+    if (list.length >= 5 && gap >= 4) push({
+      id: `geology:photo-gap:${hole}:${list.length}`, dept: 'geology', severity: gap >= 8 ? 'act' : 'watch',
+      title: `${hole}: drill log recovery ${gap.toFixed(0)} points above the tray photos`,
+      detail: `Across ${list.length} shifts with photos. The client sees the photos, so the gap will be asked about.`,
+      action: 'Check how the crew measures recovery at the rig; agree one method with the geologist.',
+      owner: 'Geologist', rig: list[0].l.rig, project: list[0].l.project, href: `/admin/geology/holes/${hole}`,
     })
   })
 
