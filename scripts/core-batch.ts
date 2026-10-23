@@ -48,7 +48,7 @@ for (const src of PHOTO_SOURCES) {
   const drilled = Math.max(...hl.map(l => l.meterEnd ?? 0))
   const size = hl[0].holeSize || 'HQ'
   const rowsCsv = csv(path.join(dir, 'trays.csv')).map(c => ({ n: +c[0], from: +c[1], to: +c[2], file: c[3] }))
-    .filter(r => fs.existsSync(path.join(dir, r.file))).sort((a, b) => a.from - b.from)
+    .filter(r => r.file && !/\.hd\.jpg$/i.test(r.file) && fs.existsSync(path.join(dir, r.file))).sort((a, b) => a.from - b.from)
   const f0 = rowsCsv[0].from
   const shift = f0 - Math.min(f0, 3)
   const photos = rowsCsv.map(r => load(path.join(dir, r.file)))
@@ -63,12 +63,16 @@ for (const src of PHOTO_SOURCES) {
     const res = processTray(px, { from, to, layout: layoutFor(layouts, px.height), coreDiameterMm: CORE_DIAMETER_MM[size] ?? 63.5, idPrefix: id })
     const file = `tray_${String(trays.length + 1).padStart(3, '0')}.jpg`
     fs.copyFileSync(path.join(dir, r.file), path.join(OUT, 'photos', src.hole, file))
+    // the full-size photo for the tray screens, when the archive has one
+    const hdSrc = path.join(dir, r.file.replace(/\.jpg$/i, '.hd.jpg'))
+    const hd = fs.existsSync(hdSrc) ? file.replace(/\.jpg$/, '.hd.jpg') : undefined
+    if (hd) fs.copyFileSync(hdSrc, path.join(OUT, 'photos', src.hole, hd))
     const shiftsHere = hl.filter(l => (l.meterEnd ?? 0) > from && (l.meterStart ?? 0) < to)
     const last = hl.find(l => (l.meterEnd ?? 0) >= to) ?? hl[hl.length - 1]
     trays.push({
       id, hole: src.hole, no: trays.length + 1, file, from, to, usedTo: res.usedTo, w: res.width, h: res.height,
       rows: res.rows, spans: res.spans, breaks: res.breaks, bins: res.bins.map(b => ({ ...b, cls: -1 })),
-      rowConfidence: res.rowConfidence, notes: res.notes, shiftIds: shiftsHere.map(l => l.id),
+      rowConfidence: res.rowConfidence, notes: res.notes, shiftIds: shiftsHere.map(l => l.id), hd,
       takenAt: `${last.date}T${last.shift === 'Day' ? '18:40' : '06:40'}`, takenBy: last.supervisor ?? 'Site supervisor', source: 'archive',
     })
   })

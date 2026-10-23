@@ -16,7 +16,8 @@ export interface CoreTray {
   id: string                 // e.g. DH-961-T05
   hole: string
   no: number
-  file: string               // under /core/photos/<hole>/
+  file: string               // under /core/photos/<hole>/ — 400 px wide, what the photo step measured
+  hd?: string                // the same tray, full size, for the tray screens
   from: number
   to: number
   usedTo: number

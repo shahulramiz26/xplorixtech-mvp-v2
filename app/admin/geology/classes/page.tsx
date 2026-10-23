@@ -22,7 +22,7 @@ function Crop({ tray, at }: { tray: CoreTray; at: number }) {
   return (
     <Link href={`/admin/geology/trays/${tray.id}`} title={`${tray.hole} ${at.toFixed(2)} m`}
       style={{ display: 'block', width: win * 2, height: hgt, borderRadius: 6, border: `1px solid ${T.border}`, flex: '0 0 auto',
-        backgroundImage: `url(${photoSrc(tray)})`, backgroundSize: `${tray.w * K}px ${tray.h * K}px`,
+        backgroundImage: `url(${photoSrc(tray, true)})`, backgroundSize: `${tray.w * K}px ${tray.h * K}px`,
         backgroundPosition: `${-(p.x * K - win)}px ${-(r.band[0] * K)}px`, backgroundRepeat: 'no-repeat' }} />
   )
 }
