@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
-  Layers, Camera, Mountain, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill,
+  Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'
 import { CurrencyProvider } from '../components/currency-context'
@@ -96,6 +96,7 @@ const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: 'Interpretation',
     items: [
+      { href: '/admin/geology/3d', label: '3D view', icon: Box },
       { href: '/admin/geology/rock-mass', label: 'Rock mass', icon: Mountain },
       { href: '/admin/geology/classes', label: 'Rock classes', icon: PaletteIcon },
       { href: '/admin/geology/export', label: 'Export', icon: Download },
