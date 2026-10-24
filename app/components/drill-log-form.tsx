@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, Trash2, Paperclip, Upload, ShieldCheck, ShieldAlert, OctagonX } from 'lucide-react'
+import { Plus, Trash2, Paperclip, Upload, ShieldCheck, ShieldAlert, OctagonX, Compass } from 'lucide-react'
 import {
   useCosting, uid, nowStamp, shiftOrder, isOwnStop, HOLE_SIZES, LITHOLOGIES,
   type ShiftLog, type ShiftName, type DowntimeLine,
@@ -11,6 +11,7 @@ import { equipment as EQUIPMENT, incidentTypes, severityTypes } from '../../lib/
 import { projectHoles } from '../../lib/projects'
 import { checkShift, describeChanges, type LogCheck } from '../../lib/log-checks'
 import { T, tint, Btn, Seg, inputStyle } from './kit'
+import { SURVEY_TOOLS } from '../../lib/survey'
 
 /* ==========================================================================
  * THE DRILL LOG FORM
@@ -128,6 +129,7 @@ interface BitRow { id: string; itemId: string; serial: string; mStart: string; m
 interface EquipRow { id: string; name: string; hours: string }
 interface AccRow { id: string; itemId: string; qty: string }
 interface IncidentRow { id: string; type: string; severity: string; note: string }
+interface SurveyRow { id: string; depth: string; az: string; dip: string; tool: string }
 
 interface F {
   shiftHours: number; standby: boolean; standbyReason: string
@@ -139,6 +141,7 @@ interface F {
   downRows: DownRow[]; bits: BitRow[]; equip: EquipRow[]; acc: AccRow[]; incidents: IncidentRow[]
   fuel: string; water: string; additives: string
   files: string[]; notes: string
+  surveys: SurveyRow[]
 }
 
 function fromLog(l: ShiftLog | undefined, scopes: LogScope[], start: Partial<Pick<F, 'project' | 'rig' | 'date' | 'shift' | 'supervisor'>>): F {
@@ -167,6 +170,7 @@ function fromLog(l: ShiftLog | undefined, scopes: LogScope[], start: Partial<Pic
     incidents: (l?.incidents ?? []).map(i => ({ id: rid(), ...i })),
     fuel: l ? str(l.fuelLitres) : '', water: l ? str(l.waterLitres) : '', additives: l ? str(l.additivesKg) : '',
     files: l?.attachments ?? [], notes: l?.notes ?? '',
+    surveys: (l?.surveys ?? []).map(x => ({ id: rid(), depth: str(x.depth), az: str(x.azimuth), dip: str(x.dip), tool: x.tool ?? '' })),
   }
 }
 
@@ -338,6 +342,16 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
   if (blank(f.additives)) problems.push('Enter the additives used (0 if none).')
   if (f.equip.some(e => !e.name || !(num(e.hours) > 0))) problems.push('Every equipment line needs the equipment and its hours.')
   if (f.incidents.some(i => !i.type || !i.severity)) problems.push('Every incident needs a type and a severity.')
+  if (!contractor && !f.standby) {
+    const deepest = Math.max(mEnd, f.closed && f.nhStarted ? num(f.nhEnd) : 0)
+    f.surveys.forEach((x, i) => {
+      const d = parseFloat(x.depth), a = parseFloat(x.az), p = parseFloat(x.dip)
+      if (!(d >= 0)) problems.push(`Survey reading ${i + 1}: enter the depth.`)
+      else if (deepest > 0 && d > deepest + 0.5) problems.push(`Survey reading ${i + 1}: ${d} m is deeper than the hole at the end of the shift.`)
+      if (!(a >= 0 && a <= 360)) problems.push(`Survey reading ${i + 1}: azimuth is 0 to 360.`)
+      if (!(p >= -90 && p <= 90)) problems.push(`Survey reading ${i + 1}: dip is −90 (straight down) to 90.`)
+    })
+  }
 
   /* The shift as it would be saved. Built the same way for the checks as
    * the typing goes on, and for the save itself. */
@@ -378,6 +392,7 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
       equipmentUsed: f.equip.map(e => ({ name: e.name, hours: num(e.hours) })),
       incidents: f.incidents.map(i => ({ type: i.type, severity: i.severity, note: i.note.trim() })),
       attachments: f.files, notes: f.notes.trim() || undefined,
+      surveys: contractor || f.standby || !f.surveys.length ? undefined : f.surveys.map(x => ({ depth: r2(num(x.depth)), azimuth: num(x.az), dip: num(x.dip), tool: x.tool || undefined })),
       fuelLitres: num(f.fuel), waterLitres: num(f.water), additivesKg: num(f.additives),
       supervisor: f.supervisor.trim(), driller: f.driller.trim(),
       loggedBy: existing?.loggedBy ?? by, loggedAt: existing?.loggedAt ?? nowStamp(),
@@ -720,6 +735,33 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
                   </div>
                   <div style={{ width: 90 }}><input type="number" min={0} value={a.qty} aria-label="Quantity" onChange={e => set({ qty: e.target.value })} placeholder="Qty" style={numIn} /></div>
                   <Bin label="Remove this accessory" onClick={() => u({ acc: f.acc.filter(x => x.id !== a.id) })} />
+                </div>
+              )
+            })}
+          </div>
+        </Panel>
+      )}
+
+      {/* ── downhole survey ──────────────────────────────────────────────── */}
+      {!contractor && !f.standby && (
+        <Panel title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><Compass size={15} style={{ color: T.faint }} /> Downhole survey</span>}
+          hint="Only if a survey was taken this shift. Dip is the angle from flat, negative going down: −60 means 60° below flat. The office checks each reading before it draws the hole."
+          right={<AddBtn onClick={() => u({ surveys: [...f.surveys, { id: rid(), depth: f.mEnd || '', az: f.surveys[f.surveys.length - 1]?.az ?? '', dip: f.surveys[f.surveys.length - 1]?.dip ?? '', tool: f.surveys[f.surveys.length - 1]?.tool ?? '' }] })} />}>
+          {f.surveys.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>No survey this shift.</div>}
+          <div style={{ display: 'grid', gap: 10 }}>
+            {f.surveys.map((x, i) => {
+              const set = (p: Partial<SurveyRow>) => u({ surveys: f.surveys.map(y => y.id === x.id ? { ...y, ...p } : y) })
+              return (
+                <div key={x.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  <RowNo n={i + 1} />
+                  <div style={{ flex: '1 1 110px' }}><L label="Depth, m"><input type="number" value={x.depth} onChange={e => set({ depth: e.target.value })} style={numIn} aria-label={`Survey ${i + 1} depth`} /></L></div>
+                  <div style={{ flex: '1 1 110px' }}><L label="Azimuth, °"><input type="number" value={x.az} onChange={e => set({ az: e.target.value })} placeholder="e.g. 60" style={numIn} aria-label={`Survey ${i + 1} azimuth`} /></L></div>
+                  <div style={{ flex: '1 1 110px' }}><L label="Dip, °"><input type="number" value={x.dip} onChange={e => set({ dip: e.target.value })} placeholder="e.g. −60" style={numIn} aria-label={`Survey ${i + 1} dip`} /></L></div>
+                  <div style={{ flex: '2 1 180px' }}><L label="Tool">
+                    <select value={x.tool} onChange={e => set({ tool: e.target.value })} style={sel} aria-label={`Survey ${i + 1} tool`}>
+                      <option value="">Not stated</option>{SURVEY_TOOLS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select></L></div>
+                  <Bin label="Remove this survey reading" onClick={() => u({ surveys: f.surveys.filter(y => y.id !== x.id) })} />
                 </div>
               )
             })}

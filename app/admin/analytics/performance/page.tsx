@@ -1,16 +1,32 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts'
 import { holeShifts, type Insight } from '../../../../lib/analytics'
 import { projectHoles } from '../../../../lib/projects'
 import { useInventory } from '../../../../lib/inventory-store'
 import { Page, PageHead, Card, Tile, Grid, Table, Empty, Status, Tip, inputStyle, axisTick, gridStroke, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
 import { useAnalytics, BoardTabs, FilterBar, n1 } from '../shared'
+import { useCosting, ADMIN_NAME, nowStamp, money } from '../../../../lib/costing-store'
+import { holeSurvey, SURVEY_LIMITS, type SurveyReading } from '../../../../lib/survey'
+import { depthBands } from '../../../../lib/plan'
+import { Path3D, PlanView, SectionView, DeviationFigures } from '../../../components/hole-path'
+import { SurveyTable, AddReadingsModal, ImportSurveyModal, DepthPanel } from '../../../components/survey-panel'
+import { Seg, Btn, Split, Note } from '../../../components/kit'
 
-/* HOLE BY HOLE — what happened in this hole, shift by shift?
- * Depth against plan, every shift's metres, stops and parts, read from the
- * drill logs of whichever rigs worked the hole. */
+/* HOLE BY HOLE — what happened in this hole?
+ *
+ *   Shift by shift   depth against plan, every shift's metres, stops and
+ *                    parts, from the drill logs of whichever rigs worked it
+ *   Survey           where the hole went: the path from the approved survey
+ *                    readings against the planned line, in 3D, from above and
+ *                    from the side, and every reading with its status
+ *   Down the hole    drilling speed and cost per metre, band by band
+ *                    (drilling only; what the core says is in XPLORIX Core) */
+
+type View = 'shifts' | 'survey' | 'depth'
+const VIEWS: { value: View; label: string }[] = [{ value: 'shifts', label: 'Shift by shift' }, { value: 'survey', label: 'Survey' }, { value: 'depth', label: 'Down the hole' }]
 
 export default function HoleByHole() {
   const { state, f } = useAnalytics()
@@ -18,6 +34,14 @@ export default function HoleByHole() {
   const projects = (state.projects ?? []).filter(p => f.project === 'all' || p.name === f.project)
   const holes = useMemo(() => projects.flatMap(p => projectHoles(state, p.name).filter(h => h.status !== 'planned').map(h => ({ ...h, project: p.name }))), [state, projects])
   const [pick, setPick] = useState('')
+  const [view, setView] = useState<View>('shifts')
+  // A link can name the hole and the view: ?hole=DH-013&view=survey
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const h = q.get('hole'), v = q.get('view')
+    if (h) setPick(h)
+    if (v && VIEWS.some(x => x.value === v)) setView(v as View)
+  }, [])
   const hole = holes.find(h => h.id === pick) ?? holes[0]
   const rows = useMemo(() => hole ? holeShifts(state, hole.id) : [], [state, hole])
   const partName = (id: string) => inv.catalogue.find(p => p.id === id)?.name ?? 'Part'
@@ -54,7 +78,12 @@ export default function HoleByHole() {
             {holes.map(h => <option key={h.id} value={h.id}>{h.id} · {h.project} · {h.status === 'drilling' ? 'drilling' : 'finished'}</option>)}
           </select>
           <Status tone={hole.status === 'drilling' ? 'info' : 'good'}>{hole.status === 'drilling' ? 'Drilling' : 'Finished'}</Status>
+          <div style={{ flex: 1 }} />
+          <Seg<View> options={VIEWS} value={view} onChange={setView} />
         </div>
+        {view === 'survey' && <SurveyView hole={hole.id} project={hole.project} />}
+        {view === 'depth' && <DepthView hole={hole.id} />}
+        {view === 'shifts' && <>
         {insights.length > 0 && (
           <Card title="This hole in a few lines" pad={false}>
             {insights.map((i, n) => (
@@ -103,7 +132,96 @@ export default function HoleByHole() {
             </tbody>
           </Table>
         </Card>
+        </>}
       </>}
     </Page>
+  )
+}
+
+// ── survey ────────────────────────────────────────────────────────────────
+
+function Lines({ items, empty, subtitle }: { items: { id: string; tone: string; title: string; detail: string; href?: string }[]; empty: string; subtitle: string }) {
+  return (
+    <Card title="XPLORIX insights" subtitle={subtitle} pad={false}>
+      {items.length === 0 && <div style={{ padding: '14px 18px', fontSize: 13.5, color: T.muted }}>{empty}</div>}
+      {items.map((i, n) => (
+        <div key={i.id} style={{ padding: '11px 18px', borderTop: n ? rowLine : 'none' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: i.tone === 'bad' ? T.red : i.tone === 'warn' ? T.amber : T.text }}>{i.title}</div>
+          <div style={{ fontSize: 12.5, color: T.muted, marginTop: 2, lineHeight: 1.5 }}>{i.detail}{i.href && <> <Link href={i.href} style={{ color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Set it now</Link></>}</div>
+        </div>
+      ))}
+    </Card>
+  )
+}
+
+function SurveyView({ hole, project }: { hole: string; project: string }) {
+  const { state, saveSurveys, deleteSurvey, saveSurveyProfile } = useCosting()
+  const s = useMemo(() => holeSurvey(state, hole), [state, hole])
+  const [shape, setShape] = useState<'plan' | 'section'>('plan')
+  const [adding, setAdding] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const projectId = (state.projects ?? []).find(p => p.name === project)?.id
+  const known = useMemo(() => {
+    const out: Record<string, { drilled: number; planned?: number; project: string }> = {}
+    ;(state.projects ?? []).forEach(p => projectHoles(state, p.name).forEach(h => { out[h.id] = { drilled: h.drilled, planned: h.planned, project: p.name } }))
+    return out
+  }, [state])
+  const existing = useMemo(() => (state.surveys ?? []).filter(r => r.source !== 'log').map(r => ({ hole: r.hole, depth: r.depth })), [state.surveys])
+
+  const decide = (rs: SurveyReading[], status: 'approved' | 'rejected', note?: string) => saveSurveys(rs.map(r => ({
+    ...r, status, decidedBy: ADMIN_NAME, decidedAt: nowStamp(), note: status === 'rejected' ? note : undefined,
+  })))
+  const insights = s.warnings.map(w => ({ id: w.id, tone: w.tone, title: w.title, detail: w.detail,
+    href: w.id === 'noplan' && projectId ? `/admin/projects/${encodeURIComponent(projectId)}?tab=holes` : undefined }))
+  const hasPath = s.path.length > 1 || s.planned.length > 1
+
+  return (
+    <>
+      <Lines items={insights} subtitle="From the approved survey readings and the planned direction."
+        empty={s.approved.length ? `The hole is on its planned line, surveyed to ${n1(s.lastSurveyed)} m.` : 'No approved readings yet.'} />
+      <DeviationFigures s={s} />
+      {!s.plan && <Note tone="info">This hole has no planned direction, so its path can be drawn but not compared with a plan. {projectId && <Link href={`/admin/projects/${encodeURIComponent(projectId)}?tab=holes`} style={{ color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Set it on the project&apos;s Holes tab</Link>}</Note>}
+      {hasPath ? (
+        <Split left={3} right={2}>
+          <Card title="Hole path" subtitle={s.collar?.rl != null ? `From the collar at ${s.collar.rl} m above sea level.` : 'From the collar.'}><Path3D s={s} /></Card>
+          <Card title={shape === 'plan' ? 'Plan view' : 'Cross-section'} subtitle={shape === 'plan' ? 'From above. North is up.' : `From the side, along the planned bearing${s.plan ? ` of ${Math.round(s.plan.azimuth)}°` : ''}.`}
+            right={<Seg<'plan' | 'section'> options={[{ value: 'plan', label: 'Plan' }, { value: 'section', label: 'Section' }]} value={shape} onChange={setShape} />}>
+            {shape === 'plan' ? <PlanView s={s} /> : <SectionView s={s} />}
+          </Card>
+        </Split>
+      ) : <Card title="Hole path"><Empty>Approve a survey reading, or set the planned direction, to draw the hole.</Empty></Card>}
+      <Card title="Survey readings" pad={false}
+        subtitle={`Readings from the shift log and from files arrive as "to check". Only approved readings draw the path. A survey is due every ${SURVEY_LIMITS.gap} m or so.`}
+        right={<span style={{ display: 'inline-flex', gap: 8 }}><Btn size="sm" onClick={() => setAdding(true)}>Type in readings</Btn><Btn size="sm" kind="primary" onClick={() => setImporting(true)}>Import a file</Btn></span>}>
+        <SurveyTable readings={s.readings} editable onDecide={decide} onDelete={r => deleteSurvey(r.id)} />
+      </Card>
+      {adding && <AddReadingsModal hole={hole} project={project} by={ADMIN_NAME} drilled={s.drilled} taken={s.readings.filter(r => r.status !== 'rejected').map(r => r.depth)}
+        onClose={() => setAdding(false)} onSave={rs => { saveSurveys(rs); setAdding(false) }} />}
+      {importing && <ImportSurveyModal holes={known} profiles={state.surveyProfiles ?? []} existing={existing} by={ADMIN_NAME} oneHole={hole}
+        onClose={() => setImporting(false)} onSave={(rs, prof) => { saveSurveys(rs); if (prof) saveSurveyProfile(prof); setImporting(false) }} />}
+    </>
+  )
+}
+
+// ── down the hole: drilling only ──────────────────────────────────────────
+
+function DepthView({ hole }: { hole: string }) {
+  const { state } = useCosting()
+  const { state: inv } = useInventory()
+  const { bands, step } = useMemo(() => depthBands(state, inv, hole), [state, inv, hole])
+  const slow = bands.filter(b => b.rop != null).sort((a, b) => (a.rop ?? 0) - (b.rop ?? 0))[0]
+  const fast = bands.filter(b => b.rop != null).sort((a, b) => (b.rop ?? 0) - (a.rop ?? 0))[0]
+  const dear = bands.filter(b => b.cpm != null).sort((a, b) => (b.cpm ?? 0) - (a.cpm ?? 0))[0]
+  return (
+    <>
+      <Grid min={170}>
+        <Tile label="Slowest band" value={slow ? `${slow.from}–${slow.to} m` : '—'} note={slow?.rop != null ? `${slow.rop.toFixed(2)} m an hour${slow.ground ? ` · ${slow.ground.toLowerCase()}` : ''}` : undefined} />
+        <Tile label="Fastest band" value={fast ? `${fast.from}–${fast.to} m` : '—'} note={fast?.rop != null ? `${fast.rop.toFixed(2)} m an hour${fast.ground ? ` · ${fast.ground.toLowerCase()}` : ''}` : undefined} />
+        <Tile label="Costliest band" value={dear ? `${dear.from}–${dear.to} m` : '—'} note={dear?.cpm != null ? `${money(dear.cpm)} a metre` : undefined} />
+      </Grid>
+      <Card title="Speed and cost, down the hole" subtitle="Each band of depth: how fast the bit cut it, and what a metre of it cost.">
+        <DepthPanel bands={bands} step={step} />
+      </Card>
+    </>
   )
 }

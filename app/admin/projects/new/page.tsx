@@ -94,6 +94,7 @@ export default function NewProjectPage() {
   const [step, setStep] = useState(0)
   const [f, setF] = useState({
     name: '', code: nextProjectCode(projects), location: '', client: '', startDate: TODAY, plannedMetres: '', holeSize: 'HQ', dailyTarget: '',
+    plannedEnd: '', budgetTotal: '', budgetPerMetre: '',
   })
   const [useRates, setUseRates] = useState(true)
   const [rate, setRate] = useState<ClientRate>(() => blankClientRate('', TODAY))
@@ -154,6 +155,8 @@ export default function NewProjectPage() {
       id: f.code.trim().toUpperCase(), code: f.code.trim().toUpperCase(), name, location: f.location.trim(), client: f.client.trim(),
       status: 'active', startDate: f.startDate, plannedMetres: parseFloat(f.plannedMetres) || undefined, holeSize: f.holeSize,
       dailyTarget: parseFloat(f.dailyTarget) || undefined,
+      plannedEnd: f.plannedEnd && f.plannedEnd > f.startDate ? f.plannedEnd : undefined,
+      budgetTotal: parseFloat(f.budgetTotal) || undefined, budgetPerMetre: parseFloat(f.budgetPerMetre) || undefined,
       shared: willShare, rigs, supervisors, drillers, createdAt: TODAY,
     }
     createProject(project, {
@@ -206,6 +209,15 @@ export default function NewProjectPage() {
             </Field>
             <Field label="Daily target, metres per rig" hint="Your KPI. The Dashboard flags a rig that falls under it. The client never sees it.">
               <input type="number" min={0} value={f.dailyTarget} onChange={e => setF({ ...f, dailyTarget: e.target.value })} placeholder="e.g. 18" style={{ ...inputStyle, textAlign: 'right' }} />
+            </Field>
+            <Field label="Planned end of drilling" hint="Draws the planned line on the project's plan-against-actual chart. Optional.">
+              <input type="date" value={f.plannedEnd} min={f.startDate} onChange={e => setF({ ...f, plannedEnd: e.target.value })} style={inputStyle} />
+            </Field>
+            <Field label="Total budget, ₹" hint="Your own figure. The client never sees it. Optional.">
+              <input type="number" min={0} value={f.budgetTotal} onChange={e => setF({ ...f, budgetTotal: e.target.value })} placeholder="e.g. 12000000" style={{ ...inputStyle, textAlign: 'right' }} />
+            </Field>
+            <Field label="Budget per metre, ₹" hint="What a metre should cost. Optional.">
+              <input type="number" min={0} value={f.budgetPerMetre} onChange={e => setF({ ...f, budgetPerMetre: e.target.value })} placeholder="e.g. 5000" style={{ ...inputStyle, textAlign: 'right' }} />
             </Field>
           </div>
         </Card>

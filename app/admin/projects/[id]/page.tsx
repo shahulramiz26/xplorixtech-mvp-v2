@@ -10,7 +10,7 @@ import {
 } from '../../../../lib/costing-store'
 import { TODAY, addDays } from '../../../../lib/inventory-store'
 import { PHOTO_SOURCES } from '../../../../lib/core/sources'
-import { projectById, projectStats, holeSeriesStart, contractOf, eventsFor, structureWords, day, whenIn, type ProjectHole } from '../../../../lib/projects'
+import { projectById, projectStats, projectHoles, holeSeriesStart, contractOf, eventsFor, structureWords, day, whenIn, type ProjectHole } from '../../../../lib/projects'
 import { financeLink } from '../../../../lib/admin-overview'
 import { words, contractorOf, workOrderProgress, whoDrills, WHO_DRILLS_LABEL } from '../../../../lib/contracting'
 import {
@@ -19,11 +19,20 @@ import {
 import { RateSchedule, RateEditor, ratesUsable } from '../../../components/rate-card'
 import { OperatingCostModal, operatingLine } from '../../../components/cost-panels'
 import { ProjectStatusTag, SharedTag, ChangeList, HolesTable, AddHolesModal, Fact } from '../../../components/project-ui'
+import { useInventory } from '../../../../lib/inventory-store'
+import { projectBudget, projectSchedule } from '../../../../lib/plan'
+import { holeSurvey } from '../../../../lib/survey'
+import { collarLatLon, offsetLatLon, type CoordSystem } from '../../../../lib/geo'
+import { ScheduleCard, BudgetCard } from '../../../components/plan-cards'
+import { HoleSetupModal, directionWords } from '../../../components/hole-setup'
+import { HoleMap, MapLegend, type MapHole } from '../../../components/hole-map'
 
 /* ONE PROJECT — the contract and everything agreed under it.
  *
  *   Overview         where it stands and what needs the contractor
- *   Holes            the plan: add, change the depth, take one off
+ *   Holes            the plan: add, change the depth, take one off; each
+ *                    hole's collar and planned direction
+ *   Map              the collars on a map, with each surveyed hole's path
  *   Contract rates   what is agreed, what is waiting with the client, history
  *   Rigs and crew    what is on site
  *   Changes          every change, who made it, and whether the client saw it
@@ -33,9 +42,9 @@ import { ProjectStatusTag, SharedTag, ChangeList, HolesTable, AddHolesModal, Fac
 
 const PHOTO_HOLES = new Set(PHOTO_SOURCES.map(x => x.hole))
 
-type Tab = 'overview' | 'holes' | 'rates' | 'team' | 'changes'
+type Tab = 'overview' | 'holes' | 'map' | 'rates' | 'team' | 'changes'
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'overview', label: 'Overview' }, { value: 'holes', label: 'Holes' }, { value: 'rates', label: 'Contract rates' },
+  { value: 'overview', label: 'Overview' }, { value: 'holes', label: 'Holes' }, { value: 'map', label: 'Map' }, { value: 'rates', label: 'Contract rates' },
   { value: 'team', label: 'Rigs and crew' }, { value: 'changes', label: 'Changes' },
 ]
 const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
@@ -130,8 +139,12 @@ function Roster({ title, subtitle, items, pool, busy, addLabel, allowNew, newHin
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>()
-  const { state, updateProject, planHoles, proposeRates, withdrawProposal, markProjectSeen } = useCosting()
+  const { state, updateProject, planHoles, proposeRates, withdrawProposal, markProjectSeen, setHoleSetup } = useCosting()
+  const { state: inv } = useInventory()
   const p = projectById(state, decodeURIComponent(id))
+  const [setup, setSetup] = useState<string | null>(null)   // 'all', or one hole
+  const budget = useMemo(() => p ? projectBudget(state, inv, p) : null, [state, inv, p])
+  const schedule = useMemo(() => p ? projectSchedule(state, p) : null, [state, p])
   const [tab, setTab] = useState<Tab>('overview')
   const [fresh, setFresh] = useState<Set<string>>(new Set())
   const [addHoles, setAddHoles] = useState(false)
@@ -169,6 +182,20 @@ export default function ProjectPage() {
     () => Array.from(new Set([...Object.keys(state.holePlans ?? {}), ...state.shiftLogs.map(l => l.holeNumber).filter(Boolean) as string[]])),
     [state.holePlans, state.shiftLogs])
 
+  const mapHoles: MapHole[] = useMemo(() => {
+    if (!p) return []
+    return projectHoles(state, p.name).flatMap(h => {
+      const at = collarLatLon(state.holePlans[h.id]?.collar, p.coords, p.utmZone)
+      if (!at) return []
+      const sv = h.status === 'planned' ? null : holeSurvey(state, h.id)
+      const trace = sv?.path.length ? sv.path.map(q => offsetLatLon(at, q.e, q.n)) : undefined
+      const status: MapHole['status'] = h.status === 'planned' ? 'planned' : h.status === 'drilling' ? 'drilling' : 'done'
+      return [{ id: h.id, ...at, status, trace,
+        label: `${h.status === 'planned' ? `${h.planned ?? '—'} m planned` : `${Math.round(h.drilled)} m${h.planned ? ` of ${h.planned} m` : ''}`}${directionWords(state.holePlans[h.id]) ? ` · ${directionWords(state.holePlans[h.id])}` : ''}`,
+        href: h.status === 'planned' ? undefined : `/admin/analytics/performance?hole=${encodeURIComponent(h.id)}&view=survey` }]
+    })
+  }, [state, p])
+
   if (!p) {
     return <Page><Card><Empty>This project does not exist. <Link href="/admin/projects" style={{ color: T.orange, fontWeight: 600 }}>Back to projects</Link></Empty></Card></Page>
   }
@@ -199,7 +226,13 @@ export default function ProjectPage() {
     ? { kind: 'shared', title: `Shared with ${client}`, detail: 'Contract rates, planned holes, rigs and crew are now visible in the client login.' }
     : { kind: 'shared', title: `Stopped sharing with ${client}`, detail: 'The project is no longer visible in the client login.' })
 
-  const holeAction = (h: ProjectHole) => {
+  const holeAction = (h: ProjectHole) => (
+    <span style={{ display: 'inline-flex', gap: 14 }}>
+      <button style={link} onClick={() => setSetup(h.id)}>Collar and direction</button>
+      {holeAction0(h)}
+    </span>
+  )
+  const holeAction0 = (h: ProjectHole) => {
     const core = PHOTO_HOLES.has(h.id) && <Link href={`/admin/geology/holes/${h.id}`} style={{ ...link, textDecoration: 'none' }}>Core log</Link>
     if (h.status === 'planned') return (
       <span style={{ display: 'inline-flex', gap: 14 }}>
@@ -210,6 +243,15 @@ export default function ProjectPage() {
     if (h.status === 'drilling') return <span style={{ display: 'inline-flex', gap: 14 }}>{core}<button style={link} onClick={() => { setDepthOf(h); setDepth(String(h.planned ?? '')) }}>Change depth</button></span>
     return <span style={{ display: 'inline-flex', gap: 14 }}>{core}<Link href={financeLink({ project: p.name, rig: h.rig ?? '', month: monthOf(h.end ?? h.start ?? TODAY), tab: 'Drillholes' })} style={{ ...link, textDecoration: 'none' }}>Open in Finance</Link></span>
   }
+
+  const holeDetail = (h: ProjectHole) => {
+    const pl = state.holePlans[h.id]
+    const dir = directionWords(pl)
+    const collar = !!collarLatLon(pl?.collar, p.coords, p.utmZone)
+    return <span style={{ color: dir && collar ? T.faint : T.amber }}>{dir ? `Planned ${dir}` : 'No planned direction'} · {collar ? 'collar set' : 'no collar'}</span>
+  }
+  const withCollar = mapHoles.length
+  const totalHoles = stats.holes.length
 
   return (
     <Page>
@@ -260,6 +302,11 @@ export default function ProjectPage() {
               note={c.waiting ? `A change is waiting for ${client}` : c.current ? `In force since ${fullDate(c.current.effectiveFrom)}` : 'Finance cannot bill this project yet'} />
           </Grid>
 
+          <Split left={3} right={2}>
+            {schedule && <ScheduleCard s={schedule} onSetPlan={() => setEditing(true)} />}
+            {budget && <BudgetCard b={budget} onSet={() => setEditing(true)} />}
+          </Split>
+
           <Split left={2} right={3}>
             <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
               <Card title="The contract">
@@ -302,8 +349,18 @@ export default function ProjectPage() {
       {tab === 'holes' && (
         <Card title="Holes" pad={false}
           subtitle={`${stats.holes.length} on the plan · ${n0(stats.drilled)} m drilled · ${n0(stats.toGo)} m still to drill.${p.shared ? ` ${client} sees this list and can release holes himself.` : ''}`}
-          >
-          <HolesTable holes={stats.holes} client={client} contractor="You" action={holeAction} />
+          right={stats.holes.length ? <Btn size="sm" onClick={() => setSetup('all')}>Collars and directions</Btn> : undefined}>
+          <HolesTable holes={stats.holes} client={client} contractor="You" action={holeAction} detail={holeDetail} />
+        </Card>
+      )}
+
+      {tab === 'map' && (
+        <Card title="Where the holes are" right={<Btn size="sm" onClick={() => setSetup('all')}>Collars and directions</Btn>}
+          subtitle={withCollar === totalHoles
+            ? `${totalHoles} ${totalHoles === 1 ? 'hole' : 'holes'}. Click a drilled hole to open its survey.`
+            : `${withCollar} of ${totalHoles} holes have a collar. Add the rest under Collars and directions.`}>
+          {withCollar ? <><HoleMap holes={mapHoles} /><div style={{ marginTop: 10 }}><MapLegend /></div></>
+            : <Empty>No hole on this project has a collar yet. Add them under Collars and directions: type them in, or paste them from the plan spreadsheet.</Empty>}
         </Card>
       )}
 
@@ -442,6 +499,19 @@ export default function ProjectPage() {
 
       {opCost && <OperatingCostModal rig={opCost} project={p.name} onClose={() => setOpCost(null)} />}
 
+      {setup && (
+        <HoleSetupModal project={p} holes={stats.holes} plans={state.holePlans} only={setup === 'all' ? undefined : setup}
+          onClose={() => setSetup(null)}
+          onSave={(changes, coords) => {
+            if (coords) updateProject(p.id, coords as { coords: CoordSystem; utmZone?: string })
+            if (changes.length) setHoleSetup(p.name, changes, {
+              kind: 'hole', title: changes.length === 1 ? `${changes[0].id}: collar and planned direction set` : `Collars and planned directions set for ${changes.length} holes`,
+              detail: changes.map(ch => ch.id).join(', '),
+            })
+            setSetup(null)
+          }} />
+      )}
+
       {rates && <RatesModal project={p} current={c.versions[0]} minDate={minDate} onClose={() => setRates(false)}
         onSave={r => { proposeRates(p.name, r); setRates(false) }} />}
 
@@ -454,22 +524,36 @@ export default function ProjectPage() {
 }
 
 function DetailsModal({ p, onClose, onSave }: { p: ProjectRecord; onClose: () => void; onSave: (patch: Partial<ProjectRecord>, detail: string) => void }) {
-  const [f, setF] = useState({ location: p.location, client: p.client, plannedMetres: p.plannedMetres ? String(p.plannedMetres) : '', holeSize: p.holeSize, dailyTarget: p.dailyTarget ? String(p.dailyTarget) : '' })
-  const metres = parseFloat(f.plannedMetres) || undefined
-  const target = parseFloat(f.dailyTarget) || undefined
-  const changes = [
+  const str = (v?: number) => v ? String(v) : ''
+  const [f, setF] = useState({
+    location: p.location, client: p.client, plannedMetres: str(p.plannedMetres), holeSize: p.holeSize, dailyTarget: str(p.dailyTarget),
+    plannedEnd: p.plannedEnd ?? '', budgetTotal: str(p.budgetTotal), budgetPerMetre: str(p.budgetPerMetre),
+  })
+  const num = (v: string) => parseFloat(v) || undefined
+  const metres = num(f.plannedMetres), target = num(f.dailyTarget), total = num(f.budgetTotal), perM = num(f.budgetPerMetre)
+  const end = f.plannedEnd || undefined
+  const rupees = (v?: number) => v ? `₹${Math.round(v).toLocaleString('en-IN')}` : 'none'
+  /* What the client may read in the change list, and what stays yours: the
+   * daily target and the budget are never in a line the client sees. */
+  const shared = [
     f.client.trim() !== p.client && `client ${p.client} → ${f.client.trim()}`,
     f.location.trim() !== p.location && `location ${p.location} → ${f.location.trim()}`,
     metres !== p.plannedMetres && `metres in the contract ${p.plannedMetres ?? 'not fixed'} → ${metres ?? 'not fixed'}`,
     f.holeSize !== p.holeSize && `main core size ${p.holeSize} → ${f.holeSize}`,
-    target !== p.dailyTarget && `daily target ${p.dailyTarget ? `${p.dailyTarget} m` : 'none'} → ${target ? `${target} m` : 'none'}`,
+    end !== p.plannedEnd && `planned end ${p.plannedEnd ? fullDate(p.plannedEnd) : 'none'} → ${end ? fullDate(end) : 'none'}`,
   ].filter(Boolean) as string[]
+  const own = [
+    target !== p.dailyTarget && 'daily target',
+    total !== p.budgetTotal && 'total budget',
+    perM !== p.budgetPerMetre && 'budget per metre',
+  ].filter(Boolean) as string[]
+  const endBad = !!end && end <= p.startDate
   return (
-    <Modal title="Project details" width={560} onClose={onClose}
+    <Modal title="Project details" width={620} onClose={onClose}
       subtitle="The project name cannot be changed: shifts, rates and invoices are filed under it."
       footer={<><Btn onClick={onClose}>Cancel</Btn>
-        <Btn kind="primary" disabled={!changes.length || !f.client.trim() || !f.location.trim()}
-          onClick={() => onSave({ client: f.client.trim(), location: f.location.trim(), plannedMetres: metres, holeSize: f.holeSize, dailyTarget: target }, listOf(changes))}>Save</Btn></>}>
+        <Btn kind="primary" disabled={!(shared.length + own.length) || !f.client.trim() || !f.location.trim() || endBad}
+          onClick={() => onSave({ client: f.client.trim(), location: f.location.trim(), plannedMetres: metres, holeSize: f.holeSize, dailyTarget: target, plannedEnd: end, budgetTotal: total, budgetPerMetre: perM }, listOf(shared))}>Save</Btn></>}>
       <div style={{ display: 'grid', gap: 14 }}>
         <Field label="Client"><input value={f.client} onChange={e => setF({ ...f, client: e.target.value })} style={inputStyle} /></Field>
         <Field label="Location"><input value={f.location} onChange={e => setF({ ...f, location: e.target.value })} style={inputStyle} /></Field>
@@ -481,9 +565,25 @@ function DetailsModal({ p, onClose, onSave }: { p: ProjectRecord; onClose: () =>
             </select>
           </Field>
         </div>
-        <Field label="Daily target, metres per rig" hint="Your KPI. The Dashboard flags a rig that falls under it. The client never sees it.">
-          <input type="number" min={0} value={f.dailyTarget} onChange={e => setF({ ...f, dailyTarget: e.target.value })} placeholder="e.g. 18" style={{ ...inputStyle, textAlign: 'right' }} />
-        </Field>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <Field label="Planned end of drilling" hint={endBad ? 'Must be after the start date.' : `Draws the planned line from ${fullDate(p.startDate)}.`}>
+            <input type="date" value={f.plannedEnd} min={p.startDate} onChange={e => setF({ ...f, plannedEnd: e.target.value })} style={inputStyle} />
+          </Field>
+          <Field label="Daily target, metres per rig" hint="Your KPI. The client never sees it.">
+            <input type="number" min={0} value={f.dailyTarget} onChange={e => setF({ ...f, dailyTarget: e.target.value })} placeholder="e.g. 18" style={{ ...inputStyle, textAlign: 'right' }} />
+          </Field>
+        </div>
+        <div style={{ padding: 14, borderRadius: 12, border: `1px solid ${T.border}`, display: 'grid', gap: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Budget <span style={{ fontWeight: 400, color: T.faint }}>· your own figures, never shown to the client, a contractor or a supervisor</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <Field label="Total budget, ₹" hint={total ? rupees(total) : 'What the whole project may cost.'}>
+              <input type="number" min={0} value={f.budgetTotal} onChange={e => setF({ ...f, budgetTotal: e.target.value })} placeholder="e.g. 12000000" style={{ ...inputStyle, textAlign: 'right' }} />
+            </Field>
+            <Field label="Budget per metre, ₹" hint={metres && total ? `${rupees(total / metres)} if the total is spread over ${metres.toLocaleString('en-IN')} m.` : 'What a metre should cost.'}>
+              <input type="number" min={0} value={f.budgetPerMetre} onChange={e => setF({ ...f, budgetPerMetre: e.target.value })} placeholder="e.g. 5000" style={{ ...inputStyle, textAlign: 'right' }} />
+            </Field>
+          </div>
+        </div>
       </div>
     </Modal>
   )
