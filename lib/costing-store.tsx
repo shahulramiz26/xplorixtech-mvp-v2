@@ -15,6 +15,9 @@ import {
 import { seedInvoices } from './client-record'
 import { useServerSync } from './backend'
 import { COMPANY_CODE, IS_DEMO } from './company'
+import type { Collar, CoordSystem } from './geo'
+import type { ShiftSurvey, SurveyReading, SurveyProfile } from './survey'
+import { withSeedGeometry, seedSurveys, DEMO_SITES } from './seed-survey'
 
 /* ==========================================================================
  * XPLORIX COSTING
@@ -123,6 +126,9 @@ export interface ShiftLog {
   incidents?: { type: string; severity: string; note: string }[]
   attachments?: string[]      // file names; the MVP keeps the name, not the file
   notes?: string
+  /* Downhole survey readings taken this shift. Optional: most shifts have none.
+   * (Tray photos are not kept here: they belong to XPLORIX Core.) */
+  surveys?: ShiftSurvey[]
   /* A second hole started in the same shift after this one was closed. Its
    * metres are kept as a second row (`segmentOf` points back here) so every
    * metre sits on the hole it was drilled in. */
@@ -483,6 +489,12 @@ export interface HolePlan {
   note?: string                       // what the hole is for, in the planner's words
   by?: 'contractor' | 'owner'         // who put it on the plan
   addedAt?: string
+  /* Where the hole starts and which way it is meant to go. The collar is in
+   * the project's coordinates (latitude/longitude or UTM); azimuth is the
+   * compass bearing and dip the angle from flat, negative going down. */
+  collar?: Collar
+  azimuth?: number
+  dip?: number
 }
 
 // ── PROJECT ───────────────────────────────────────────────────────────────
@@ -511,6 +523,18 @@ export interface ProjectRecord {
   /* The metres a rig should make in a day on this project: the KPI. Your own
    * figure, never shown to the client or the contractor. */
   dailyTarget?: number
+  /* The budget: what the whole project may cost, and what a metre should
+   * cost. Your own figures, like the daily target: never shown to the client,
+   * the contractor or a supervisor. */
+  budgetTotal?: number
+  budgetPerMetre?: number
+  /* When the plan says drilling ends. With the start date and the metres it
+   * draws the planned line of the plan-against-actual chart. */
+  plannedEnd?: string
+  /* How the project's collars are written: latitude/longitude, or UTM metres
+   * in the zone given (e.g. 43N). */
+  coords?: CoordSystem
+  utmZone?: string
   holeSize: string
   shared: boolean
   rigs: string[]
@@ -1120,12 +1144,16 @@ export const SEED_PROJECTS: ProjectRecord[] = [
   {
     id: 'PRJ-001', code: 'PRJ-001', name: 'Site A - North Field', location: 'North Field block', client: DEMO_CLIENT,
     status: 'active', startDate: '2026-06-01', plannedMetres: 2400, holeSize: 'HQ', shared: true,
+    plannedEnd: '2027-01-31', budgetTotal: 13000000, budgetPerMetre: 4200,
+    coords: DEMO_SITES['Site A - North Field'].coords,
     rigs: ['RIG-001', 'RIG-002'], supervisors: ['Arun Verma', 'Imran Shaikh'],
     drillers: ['Mahesh Yadav', 'Ravi Kumar', 'Santosh Patil', 'Dinesh Sahu'], createdAt: '2026-05-25',
   },
   {
     id: 'PRJ-002', code: 'PRJ-002', name: 'Site B - South Ridge', location: 'South Ridge block', client: 'South Ridge Minerals',
     status: 'active', startDate: '2026-01-01', plannedMetres: 3000, holeSize: 'HQ', shared: false,
+    plannedEnd: '2026-12-31', budgetTotal: 16500000, budgetPerMetre: 5500,
+    coords: DEMO_SITES['Site B - South Ridge'].coords, utmZone: DEMO_SITES['Site B - South Ridge'].utmZone,
     rigs: ['RIG-003'], supervisors: ['Pradeep Rao'], drillers: ['Farid Khan', 'Gopal Das'], createdAt: '2025-12-15',
   },
   {
@@ -1624,7 +1652,7 @@ export const SEED_HOLE_PLANS: Record<string, HolePlan> = (() => {
   // Holes that are planned but not started. These are what the next-month
   // forecast drills into once the current holes reach their planned depth.
   UPCOMING_HOLES.forEach(([hole, project, plannedDepth]) => { out[hole] = { plannedDepth, project } })
-  return out
+  return withSeedGeometry(out)
 })()
 
 const RAW_MAINTENANCE: MaintenanceLog[] = [
@@ -1846,6 +1874,10 @@ interface State {
   // The company's own rigs and people (lib/registers.ts).
   rigRegister: RigRecord[]
   crew: CrewMember[]
+  // Downhole surveys: readings typed or imported in the office, and the
+  // decisions on readings written on shift logs. Tool layouts for imports.
+  surveys: SurveyReading[]
+  surveyProfiles: SurveyProfile[]
 }
 
 export interface FindingStatus {
@@ -1936,6 +1968,7 @@ function initial(): State {
     contractors: SEED_CONTRACTORS, workOrders: SEED_WORK_ORDERS, contractorReports: SEED_CONTRACTOR_REPORTS,
     wording: 'standard' as Wording,
     users: SEED_USERS,
+    surveys: seedSurveys(SEED_HOLE_PLANS, SEED_SHIFT_LOGS), surveyProfiles: [] as SurveyProfile[],
     findingStatus: { ...PAST_STATUS, ...SEED_FINDING_STATUS },
     rigRegister: SEED_RIGS, crew: SEED_CREW,
   }
@@ -1967,6 +2000,7 @@ function emptyState(): State {
     shiftLogs: [], maintenance: [], ownership: [], operating: [], clientRates: [], holeStatus: {}, invoices: [],
     holePlans: {}, projects: [], projectEvents: [], rateProposals: [], contractors: [], workOrders: [],
     contractorReports: [], contractorBills: [], wording: 'standard', users: [], findingStatus: {}, rigRegister: [], crew: [],
+    surveys: [], surveyProfiles: [],
   }
 }
 
@@ -2048,6 +2082,13 @@ interface CtxValue {
   reopenBill: (id: string) => void
   markBillPaid: (id: string) => void
   setWording: (w: Wording) => void
+  // Downhole surveys
+  /* Collar and planned direction for holes on a project, merged into each
+   * hole's plan. A hole with no plan yet gets one at the depth it has reached. */
+  setHoleSetup: (project: string, holes: { id: string; patch: Partial<HolePlan> }[], log: ProjectLog) => void
+  saveSurveys: (readings: SurveyReading[]) => void
+  deleteSurvey: (id: string) => void
+  saveSurveyProfile: (p: SurveyProfile) => void
   setFindingStatus: (id: string, st: FindingStatus | null) => void
   saveRig: (r: RigRecord) => void
   saveCrew: (c: CrewMember) => void
@@ -2343,6 +2384,20 @@ function CostingRoot({ children }: { children: ReactNode }) {
     ...s, contractorBills: s.contractorBills.map(b => b.id !== id || !b.approved ? b : { ...b, status: 'paid', paidAt: nowStamp() }),
   }))
   const setWording: CtxValue['setWording'] = wording => setState(s => ({ ...s, wording }))
+
+  const setHoleSetup: CtxValue['setHoleSetup'] = (project, holes, log) => setState(s => {
+    const plans = { ...s.holePlans }
+    holes.forEach(h => {
+      const before = plans[h.id]
+      const reached = s.shiftLogs.filter(l => l.holeNumber === h.id).reduce((m, l) => m + l.metresDrilled, 0)
+      const base: HolePlan = before ?? { plannedDepth: Math.max(1, Math.ceil(reached)), by: 'contractor', addedAt: nowStamp() }
+      plans[h.id] = { ...base, ...h.patch, project }
+    })
+    return { ...s, holePlans: plans, projectEvents: [...s.projectEvents, event(project, 'contractor', log)] }
+  })
+  const saveSurveys: CtxValue['saveSurveys'] = list => setState(s => ({ ...s, surveys: list.reduce((acc, r) => upsert(acc, r), s.surveys ?? []) }))
+  const deleteSurvey: CtxValue['deleteSurvey'] = id => setState(s => ({ ...s, surveys: (s.surveys ?? []).filter(r => r.id !== id) }))
+  const saveSurveyProfile: CtxValue['saveSurveyProfile'] = p => setState(s => ({ ...s, surveyProfiles: upsert(s.surveyProfiles ?? [], p) }))
   const saveRig: CtxValue['saveRig'] = x => setState(s => ({ ...s, rigRegister: upsert(s.rigRegister ?? [], x) }))
   const saveCrew: CtxValue['saveCrew'] = x => setState(s => ({ ...s, crew: upsert(s.crew ?? [], x) }))
   const removeCrew: CtxValue['removeCrew'] = id => setState(s => ({ ...s, crew: (s.crew ?? []).filter(c => c.id !== id) }))
@@ -2360,6 +2415,7 @@ function CostingRoot({ children }: { children: ReactNode }) {
       saveShiftLog, deleteShiftLog, saveMaintenance, deleteMaintenance, saveUser, removeUser,
       saveContractor, saveWorkOrder, addReports, saveReport, acceptReport, returnReport, reopenReport, deleteReport,
       saveBill, approveBill, returnBill, reopenBill, markBillPaid, setWording, setFindingStatus, saveRig, saveCrew, removeCrew,
+      setHoleSetup, saveSurveys, deleteSurvey, saveSurveyProfile,
       resetAll: () => { if (local) setState(initial()) },
       ready: local ? loaded : sync.ready, mode: sync.mode,
     }}>{children}</CostingContext.Provider>

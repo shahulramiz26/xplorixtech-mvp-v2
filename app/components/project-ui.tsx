@@ -73,10 +73,11 @@ export function ChangeList({ events, viewer, otherSide, fresh, limit, showSeen }
 
 // ── HOLES ─────────────────────────────────────────────────────────────────
 
-export function HolesTable({ holes, client, contractor = 'Contractor', action, href }: {
+export function HolesTable({ holes, client, contractor = 'Contractor', action, href, detail }: {
   holes: ProjectHole[]; client: string; contractor?: string
   action?: (h: ProjectHole) => ReactNode
   href?: (h: ProjectHole) => string | undefined
+  detail?: (h: ProjectHole) => ReactNode          // a second line under the hole number
 }) {
   if (!holes.length) return <Empty>No holes on the plan yet.</Empty>
   return (
@@ -93,6 +94,7 @@ export function HolesTable({ holes, client, contractor = 'Contractor', action, h
               <td style={tdStrong}>
                 {link ? <a href={link} style={{ color: T.text, textDecoration: 'none' }}>{h.id}</a> : h.id}
                 {(h.holeSize || h.note) && <div style={{ fontSize: 11.5, fontWeight: 400, color: T.faint, marginTop: 2, whiteSpace: 'normal', maxWidth: 260 }}>{[h.holeSize, h.note].filter(Boolean).join(' · ')}</div>}
+                {detail && <div style={{ fontSize: 11.5, fontWeight: 400, marginTop: 2, whiteSpace: 'normal', maxWidth: 300 }}>{detail(h)}</div>}
               </td>
               <td style={td}><Status tone={HOLE_TONE[h.status]}>{PLAN_STATUS_LABEL[h.status]}</Status></td>
               <td style={td}>

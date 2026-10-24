@@ -13,6 +13,7 @@ import { computeRigMonth } from './costing-view'
 import { holesFromLogs, shortDate as shortDay, type LiveHole } from './client-record'
 import { contractorInbox, projectByName, projectHoles } from './projects'
 import { workOrderFor, contractorName, workOrderProgress, billFigures } from './contracting'
+import { holeSurvey, pendingReadings } from './survey'
 
 /* ==========================================================================
  * THE CONTRACTOR'S DASHBOARD — what it reads
@@ -302,6 +303,30 @@ export function computeOverview(costing: OverviewCosting, inv: OverviewInv) {
       detail: `${Array.from(u.lines).slice(0, 3).join(', ')} · these metres bill at zero until the rate is added`,
     }))
 
+    /* The survey: readings waiting to be checked, and holes still being
+     * drilled that have drifted off plan or gone too far without a survey. */
+    const surveyLink = (hole: string) => `/admin/analytics/performance?hole=${encodeURIComponent(hole)}&view=survey`
+    const waitingReadings = pendingReadings(costing)
+    const surveyItems: Attention[] = []
+    if (waitingReadings.length) {
+      const holesW = Array.from(new Set(waitingReadings.map(r => r.hole)))
+      surveyItems.push({
+        key: 'survey_wait', tone: 'info', action: 'Check readings', href: surveyLink(holesW[0]),
+        title: `${waitingReadings.length} survey ${waitingReadings.length === 1 ? 'reading is' : 'readings are'} waiting to be checked`,
+        detail: `${holesW.slice(0, 5).join(', ')}${holesW.length > 5 ? ' and more' : ''} · only approved readings draw the hole path`,
+      })
+    }
+    // Only on a project that surveys at all, so a company that does not run
+    // surveys is not told about every hole it drills.
+    const surveyed = new Set([...(costing.surveys ?? []).map(r => r.project), ...costing.shiftLogs.filter(l => l.surveys?.length).map(l => l.project)])
+    ;(costing.projects ?? []).filter(p => p.status === 'active' && surveyed.has(p.name)).forEach(p => projectHoles(costing, p.name).filter(h => h.status === 'drilling').forEach(h => {
+      const sv = holeSurvey(costing, h.id)
+      sv.warnings.filter(w => w.id === 'dev' || w.id === 'gap').forEach(w => surveyItems.push({
+        key: `sv_${w.id}_${h.id}`, tone: w.tone === 'bad' ? 'bad' : 'warn', action: 'Open survey', href: surveyLink(h.id),
+        title: `${h.id}: ${w.title.charAt(0).toLowerCase()}${w.title.slice(1)}`, detail: w.detail,
+      }))
+    }))
+
     const attention: Attention[] = [
       ...projectItems,
       ...rateItems,
@@ -350,6 +375,7 @@ export function computeOverview(costing: OverviewCosting, inv: OverviewInv) {
           `${toSend.slice(0, 6).map(h => h.id).join(', ')}${toSend.length > 6 ? ' and more' : ''}`,
         ].filter(Boolean).join(' · '),
       }] : []),
+      ...surveyItems,
       ...(urgentAlerts.length ? [{
         key: 'stock', tone: 'warn' as Tone, action: 'Open inventory', href: '/admin/inventory',
         title: `${urgentAlerts.length} urgent stock ${urgentAlerts.length === 1 ? 'problem' : 'problems'}`,

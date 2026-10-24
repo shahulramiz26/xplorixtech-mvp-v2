@@ -278,16 +278,17 @@ export function Legend({ items }: { items: { color: string; label: string; dash?
 
 /* Tooltip body shared by every chart: the label, then one row per series with
  * its own colour key, value in the text colour. */
-export function Tip({ active, payload, label, unit = '', names }: {
+export function Tip({ active, payload, label, unit = '', names, fmt }: {
   active?: boolean; payload?: { name?: string; dataKey?: string | number; value?: number | string | null; color?: string }[]
   label?: string | number; unit?: string; names?: Record<string, string>
+  fmt?: (label: number) => string        // for a numeric axis, such as dates as day numbers
 }) {
   if (!active || !payload?.length) return null
   const rows = payload.filter(p => p.value != null)
   if (!rows.length) return null
   return (
     <div style={{ background: 'var(--x-side)', border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 12px', boxShadow: '0 10px 30px rgba(var(--x-shadow),0.5)' }}>
-      <div style={{ fontSize: 11.5, color: T.faint, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 11.5, color: T.faint, marginBottom: 6 }}>{fmt && typeof label === 'number' ? fmt(label) : label}</div>
       {rows.map(p => (
         <div key={String(p.dataKey)} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: T.text, padding: '1.5px 0' }}>
           <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />

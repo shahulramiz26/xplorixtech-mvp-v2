@@ -112,6 +112,8 @@ function fromAttention(a: Attention): Finding | null {
   if (k.startsWith('od_')) return make('billing', 'act', { tag: 'Overdue', subject: `invoice:${k.slice(3)}`, kind: 'invoice-overdue', ref: { invoiceId: k.slice(3) }, moneyNote: 'outstanding' })
   if (k === 'ready') return make('billing', 'act', { tag: 'Ready to invoice', kind: 'ready-to-invoice', moneyNote: 'to invoice', due: TODAY })
   if (k === 'tosend') return make('billing', 'act', { tag: 'Approval', kind: 'approval-waiting', moneyNote: 'waiting for approval' })
+  if (k === 'survey_wait') return make('operations', 'plan', { tag: 'Survey' })
+  if (k.startsWith('sv_')) return make('operations', sev(a.tone), { tag: 'Survey', subject: `hole:${k.split('_').slice(2).join('_')}` })
   return make('operations', sev(a.tone))
 }
 
