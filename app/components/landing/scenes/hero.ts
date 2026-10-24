@@ -199,14 +199,18 @@ export function startHero(): () => void {
     tags.appendChild(d); return d })
 
   function size() {
-    const w = innerWidth, h = Math.max(innerHeight, 620), mobile = w < 980
-    renderer.setSize(w, canvas.parentElement.clientHeight, false)
-    camera.aspect = w / canvas.parentElement.clientHeight; camera.updateProjectionMatrix()
+    // the canvas fills the hero; size its drawing buffer to the hero's own box (not the window, which counts the scrollbar)
+    const host = canvas.parentElement, w = host.clientWidth, h = host.clientHeight, mobile = innerWidth < 980
+    if (!w || !h) return
+    renderer.setSize(w, h, false)
+    camera.aspect = w / h; camera.updateProjectionMatrix()
     camera.position.set(mobile ? 0 : -2.4, mobile ? 2.0 : 0.15, mobile ? 13 : 11.5)
     camera.lookAt(mobile ? 0 : -2.4, mobile ? 1.4 : 0, 0); camera.userData.base = camera.position.clone()
     group.position.set(mobile ? 0 : 0.85, mobile ? 3.4 : 0.05, 0); group.scale.setScalar(mobile ? .78 : 1); group.userData.base = mobile ? .78 : 1
   }
   on('resize', size); size()
+  // the hero's height changes when the web fonts arrive: keep the drawing in step
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => size()); ro.observe(canvas.parentElement); if (typeof undo !== 'undefined') undo.push(() => ro.disconnect()) }
 
   const ease = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
   const easeIO = x => { x = Math.min(1, Math.max(0, x)); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2 }
