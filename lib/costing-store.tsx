@@ -2009,7 +2009,19 @@ function emptyState(): State {
 function withSeedPlans(s: State): State {
   /* A demo browser saved before the answer history existed still gets it. */
   const history = IS_DEMO ? PAST_STATUS : {}
-  return { ...s, holePlans: { ...SEED_HOLE_PLANS, ...(s.holePlans ?? {}) }, findingStatus: { ...history, ...(s.findingStatus ?? {}) } }
+  /* A browser saved before surveys existed has hole plans and projects with
+   * no collar, direction or site coordinates: fill those in from the seed,
+   * keeping everything the user changed. */
+  const plans: Record<string, HolePlan> = { ...SEED_HOLE_PLANS }
+  Object.entries(s.holePlans ?? {}).forEach(([id, p]) => {
+    const seed = SEED_HOLE_PLANS[id]
+    plans[id] = seed ? { ...p, collar: p.collar ?? seed.collar, azimuth: p.azimuth ?? seed.azimuth, dip: p.dip ?? seed.dip } : p
+  })
+  const projects = (s.projects ?? []).map(p => {
+    const seed = SEED_PROJECTS.find(x => x.id === p.id)
+    return seed ? { ...p, coords: p.coords ?? seed.coords, utmZone: p.utmZone ?? seed.utmZone, budgetTotal: p.budgetTotal ?? seed.budgetTotal, budgetPerMetre: p.budgetPerMetre ?? seed.budgetPerMetre, plannedEnd: p.plannedEnd ?? seed.plannedEnd } : p
+  })
+  return { ...s, projects, holePlans: plans, surveys: s.surveys ?? [], findingStatus: { ...history, ...(s.findingStatus ?? {}) } }
 }
 
 export const uid = (p: string) => `${p}_${Date.now()}_${Math.floor(Math.random() * 9999)}`
