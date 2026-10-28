@@ -236,7 +236,7 @@ export function DeptInbox({ depts, name }: { depts: Dept[]; name: string; show?:
   const reminders = inbox.reminders.filter(u => u.depts.some(d => depts.includes(d))).length
   return (
     <Link href={`/admin/tasks?dept=${depts.join(',')}`} aria-label={`${mine.length} tasks for ${name}, ${today} due today. Open in Tasks`} className="xpl-row"
-      style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none', boxShadow: 'var(--x-card-shadow)' }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none', boxShadow: 'var(--x-card-shadow)' }}>
       {mine.length ? <CalendarCheck size={17} aria-hidden style={{ color: T.orange }} /> : <ShieldCheck size={17} aria-hidden style={{ color: T.green }} />}
       <span style={{ fontSize: 13.5, color: T.text }}>
         {mine.length ? <><b>{mine.length} {mine.length === 1 ? 'task' : 'tasks'} for {name}</b>{today ? <> · <b style={{ color: 'var(--x-bad-text)' }}>{today} due today</b></> : null}{reminders ? <span style={{ color: T.faint }}> · {reminders} on a reminder</span> : null}</> : <>Nothing waiting for {name}</>}

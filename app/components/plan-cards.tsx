@@ -5,7 +5,7 @@ import { money } from '../../lib/costing-store'
 import { day } from '../../lib/projects'
 import type { BudgetView, ScheduleView } from '../../lib/plan'
 import { TODAY } from '../../lib/inventory-store'
-import { T, Card, Legend, Tip, Meter, Empty, Status, axisTick, gridStroke, display, toneColor } from './kit'
+import { T, Card, Legend, Tip, Meter, Empty, Status, axisTick, gridStroke, display, toneColor, num } from './kit'
 
 /* ==========================================================================
  * PLAN AGAINST ACTUAL, ON THE PROJECT
@@ -69,7 +69,7 @@ export function BudgetCard({ b, onSet }: { b: BudgetView; onSet?: () => void }) 
   const big = (label: string, value: string, note: string, color?: string) => (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 11.5, fontWeight: 600, color: T.faint, marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, fontFamily: display, color: color ?? T.text, lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, ...num, color: color ?? T.text, lineHeight: 1.1 }}>{value}</div>
       <div style={{ fontSize: 12, color: T.faint, marginTop: 5, lineHeight: 1.4 }}>{note}</div>
     </div>
   )

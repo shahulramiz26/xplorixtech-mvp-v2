@@ -262,7 +262,7 @@ export default function ProjectPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.01em' }}>{p.name}</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.01em' }}>{p.name}</h1>
               <ProjectStatusTag status={p.status} />
               <SharedTag shared={p.shared} client={client} />
             </div>
@@ -573,7 +573,7 @@ function DetailsModal({ p, onClose, onSave }: { p: ProjectRecord; onClose: () =>
             <input type="number" min={0} value={f.dailyTarget} onChange={e => setF({ ...f, dailyTarget: e.target.value })} placeholder="e.g. 18" style={{ ...inputStyle, textAlign: 'right' }} />
           </Field>
         </div>
-        <div style={{ padding: 14, borderRadius: 12, border: `1px solid ${T.border}`, display: 'grid', gap: 12 }}>
+        <div style={{ padding: 14, borderRadius: 10, border: `1px solid ${T.border}`, display: 'grid', gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Budget <span style={{ fontWeight: 400, color: T.faint }}>· your own figures, never shown to the client, a contractor or a supervisor</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="Total budget, ₹" hint={total ? rupees(total) : 'What the whole project may cost.'}>

@@ -285,7 +285,7 @@ export function ImportSurveyModal({ holes, profiles, existing, by, oneHole, onCl
               <Note tone="warn">Every dip in this file is positive, which reads as the hole going <b>up</b>. Most tools that write dip as a positive number mean downward: choose &ldquo;Dip, positive down&rdquo; above unless these holes really are drilled upward.</Note>
             )}
             {ready && (
-              <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
                 <div style={{ padding: '10px 14px', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', borderBottom: rowLine }}>
                   <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{good.length} ready</span>
                   {bad.length > 0 && <span style={{ fontSize: 13, color: T.amber }}>{bad.length} will be left out</span>}
@@ -367,7 +367,7 @@ export function DepthPanel({ bands, step, cost = true, right }: {
         </div>
       </div>
 
-      <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `90px minmax(120px, 1fr) ${cost ? 'minmax(120px, 1fr) ' : ''}minmax(140px, 1fr)`, gap: 0, fontSize: 11.5, fontWeight: 600, color: T.faint, padding: '9px 12px', borderBottom: rowLine, background: tint(T.text, 3) }}>
           <span>Depth</span><span>Metres an hour</span>{cost && <span>Cost per metre</span>}<span>Ground · size</span>
         </div>

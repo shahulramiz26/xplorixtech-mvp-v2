@@ -57,7 +57,7 @@ function Shell({ role, label, home, nav, group, children }: {
 
       <aside
         className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex flex-col w-64 lg:h-screen transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-        style={{ background: 'var(--x-side)', borderRight: `1px solid ${T.border}` }}
+        style={{ background: 'var(--x-card)', borderRight: `1px solid ${T.border}` }}
       >
         <div className="flex items-center justify-between" style={{ padding: '18px 18px 16px', borderBottom: `1px solid ${T.border}` }}>
           <Link href={home} className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
@@ -91,7 +91,7 @@ function Shell({ role, label, home, nav, group, children }: {
                 {!!item.badge && (
                   <span aria-label={`${item.badge} waiting`} style={{
                     minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                    background: T.orange, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: T.orange, color: 'var(--x-on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>{item.badge}</span>
                 )}
               </Link>

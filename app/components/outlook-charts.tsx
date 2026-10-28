@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { moneyL } from '../../lib/costing-store'
 import type { MonthPoint, Bridge, Lever, Warning } from '../../lib/outlook-analytics'
-import { T, tint, display } from './kit'
+import { T, tint, display, num } from './kit'
 
 /* ==========================================================================
  * OUTLOOK CHARTS — drawn by hand in SVG so each says one thing plainly
@@ -154,7 +154,7 @@ export function WarningCard({ w }: { w: Warning }) {
   const fmt = (v: number | null) => v == null ? '—' : w.unit === '₹' ? short(v) : `${v.toFixed(w.unit === 'h' ? 0 : 1)}${w.unit === '%' ? '%' : ` ${w.unit}`}`
   const word = { worse: 'Turning the wrong way', better: 'Improving', steady: 'Steady', thin: 'Not enough weeks yet' }[w.state]
   return (
-    <div style={{ background: w.state === 'worse' ? tint(T.red, 6) : T.card, border: `1px solid ${w.state === 'worse' ? tint(T.red, 35) : T.border}`, borderRadius: 12, padding: '12px 14px', display: 'grid', gap: 6 }}>
+    <div style={{ background: w.state === 'worse' ? tint(T.red, 6) : T.card, border: `1px solid ${w.state === 'worse' ? tint(T.red, 35) : T.border}`, borderRadius: 10, padding: '12px 14px', display: 'grid', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{w.label}</span>
         <span style={{ fontSize: 11.5, fontWeight: 700, color }}>{word}</span>

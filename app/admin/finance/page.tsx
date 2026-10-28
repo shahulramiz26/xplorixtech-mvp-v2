@@ -10,7 +10,7 @@ import { computeOverview, financeLink } from '../../../lib/admin-overview'
 import { holesFromLogs } from '../../../lib/client-record'
 import { profitByRig, byProject, cashStages, type Stage } from '../../../lib/finance-overview'
 import { useInbox, DeptInbox } from '../../components/inbox'
-import { Page, PageHead, Card, Seg, Table, Empty, Status, Btn, T, tint, display, th, thR, td, tdR, tdStrong, rowLine, type Tone } from '../../components/kit'
+import { Page, PageHead, Card, Seg, Table, Empty, Status, Btn, T, tint, display, th, thR, td, tdR, tdStrong, rowLine, type Tone, num, eyebrow } from '../../components/kit'
 
 /* ==========================================================================
  * FINANCE AND BILLING — the overview
@@ -197,9 +197,9 @@ function invoiceState(i: Invoice): [Tone, string] {
 
 function Stat({ label, value, note, tone }: { label: string; value: string; note?: React.ReactNode; tone?: 'bad' | 'warn' }) {
   return (
-    <div style={{ background: tone === 'bad' ? tint(T.red, 6) : T.card, border: `1px solid ${tone === 'bad' ? tint(T.red, 30) : T.border}`, borderRadius: 14, padding: '14px 16px', display: 'grid', gap: 4, boxShadow: 'var(--x-card-shadow)' }}>
-      <span style={{ fontSize: 12.5, color: tone === 'bad' ? 'var(--x-bad-text)' : T.muted, fontWeight: 600 }}>{label}</span>
-      <span style={{ fontFamily: display, fontSize: 26, fontWeight: 700, color: tone === 'bad' ? 'var(--x-bad-text)' : T.text }}>{value}</span>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '13px 16px', display: 'grid', gap: 6, boxShadow: tone === 'bad' ? 'inset 3px 0 0 var(--x-red)' : tone === 'warn' ? 'inset 3px 0 0 var(--x-amber)' : 'var(--x-card-shadow)' }}>
+      <span style={{ ...eyebrow, color: tone === 'bad' ? 'var(--x-bad-text)' : 'var(--x-faint)' }}>{label}</span>
+      <span style={{ ...num, fontSize: 24, fontWeight: 600, color: tone === 'bad' ? 'var(--x-bad-text)' : T.text }}>{value}</span>
       {note && <span style={{ fontSize: 12, color: T.faint, lineHeight: 1.45 }}>{note}</span>}
     </div>
   )
@@ -210,12 +210,12 @@ function StageCol({ s, last }: { s: Stage; last: boolean }) {
   const show = all ? s.items : s.items.slice(0, 4)
   const stuck = s.key === 'drilled' && s.items.length > 0
   return (
-    <section aria-label={s.label} style={{ display: 'grid', gap: 8, alignContent: 'start', padding: 12, borderRadius: 12, background: stuck ? tint(T.red, 5) : last ? tint(T.green, 6) : 'rgba(var(--x-ov),0.035)', border: `1px solid ${stuck ? tint(T.red, 25) : 'transparent'}` }}>
+    <section aria-label={s.label} style={{ display: 'grid', gap: 8, alignContent: 'start', padding: 12, borderRadius: 10, background: stuck ? tint(T.red, 5) : last ? tint(T.green, 6) : 'rgba(var(--x-ov),0.035)', border: `1px solid ${stuck ? tint(T.red, 25) : 'transparent'}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{s.label}</span>
         <span style={{ fontSize: 12, color: T.faint }}>{s.items.length}</span>
       </div>
-      <span style={{ fontFamily: display, fontSize: 21, fontWeight: 700, color: stuck ? 'var(--x-bad-text)' : last ? 'var(--x-good-text)' : T.text }}>{moneyL(s.value)}</span>
+      <span style={{ ...num, fontSize: 21, fontWeight: 600, color: stuck ? 'var(--x-bad-text)' : last ? 'var(--x-good-text)' : T.text }}>{moneyL(s.value)}</span>
       <span style={{ fontSize: 11.5, color: T.faint, lineHeight: 1.4, minHeight: 32 }}>{s.oldest ? `Oldest waiting ${ageDays(s.oldest)} ${ageDays(s.oldest) === 1 ? 'day' : 'days'}. ` : ''}{s.help}</span>
       {show.map(x => (
         <Link key={x.id} href={x.href} className="xpl-row" style={{ display: 'grid', gap: 2, padding: '8px 10px', borderRadius: 8, background: T.card, border: `1px solid ${x.flag ? tint(T.red, 35) : T.border}`, textDecoration: 'none' }}>
@@ -234,7 +234,7 @@ function StageCol({ s, last }: { s: Stage; last: boolean }) {
 
 function SetupLink({ href, icon, title, sub }: { href: string; icon: React.ReactNode; title: string; sub: string }) {
   return (
-    <Link href={href} className="xpl-row" style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 14px', borderRadius: 12, border: `1px solid ${T.border}`, textDecoration: 'none' }}>
+    <Link href={href} className="xpl-row" style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 14px', borderRadius: 10, border: `1px solid ${T.border}`, textDecoration: 'none' }}>
       <span aria-hidden style={{ width: 34, height: 34, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: tint(T.orange, 12), color: T.orange }}>{icon}</span>
       <span style={{ display: 'grid', gap: 2 }}><b style={{ fontSize: 13.5, color: T.text }}>{title}</b><span style={{ fontSize: 12, color: T.faint }}>{sub}</span></span>
     </Link>

@@ -297,7 +297,7 @@ function RatesHistoryModal({ project, rig, onClose }: { project: string; rig: st
     <Modal title="Rates history" subtitle={`${rigCode(rig)} · ${projectCode(project)} — what changed, when, and why`} width={960} onClose={onClose}>
       {rows.length === 0 ? <Empty>No rates set yet.</Empty> : (
         <>
-          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
             <table style={tableStyle}>
               <thead>
                 <tr><th style={th}>Date</th><th style={th}>Rig</th><th style={th}>What</th><th style={th}>What changed</th><th style={th}>Why</th></tr>
@@ -395,7 +395,7 @@ function PerformanceTab({ v, rig, project, month }: {
 
       {/* Where this month sits, and where it stands right now. */}
       <div style={{
-        background: C.card, border: `1px solid ${C.border}`, borderRadius: 16,
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
         padding: '14px 16px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', gap: 20, flexWrap: 'wrap',
       }}>
@@ -1073,7 +1073,7 @@ function DrillholesTab({ v, linked, client, onStatus, onSubmit, onWithdraw, onIn
                                 </tfoot>
                               </table>
 
-                              <div style={{ marginTop: 18, padding: '16px 18px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+                              <div style={{ marginTop: 18, padding: '16px 18px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10 }}>
                                 <Grid cols={3}>
                                   <Res k="Revenue" v={money(h.roll.revenue)} tone={LAYER.revenue} />
                                   <Res k="Cost" v={money(h.roll.total)} tone={LAYER.full} />
@@ -1371,7 +1371,7 @@ function InvoiceView({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
           </Note>
         </div>
       )}
-      <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
         <table style={tableStyle}>
           <thead><tr><th style={th}>Description</th><th style={th}>Depth</th><th style={thR}>Quantity</th><th style={thR}>Rate</th><th style={thR}>Amount</th>
             {inv.ownerStatus && <th style={th}>Client</th>}</tr></thead>
@@ -1507,7 +1507,7 @@ function ReviewModal({ project, linked, clientRate, holes, nextNumber, onClose, 
           <NumField label="Tax" value={taxPercent} onChange={setTax} suffix="%" />
         </Grid>
 
-        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
           <table style={tableStyle}>
             <thead><tr><th style={th}>Description</th><th style={th}>Depth</th><th style={thR}>Quantity</th><th style={thR}>Rate</th><th style={thR}>Amount</th></tr></thead>
             <tbody>
@@ -1603,7 +1603,7 @@ function InvoiceCheck({ checks, shiftCount, stopCount, openCount, noNote, ack, o
   const tone = stopCount ? C.red : openCount ? C.amber : C.green
   const items = checks.flatMap(c => [...c.stops.map(x => ({ ...x, hole: c.hole, stop: true })), ...c.open.map(x => ({ ...x, hole: c.hole, stop: false }))])
   return (
-    <section aria-label="Invoice check" style={{ border: `1px solid ${hexA(tone, 0x5a)}`, background: hexA(tone, 0x10), borderRadius: 12, padding: '12px 14px' }}>
+    <section aria-label="Invoice check" style={{ border: `1px solid ${hexA(tone, 0x5a)}`, background: hexA(tone, 0x10), borderRadius: 10, padding: '12px 14px' }}>
       <div style={{ fontSize: 13.5, fontWeight: 700, color: tone }}>
         {stopCount ? `Cannot be sent: ${stopCount} ${stopCount === 1 ? 'figure' : 'figures'} in the logs behind it cannot be right`
           : openCount ? `Look before you send: ${openCount} unusual ${openCount === 1 ? 'figure has' : 'figures have'} no reason in the log`
@@ -1827,7 +1827,7 @@ function CostingScreen() {
       </div>
 
       <div style={{
-        background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
         padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
       }}>
         <Chain label="Project">
@@ -1867,7 +1867,7 @@ function CostingScreen() {
         )
       })()}
 
-      <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, alignSelf: 'flex-start' }}>
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: '7px 18px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',

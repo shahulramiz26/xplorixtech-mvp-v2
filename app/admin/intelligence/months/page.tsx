@@ -9,8 +9,7 @@ import { shortDate } from '../../../../lib/client-record'
 import type { Forecast, PartNeed, PeriodNumbers } from '../../../../lib/forecast'
 import {
   T, tint, display, Page, PageHead, Card, Tile, Grid, Split, Seg, Status, Table, Empty,
-  th, thR, td, tdR, tdStrong, rowLine, type Tone,
-} from '../../../components/kit'
+  th, thR, td, tdR, tdStrong, rowLine, type Tone, num } from '../../../components/kit'
 import { Timeline, TimelineKey, RangeBar, Basis, type Lane } from '../../../components/outlook'
 import { ForecastBars, Waterfall, Tornado, WarningCard, shortMoney, type Metric } from '../../../components/outlook-charts'
 import { monthSeries, bridge, levers, whatIf, earlyWarnings, type WhatIf } from '../../../../lib/outlook-analytics'
@@ -73,9 +72,9 @@ function DailyChart({ days, today }: { days: Forecast['daily']; today: string })
 
 function MetresTile({ label, value, low, high }: { label: string; value: number; low: number; high: number }) {
   return (
-    <div style={{ padding: '14px 16px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, minWidth: 0 }}>
+    <div style={{ padding: '14px 16px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, minWidth: 0 }}>
       <div style={{ fontSize: 11.5, fontWeight: 600, color: T.faint, marginBottom: 7 }}>{label}</div>
-      <div style={{ fontSize: 23, fontWeight: 700, color: T.text, fontFamily: display, lineHeight: 1.1 }}>{n0(value)} m</div>
+      <div style={{ fontSize: 23, fontWeight: 600, color: T.text, ...num, lineHeight: 1.1 }}>{n0(value)} m</div>
       {high - low < 1
         ? <div style={{ fontSize: 12, color: T.faint, marginTop: 8, lineHeight: 1.45 }}>The same at the slowest and the best pace: the planned holes run out first.</div>
         : <div style={{ marginTop: 10 }}><RangeBar low={low} mid={value} high={high} unit=" m" /></div>}
@@ -349,7 +348,7 @@ export default function MonthsPage() {
       <IntelTabs />
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Outlook</h1>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text }}>Outlook</h1>
           <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Forecast, what drives it, what could change it, and what is starting to turn. From your own record, as of {shortDate(f.today)}.</p>
         </div>
         <nav aria-label="On this page" className="xpl-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -359,7 +358,7 @@ export default function MonthsPage() {
         </nav>
       </div>
 
-      <section aria-label="Summary" style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 16, padding: '18px 22px', display: 'grid', gap: 10 }}>
+      <section aria-label="Summary" style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 10, padding: '18px 22px', display: 'grid', gap: 10 }}>
         <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', opacity: 0.7 }}>THE SHORT VERSION</span>
         {cur && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{tName} closes at about {n0(cur.metres)} m and a {short(cur.margin)} margin</b> ({Math.round(f.thisMonthTotal.marginPct)}%), between {short(cur.low?.margin ?? cur.margin)} if every rig drills at its slowest and {short(cur.high?.margin ?? cur.margin)} at its best.{prev && biggest ? <> That is {cur.margin >= prev.margin ? 'up' : 'down'} {short(Math.abs(cur.margin - prev.margin))} on {MONTHS[Number(prev.month.slice(5, 7)) - 1]}, mostly from {biggest[0]}.</> : null}</p>}
         {next && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{nName} is forecast at {short(next.margin)}</b> on {n0(next.metres)} m. The biggest thing that could move it: {lv[0].label.toLowerCase()}, worth up to {short(Math.max(Math.abs(lv[0].low), Math.abs(lv[0].high)))}.</p>}
@@ -405,9 +404,9 @@ export default function MonthsPage() {
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: T.text }}><input type="checkbox" checked={w.idleFilled} onChange={e => setW({ ...w, idleFilled: e.target.checked })} />The client releases holes for every idle rig-day</label>
               <button type="button" onClick={() => setW({ speed: 0, rate: 0, cost: 0, downDays: 0, idleFilled: false })} style={{ justifySelf: 'start', background: 'none', border: 'none', padding: 0, color: T.orange, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5 }}>Back to the forecast</button>
             </div>
-            <div style={{ display: 'grid', gap: 10, padding: 18, borderRadius: 14, background: Math.abs(sim.margin - sim.base) < 1 ? 'rgba(var(--x-ov),0.04)' : sim.margin > sim.base ? tint(T.green, 8) : tint(T.red, 7) }}>
+            <div style={{ display: 'grid', gap: 10, padding: 18, borderRadius: 10, background: Math.abs(sim.margin - sim.base) < 1 ? 'rgba(var(--x-ov),0.04)' : sim.margin > sim.base ? tint(T.green, 8) : tint(T.red, 7) }}>
               <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{nName} margin, with these changes</span>
-              <span style={{ fontFamily: display, fontSize: 34, fontWeight: 700, color: T.text }}>{short(sim.margin)}</span>
+              <span style={{ ...num, fontSize: 34, fontWeight: 600, color: T.text }}>{short(sim.margin)}</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: Math.abs(sim.margin - sim.base) < 1 ? T.muted : sim.margin > sim.base ? 'var(--x-good-text)' : 'var(--x-bad-text)' }}>{Math.abs(sim.margin - sim.base) < 1 ? 'The forecast as it stands. Move a slider.' : `${sim.margin > sim.base ? '+' : '−'}${short(Math.abs(sim.margin - sim.base))} against the forecast`}</span>
               <span style={{ fontSize: 12.5, color: T.muted }}>{n0(sim.metres)} m · billing {short(sim.revenue)} · cost {short(sim.cost)} · {Math.round(sim.marginPct)}% margin</span>
             </div>
@@ -424,7 +423,7 @@ export default function MonthsPage() {
       </div>
 
       <div id="risks" style={{ scrollMarginTop: 80 }}>
-        <Link href="/admin/tasks?dept=all" className="xpl-row" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none' }}>
+        <Link href="/admin/tasks?dept=all" className="xpl-row" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none' }}>
           <span style={{ fontSize: 13.5, color: T.text }}><b>{risks.length} risks</b> found in this forecast are in Tasks, each with its cause and a drafted next step{risks.filter(r => r.score >= 6).length ? <>, <b style={{ color: 'var(--x-bad-text)' }}>{risks.filter(r => r.score >= 6).length} to act on now</b></> : null}.</span>
           <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 600, color: T.orange }}>Open Tasks →</span>
         </Link>

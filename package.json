@@ -11,6 +11,8 @@
     "test:core": "tsx scripts/check-core.ts"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.1.1",
+    "@fontsource/jetbrains-mono": "^5.1.2",
     "clsx": "^2.1.0",
     "fflate": "^0.8.2",
     "framer-motion": "^11.0.0",

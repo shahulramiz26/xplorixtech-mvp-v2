@@ -8,10 +8,13 @@ description: "UI/UX design intelligence for web, mobile, and desktop. This skill
 > **In the XPLORIX project.** This skill is installed in the repo, not as a plugin, so
 > `${CLAUDE_PLUGIN_ROOT}` is not set. Run the tool from the project root as
 > `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" ...`.
-> Its suggestions never override the XPLORIX brand: warm peach background, dark ink
-> text, orange accent (#F97316, #EA580C for text), Space Grotesk headings, Inter body,
-> one light theme, plain British English. Use it for UX rules, layout, accessibility,
-> motion and charts; keep XPLORIX's own colours and fonts.
+> Its suggestions never override the XPLORIX look, "Field Slate" (Oct 2026), recorded in
+> `design-system/xplorix/MASTER.md`: the brand background (warm paper #F6EDE5 in light,
+> #080B10 in dark) and the logo unchanged; a dark slate sidebar; white cards with thin slate
+> borders and 10px corners; slate text; XPLORIX orange for the main action, the active
+> screen and alerts only; IBM Plex Sans for text and JetBrains Mono for figures; light and
+> dark themes. Read MASTER.md first. Use the tool for UX rules, layout, accessibility,
+> motion and charts; keep these colours and fonts.
 
 Searchable local UI/UX guidance: 79 searchable styles (50 active), 192 product palettes and exact reasoning profiles, 74 font pairings, 119 UX guidelines, 105 curated icons, 17 GSAP presets, 25 chart types, and 22 technology stacks.
 

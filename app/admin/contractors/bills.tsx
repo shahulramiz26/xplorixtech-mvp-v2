@@ -9,7 +9,7 @@ import {
   BILL_STATUS_LABEL, type ContractorBill, type BillLine, type WorkOrder, type BillStatus,
 } from '../../../lib/contracting'
 import { day, when } from '../../../lib/projects'
-import { T, tint, Card, Tile, Grid, Btn, Note, Modal, Field, Status, Empty, Table, inputStyle, th, thR, td, tdR, rowLine, type Tone } from '../../components/kit'
+import { T, tint, Card, Tile, Grid, Btn, Note, Modal, Field, Status, Empty, Table, inputStyle, th, thR, td, tdR, rowLine, type Tone, num } from '../../components/kit'
 import { me, n0, rs, period, linkBtn, numInput, SourceTag, Sum } from './shared'
 
 /* BILLS — what each contractor has asked for, against what the checked record
@@ -141,7 +141,7 @@ function BillModal({ bill, onClose }: { bill: ContractorBill; onClose: () => voi
               </form>
             )}
           </div>
-          <div style={{ padding: '12px 16px', borderRadius: 12, background: T.raised, border: `1px solid ${T.border}`, alignSelf: 'start' }}>
+          <div style={{ padding: '12px 16px', borderRadius: 10, background: T.raised, border: `1px solid ${T.border}`, alignSelf: 'start' }}>
             <Sum label="Claimed on the bill" value={rs(frozen?.claimed ?? c.claimed)} />
             <Sum label="Not supported by the record" value={c.over ? `− ${rs(c.over)}` : rs(0)} />
             <Sum label="Deductions" value={(frozen?.deductions ?? c.deducted) ? `− ${rs(frozen?.deductions ?? c.deducted)}` : rs(0)} />

@@ -286,7 +286,7 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
       {at && read && (read.r || read.s) && (
         <div style={{
           position: 'absolute', pointerEvents: 'none', left: Math.min(at.x + 16, (box.current?.clientWidth ?? 600) - 260), top: Math.max(0, at.y - 10),
-          width: 244, background: 'var(--x-side, #fff)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '10px 12px',
+          width: 244, background: 'var(--x-panel, #fff)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '10px 12px',
           boxShadow: '0 10px 30px rgba(0,0,0,.12)', fontSize: 12, color: T.muted, lineHeight: 1.6, zIndex: 2,
         }}>
           <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>{hole} · {at.d.toFixed(2)} m</div>

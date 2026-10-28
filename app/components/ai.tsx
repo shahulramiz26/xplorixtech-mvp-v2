@@ -73,7 +73,7 @@ export function DraftBox({ d, onApprove, approved }: { d: Draft; onApprove?: (te
     setCopied(true); setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <div style={{ border: `1px solid ${tint(T.orange, 35)}`, borderRadius: 12, background: tint(T.orange, 4), overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${tint(T.orange, 35)}`, borderRadius: 10, background: tint(T.orange, 4), overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: `1px solid ${tint(T.orange, 20)}`, flexWrap: 'wrap' }}>
         <Icon size={15} aria-hidden style={{ color: T.orange }} />
         <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{d.via}</span>
@@ -98,7 +98,7 @@ export function DraftBox({ d, onApprove, approved }: { d: Draft; onApprove?: (te
         )}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {onApprove && !approved && (
-            <button type="button" onClick={() => onApprove(body !== d.body ? `${d.done} (edited)` : d.done)} style={{ ...smallBtn, background: T.orange, borderColor: 'transparent', color: '#fff' }}>
+            <button type="button" onClick={() => onApprove(body !== d.body ? `${d.done} (edited)` : d.done)} style={{ ...smallBtn, background: T.orange, borderColor: 'transparent', color: 'var(--x-on-accent)' }}>
               <Check size={14} aria-hidden />{d.approve}
             </button>
           )}
@@ -119,7 +119,7 @@ export function TaskAi({ u, showAction = true }: { u: InboxUnit; showAction?: bo
   const closed = u.state === 'done' || u.state === 'dismissed'
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      <section aria-label="Why" style={{ display: 'grid', gap: 6, padding: '10px 12px', borderRadius: 12, background: 'rgba(var(--x-ov),0.03)', border: `1px solid ${T.line}` }}>
+      <section aria-label="Why" style={{ display: 'grid', gap: 6, padding: '10px 12px', borderRadius: 10, background: 'rgba(var(--x-ov),0.03)', border: `1px solid ${T.line}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <AiMark label="Why" size={12} />
           <span style={{ fontSize: 11.5, color: T.faint }}>{e.confidence} confidence</span>
@@ -149,7 +149,7 @@ export function BriefCard() {
   const [which, setWhich] = useState<'day' | 'week'>('day')
   const b = useMemo(() => which === 'day' ? dailyBrief(ctx) : weeklyBrief(ctx), [ctx, which])
   return (
-    <section aria-label="Brief" style={{ position: 'relative', borderRadius: 16, padding: '16px 18px', background: T.card, border: `1px solid ${tint(T.orange, 30)}`, boxShadow: 'var(--x-card-shadow)', display: 'grid', gap: 10, overflow: 'hidden' }}>
+    <section aria-label="Brief" style={{ position: 'relative', borderRadius: 10, padding: '16px 18px', background: T.card, border: `1px solid ${tint(T.orange, 30)}`, boxShadow: 'var(--x-card-shadow)', display: 'grid', gap: 10, overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, background: `radial-gradient(120% 80% at 100% 0%, ${tint(T.orange, 9)}, transparent 60%)`, pointerEvents: 'none' }} />
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <AiMark />
@@ -273,7 +273,7 @@ function AskPanel({ first, onFirst, onClose }: { first: string | null; onFirst: 
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(text) } }}
                 style={{ ...inputStyle, resize: 'none', fontSize: 13.5, minHeight: 42, maxHeight: 120, fontFamily: 'inherit' }} />
             </label>
-            <button type="submit" aria-label="Ask" disabled={!text.trim()} style={{ width: 42, height: 42, borderRadius: 10, border: 'none', background: T.orange, color: '#fff', cursor: text.trim() ? 'pointer' : 'default', opacity: text.trim() ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Send size={16} /></button>
+            <button type="submit" aria-label="Ask" disabled={!text.trim()} style={{ width: 42, height: 42, borderRadius: 10, border: 'none', background: T.orange, color: 'var(--x-on-accent)', cursor: text.trim() ? 'pointer' : 'default', opacity: text.trim() ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Send size={16} /></button>
           </form>
           {IS_DEMO && <div style={{ fontSize: 11, color: T.faint, lineHeight: 1.45 }}>Demo: answers are worked out from this company&apos;s record by XPLORIX&apos;s own rules. The live AI model reads the same record and connects with an API key.</div>}
         </footer>

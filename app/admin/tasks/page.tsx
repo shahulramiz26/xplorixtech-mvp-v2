@@ -9,7 +9,7 @@ import { TODAY, addDays } from '../../../lib/inventory-store'
 import { DEPTS, deptLabel, type Dept } from '../../../lib/findings'
 import { placeTasks, DEPT_COLOR, type TaskItem } from '../../../lib/tasks'
 import { useInbox, UnitActions } from '../../components/inbox'
-import { Page, T, tint, display, useEscape } from '../../components/kit'
+import { Page, T, tint, display, useEscape, num } from '../../components/kit'
 import { TaskAi } from '../../components/ai'
 
 /* ==========================================================================
@@ -61,7 +61,7 @@ function Tasks() {
     return (
       <Page>
         <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Tasks</h1>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text }}>Tasks</h1>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: T.muted }}>Whose tasks do you want to see?</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(230px, 100%), 1fr))', gap: 12 }}>
@@ -89,7 +89,7 @@ function Tasks() {
     <Page>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text, display: 'flex', alignItems: 'center', gap: 10 }}>
             {dept !== 'all' && <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, background: DEPT_COLOR[dept] }} />}
             Tasks · {dept === 'all' ? 'All departments' : group.map(d => deptLabel(d)).join(' and ')}
           </h1>
@@ -107,7 +107,7 @@ function Tasks() {
               <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => setView(v)} style={{ minHeight: 32, padding: '0 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, background: view === v ? tint(T.orange, 14) : 'transparent', color: view === v ? T.text : T.muted, fontWeight: view === v ? 700 : 500, textTransform: 'capitalize' }}>{v}</button>
             ))}
           </div>
-          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${group.join(',')}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 13px', borderRadius: 9, background: T.orange, color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>
+          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${group.join(',')}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 13px', borderRadius: 9, background: T.orange, color: 'var(--x-on-accent)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>
         </div>
       </div>
 
@@ -133,7 +133,7 @@ function Tasks() {
       )}
 
       {view === 'month' && (
-        <div className="xpl-month" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden' }}>
+        <div className="xpl-month" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderBottom: `1px solid ${T.line}` }}>
             {WD.map(w => <div key={w} style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, color: T.muted }}>{w}</div>)}
           </div>
@@ -156,7 +156,7 @@ function Tasks() {
       {view === 'list' && (
         <div style={{ display: 'grid', gap: 14 }}>
           {Array.from(new Set(mine.map(t => t.date))).sort().map(d => (
-            <section key={d} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden' }}>
+            <section key={d} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
               <div style={{ padding: '9px 14px', fontSize: 13, fontWeight: 700, color: d === TODAY ? T.orange : T.text, borderBottom: `1px solid ${T.line}`, background: 'rgba(var(--x-ov),0.025)' }}>
                 {d === TODAY ? 'Today' : `${WD[weekday(d)]} ${dword(d)}`} · {on(d).length}
               </div>
@@ -175,7 +175,7 @@ const navBtn: React.CSSProperties = { width: 36, height: 36, display: 'inline-fl
 
 function DeptCard({ color, title, sub, n, today, onClick, big }: { color: string; title: string; sub: string; n: number; today: number; onClick: () => void; big?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="xpl-row" style={{ textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', display: 'grid', gap: 6, padding: '16px 18px', borderRadius: 14, background: big ? tint(color, 8) : T.card, border: `1px solid ${big ? tint(color, 35) : T.border}`, borderLeft: `5px solid ${color}`, boxShadow: 'var(--x-card-shadow)' }}>
+    <button type="button" onClick={onClick} className="xpl-row" style={{ textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', display: 'grid', gap: 6, padding: '16px 18px', borderRadius: 10, background: big ? tint(color, 8) : T.card, border: `1px solid ${big ? tint(color, 35) : T.border}`, borderLeft: `5px solid ${color}`, boxShadow: 'var(--x-card-shadow)' }}>
       <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{title}</span>
       <span style={{ fontSize: 12.5, color: T.muted }}>{sub}</span>
       <span style={{ fontSize: 13, color: T.text, marginTop: 4 }}><b>{n}</b> tasks{today ? <> · <b style={{ color: 'var(--x-bad-text)' }}>{today} today</b></> : null}</span>
@@ -186,10 +186,10 @@ function DeptCard({ color, title, sub, n, today, onClick, big }: { color: string
 function DayCol({ d, items, colorOf, onOpen }: { d: string; items: TaskItem[]; colorOf: (t: TaskItem) => string; onOpen: (id: string) => void }) {
   const isToday = d === TODAY
   return (
-    <section aria-label={`${WD[weekday(d)]} ${dword(d)}`} style={{ background: isToday ? tint(T.orange, 5) : T.card, border: `1px solid ${isToday ? tint(T.orange, 40) : T.border}`, borderRadius: 12, minHeight: 220, display: 'grid', alignContent: 'start', gap: 6, padding: 8 }}>
+    <section aria-label={`${WD[weekday(d)]} ${dword(d)}`} style={{ background: isToday ? tint(T.orange, 5) : T.card, border: `1px solid ${isToday ? tint(T.orange, 40) : T.border}`, borderRadius: 10, minHeight: 220, display: 'grid', alignContent: 'start', gap: 6, padding: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 4px 4px' }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: isToday ? T.orange : T.muted }}>{WD[weekday(d)]}</span>
-        <span style={{ fontFamily: display, fontSize: 18, fontWeight: 700, color: isToday ? T.orange : T.text }}>{dnum(d)}</span>
+        <span style={{ ...num, fontSize: 18, fontWeight: 600, color: isToday ? T.orange : T.text }}>{dnum(d)}</span>
       </div>
       {items.length === 0 ? <span style={{ fontSize: 12, color: T.faint, padding: '0 4px' }}>Nothing</span> : items.map(t => <Chip key={t.u.id} t={t} color={colorOf(t)} onOpen={onOpen} />)}
     </section>

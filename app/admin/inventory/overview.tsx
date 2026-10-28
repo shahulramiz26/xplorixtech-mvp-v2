@@ -5,7 +5,7 @@ import { useInventory, TODAY, COMPLETED_PROJECTS, PROJECTS, moneyL, type RigBurn
 import { runways, orderStages, stockBySite, type RunwayRow } from '../../../lib/stores-overview'
 import { DeptInbox } from '../../components/inbox'
 import { RigCountCard } from './rig-count'
-import { PageHead, Card, Table, Empty, Status, T, tint, display, th, thR, td, tdR, tdStrong, rowLine, type Tone } from '../../components/kit'
+import { PageHead, Card, Table, Empty, Status, T, tint, display, th, thR, td, tdR, tdStrong, rowLine, type Tone, num, eyebrow } from '../../components/kit'
 
 /* ==========================================================================
  * STORES — the overview
@@ -94,7 +94,7 @@ export function StoresOverview({ burn, rigsOn, used, go }: {
             {stages.map(s => (
               <div key={s.key} style={{ padding: '10px 12px', borderRadius: 10, background: s.key === 'late' && s.pos.length ? tint(T.red, 7) : 'rgba(var(--x-ov),0.035)', border: `1px solid ${s.key === 'late' && s.pos.length ? tint(T.red, 30) : 'transparent'}`, display: 'grid', gap: 3 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: s.key === 'late' && s.pos.length ? 'var(--x-bad-text)' : T.muted }}>{s.label}</span>
-                <span style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: T.text }}>{s.pos.length}</span>
+                <span style={{ ...num, fontSize: 20, fontWeight: 600, color: T.text }}>{s.pos.length}</span>
                 <span style={{ fontSize: 11.5, color: T.faint }}>{s.value ? moneyL(s.value) : '—'}</span>
               </div>
             ))}
@@ -133,10 +133,10 @@ export function StoresOverview({ burn, rigsOn, used, go }: {
 const linkBtn: React.CSSProperties = { background: 'none', border: 'none', color: T.orange, fontWeight: 600, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }
 
 function Stat({ label, value, note, bad, onClick }: { label: string; value: string; note: string; bad?: boolean; onClick?: () => void }) {
-  const style: React.CSSProperties = { textAlign: 'left', fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default', background: bad ? tint(T.red, 6) : T.card, border: `1px solid ${bad ? tint(T.red, 30) : T.border}`, borderRadius: 14, padding: '14px 16px', display: 'grid', gap: 4, boxShadow: 'var(--x-card-shadow)' }
+  const style: React.CSSProperties = { textAlign: 'left', fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default', background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '13px 16px', display: 'grid', gap: 6, boxShadow: bad ? 'inset 3px 0 0 var(--x-red)' : 'var(--x-card-shadow)' }
   const inner = <>
-    <span style={{ fontSize: 12.5, color: bad ? 'var(--x-bad-text)' : T.muted, fontWeight: 600 }}>{label}</span>
-    <span style={{ fontFamily: display, fontSize: 26, fontWeight: 700, color: bad ? 'var(--x-bad-text)' : T.text }}>{value}</span>
+    <span style={{ ...eyebrow, color: bad ? 'var(--x-bad-text)' : 'var(--x-faint)' }}>{label}</span>
+    <span style={{ ...num, fontSize: 24, fontWeight: 600, color: bad ? 'var(--x-bad-text)' : T.text }}>{value}</span>
     <span style={{ fontSize: 12, color: T.faint, lineHeight: 1.45 }}>{note}</span>
   </>
   return onClick ? <button type="button" onClick={onClick} style={style}>{inner}</button> : <div style={style}>{inner}</div>

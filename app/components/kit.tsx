@@ -29,8 +29,13 @@ export const T = {
 /* A colour at part strength, for tinted backgrounds and soft borders. Written
  * this way so it works on a token that is a CSS variable, in either theme. */
 export const tint = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`
-export const display = "'Space Grotesk', 'Inter', sans-serif"
-export const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace'
+export const display = "'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif"
+export const mono = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+/* Figures that sit in columns or stand as a headline number. */
+export const num: React.CSSProperties = { fontFamily: mono, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }
+/* Small uppercase label, used above figures and over table columns. */
+export const eyebrow: React.CSSProperties = { fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--x-faint)' }
+export const radius = 10
 
 export type Tone = 'good' | 'warn' | 'bad' | 'info' | 'neutral'
 export const toneColor: Record<Tone, string> = {
@@ -48,14 +53,14 @@ export function PageHead({ question, answer, tone = 'neutral', right }: {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0, flex: '1 1 420px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.01em' }}>{question}</h1>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 10, maxWidth: 820 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.015em', lineHeight: 1.25, textWrap: 'balance' }}>{question}</h1>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 8, maxWidth: 820 }}>
           <span aria-hidden style={{
             flexShrink: 0, width: 18, height: 18, borderRadius: '50%', marginTop: 1,
             background: `${hexA(toneColor[tone], 0x22)}`, color: toneColor[tone], fontSize: 11, fontWeight: 800,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>{toneMark[tone]}</span>
-          <p style={{ fontSize: 14.5, lineHeight: 1.55, color: T.muted, margin: 0 }}>{answer}</p>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: T.muted, margin: 0 }}>{answer}</p>
         </div>
       </div>
       {right && <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>{right}</div>}
@@ -64,7 +69,7 @@ export function PageHead({ question, answer, tone = 'neutral', right }: {
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 48, maxWidth: 2000, width: '100%' }}>{children}</div>
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 48, maxWidth: 1680, width: '100%' }}>{children}</div>
 }
 
 // ── CARD / TILE ───────────────────────────────────────────────────────────
@@ -73,28 +78,29 @@ export function Card({ title, subtitle, right, children, pad = true }: {
   title?: string; subtitle?: string; right?: ReactNode; children: ReactNode; pad?: boolean
 }) {
   return (
-    <section style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', minWidth: 0, boxShadow: 'var(--x-card-shadow)' }}>
+    <section style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: radius, overflow: 'hidden', minWidth: 0, boxShadow: 'var(--x-card-shadow)' }}>
       {title && (
-        <header style={{ padding: '13px 18px', borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{title}</div>
-            {subtitle && <div style={{ fontSize: 12, color: T.faint, marginTop: 3, lineHeight: 1.45 }}>{subtitle}</div>}
+        <header style={{ padding: '12px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text, fontFamily: display, letterSpacing: '-0.005em' }}>{title}</h2>
+            {subtitle && <div style={{ fontSize: 12.5, color: T.faint, marginTop: 2, lineHeight: 1.45 }}>{subtitle}</div>}
           </div>
           {right}
         </header>
       )}
-      <div style={pad ? { padding: 18 } : undefined}>{children}</div>
+      <div style={pad ? { padding: 16 } : undefined}>{children}</div>
     </section>
   )
 }
 
 export function Tile({ label, value, note, tone }: { label: string; value: ReactNode; note?: ReactNode; tone?: Tone }) {
   return (
-    <div style={{ padding: '14px 16px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, minWidth: 0, boxShadow: 'var(--x-card-shadow)' }}>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: T.faint, marginBottom: 7 }}>{label}</div>
-      <div style={{ fontSize: 23, fontWeight: 700, color: T.text, fontFamily: display, lineHeight: 1.1, letterSpacing: '-0.01em' }}>{value}</div>
+    <div style={{ position: 'relative', padding: '13px 16px 14px', background: T.card, border: `1px solid ${T.border}`, borderRadius: radius, minWidth: 0, boxShadow: 'var(--x-card-shadow)', overflow: 'hidden' }}>
+      {tone && tone !== 'neutral' && <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: toneColor[tone] }} />}
+      <div style={{ ...eyebrow, marginBottom: 8 }}>{label}</div>
+      <div style={{ ...num, fontSize: 22, fontWeight: 600, color: T.text, lineHeight: 1.1 }}>{value}</div>
       {note && (
-        <div style={{ fontSize: 12, color: tone ? toneColor[tone] : T.faint, marginTop: 7, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: tone && tone !== 'neutral' ? toneColor[tone] : T.faint, marginTop: 7, lineHeight: 1.45 }}>
           {tone && tone !== 'neutral' && <span aria-hidden style={{ marginRight: 5, fontWeight: 800 }}>{toneMark[tone]}</span>}
           {note}
         </div>
@@ -120,9 +126,9 @@ export function Status({ tone, children }: { tone: Tone; children: ReactNode }) 
   const c = toneColor[tone]
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999,
-      fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
-      background: `${hexA(c, 0x18)}`, border: `1px solid ${hexA(c, 0x40)}`, color: T.text,
+      display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6,
+      fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', lineHeight: 1.6,
+      background: `${hexA(c, 0x16)}`, border: `1px solid ${hexA(c, 0x3a)}`, color: T.text,
     }}>
       <span aria-hidden style={{ color: c, fontWeight: 800, fontSize: 10.5 }}>{toneMark[tone]}</span>
       {children}
@@ -134,7 +140,7 @@ export function Status({ tone, children }: { tone: Tone; children: ReactNode }) 
 export function InDevelopment({ phase, children }: { phase: string; children: ReactNode }) {
   return (
     <div style={{
-      padding: '13px 16px', borderRadius: 12, display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap',
+      padding: '13px 16px', borderRadius: 10, display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap',
       background: 'color-mix(in srgb, var(--x-amber) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--x-amber) 28%, transparent)',
     }}>
       <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 5, background: 'color-mix(in srgb, var(--x-amber) 18%, transparent)', color: T.amber, whiteSpace: 'nowrap', letterSpacing: '0.05em' }}>
@@ -161,15 +167,15 @@ export function Btn({ children, onClick, kind = 'ghost', size = 'md', disabled, 
   size?: 'sm' | 'md'; disabled?: boolean; href?: string
 }) {
   const kinds: Record<string, React.CSSProperties> = {
-    primary: { background: T.orange, color: '#fff', border: '1px solid transparent' },
-    ghost: { background: 'rgba(var(--x-ov),0.04)', border: `1px solid ${T.border}`, color: T.muted },
+    primary: { background: T.orange, color: 'var(--x-on-accent)', border: '1px solid transparent', boxShadow: '0 1px 2px rgba(var(--x-shadow),0.12)' },
+    ghost: { background: T.card, border: `1px solid var(--x-border3)`, color: T.text },
     good: { background: 'color-mix(in srgb, var(--x-green) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--x-green) 40%, transparent)', color: 'var(--x-good-text)' },
     danger: { background: 'color-mix(in srgb, var(--x-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--x-red) 35%, transparent)', color: 'var(--x-bad-text)' },
   }
   const style: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: disabled ? 'not-allowed' : 'pointer',
-    padding: size === 'sm' ? '6px 12px' : '9px 16px', borderRadius: 8, fontSize: size === 'sm' ? 12 : 13,
-    fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none',
+    minHeight: size === 'sm' ? 30 : 36, padding: size === 'sm' ? '0 11px' : '0 14px', borderRadius: 7, fontSize: size === 'sm' ? 12.5 : 13,
+    fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none', transition: 'background-color .15s, border-color .15s',
     opacity: disabled ? 0.45 : 1, ...kinds[kind],
   }
   if (href) return <Link href={href} style={style}>{children}</Link>
@@ -180,13 +186,14 @@ export function Seg<V extends string>({ options, value, onChange }: {
   options: { value: V; label: string }[]; value: V; onChange: (v: V) => void
 }) {
   return (
-    <div role="tablist" style={{ display: 'inline-flex', gap: 3, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, flexWrap: 'wrap' }}>
+    <div role="tablist" style={{ display: 'inline-flex', gap: 2, background: 'var(--x-raised2)', border: `1px solid ${T.border}`, borderRadius: 8, padding: 2, flexWrap: 'wrap' }}>
       {options.map(o => (
         <button key={o.value} role="tab" aria-selected={value === o.value} onClick={() => onChange(o.value)} style={{
-          padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+          minHeight: 28, padding: '0 11px', borderRadius: 6, fontSize: 12.5, fontWeight: value === o.value ? 600 : 500, cursor: 'pointer', border: 'none',
           fontFamily: 'inherit', whiteSpace: 'nowrap',
-          background: value === o.value ? 'color-mix(in srgb, var(--x-orange) 16%, transparent)' : 'transparent',
-          color: value === o.value ? T.text : T.faint,
+          background: value === o.value ? T.card : 'transparent',
+          boxShadow: value === o.value ? '0 1px 2px rgba(var(--x-shadow),0.12), 0 0 0 1px var(--x-border)' : 'none',
+          color: value === o.value ? T.text : T.muted,
         }}>{o.label}</button>
       ))}
     </div>
@@ -196,12 +203,12 @@ export function Seg<V extends string>({ options, value, onChange }: {
 // ── TABLE ─────────────────────────────────────────────────────────────────
 
 export const th: React.CSSProperties = {
-  padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: T.faint,
-  letterSpacing: '0.03em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`,
+  padding: '9px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: T.faint, textTransform: 'uppercase',
+  letterSpacing: '0.06em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, background: 'var(--x-raised)',
 }
 export const thR: React.CSSProperties = { ...th, textAlign: 'right' }
 export const td: React.CSSProperties = { padding: '10px 12px', fontSize: 13, color: T.muted, whiteSpace: 'nowrap' }
-export const tdR: React.CSSProperties = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
+export const tdR: React.CSSProperties = { ...td, textAlign: 'right', fontFamily: mono, fontSize: 12.5, fontVariantNumeric: 'tabular-nums' }
 export const tdStrong: React.CSSProperties = { ...td, color: T.text, fontWeight: 600 }
 export const rowLine = `1px solid ${T.line}`
 
@@ -240,8 +247,8 @@ export function Modal({ title, subtitle, width = 860, onClose, children, footer 
 }) {
   useEscape(onClose)
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(var(--x-shadow),0.72)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '5vh 16px', overflowY: 'auto' }}>
-      <div role="dialog" aria-modal onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: width, background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '5vh 16px', overflowY: 'auto' }}>
+      <div role="dialog" aria-modal onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: width, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 24px 60px rgba(var(--x-shadow),0.25)' }}>
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${T.line}`, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
           <div>
             <div style={{ fontSize: 17, fontWeight: 700, color: T.text, fontFamily: display }}>{title}</div>
@@ -258,7 +265,7 @@ export function Modal({ title, subtitle, width = 860, onClose, children, footer 
 
 // ── CHART PIECES ──────────────────────────────────────────────────────────
 
-export const axisTick = { fill: T.faint, fontSize: 11 }
+export const axisTick = { fill: T.faint, fontSize: 11, fontFamily: mono }
 export const gridStroke = 'color-mix(in srgb, var(--x-border) 90%, transparent)'
 
 export function Legend({ items }: { items: { color: string; label: string; dash?: boolean; line?: boolean }[] }) {
@@ -287,13 +294,13 @@ export function Tip({ active, payload, label, unit = '', names, fmt }: {
   const rows = payload.filter(p => p.value != null)
   if (!rows.length) return null
   return (
-    <div style={{ background: 'var(--x-side)', border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 12px', boxShadow: '0 10px 30px rgba(var(--x-shadow),0.5)' }}>
+    <div style={{ background: 'var(--x-panel)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', boxShadow: '0 10px 30px rgba(var(--x-shadow),0.5)' }}>
       <div style={{ fontSize: 11.5, color: T.faint, marginBottom: 6 }}>{fmt && typeof label === 'number' ? fmt(label) : label}</div>
       {rows.map(p => (
         <div key={String(p.dataKey)} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: T.text, padding: '1.5px 0' }}>
           <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />
           <span style={{ color: T.muted }}>{names?.[String(p.dataKey)] ?? p.name}</span>
-          <span style={{ marginLeft: 'auto', paddingLeft: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ marginLeft: 'auto', paddingLeft: 14, fontWeight: 600, fontFamily: mono, fontVariantNumeric: 'tabular-nums' }}>
             {typeof p.value === 'number' ? p.value.toLocaleString('en-IN') : p.value}{unit}
           </span>
         </div>
@@ -321,8 +328,8 @@ export function Head({ title, sub, right }: { title: string; sub?: ReactNode; ri
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0, flex: '1 1 380px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.01em' }}>{title}</h1>
-        {sub && <p style={{ fontSize: 14, lineHeight: 1.55, color: T.muted, margin: '7px 0 0', maxWidth: 760 }}>{sub}</p>}
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, margin: 0, fontFamily: display, letterSpacing: '-0.015em', lineHeight: 1.25 }}>{title}</h1>
+        {sub && <p style={{ fontSize: 14, lineHeight: 1.6, color: T.muted, margin: '6px 0 0', maxWidth: 760 }}>{sub}</p>}
       </div>
       {right && <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>{right}</div>}
     </div>
@@ -334,8 +341,8 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '9px 12px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
-  color: T.text, fontSize: 13.5, outline: 'none', fontFamily: 'inherit',
+  width: '100%', padding: '8px 11px', minHeight: 36, background: T.card, border: `1px solid var(--x-border3)`, borderRadius: 7,
+  color: T.text, fontSize: 13.5, fontFamily: 'inherit',
 }
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {

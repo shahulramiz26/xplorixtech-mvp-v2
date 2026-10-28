@@ -54,12 +54,12 @@ export default function ScorecardPage() {
   return (
     <Page>
       <div>
-        <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>AI Scorecard</h1>
+        <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text }}>AI Scorecard</h1>
         <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Is XPLORIX AI right, and is the team acting on it? Four scores out of 100, all from your own record. <span style={{ display: 'inline-block', fontSize: 11.5, fontWeight: 600, padding: '1px 8px', borderRadius: 99, background: tint(T.blue, 12), color: T.text }}>Demo data</span></p>
       </div>
 
       <section aria-label="Overall score" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: 12 }}>
-        <div style={{ background: tint(colorOf(sc.overall), 8), border: `1px solid ${tint(colorOf(sc.overall), 35)}`, borderRadius: 14, padding: 16, display: 'grid', gap: 10, justifyItems: 'start', boxShadow: 'var(--x-card-shadow)' }}>
+        <div style={{ background: tint(colorOf(sc.overall), 8), border: `1px solid ${tint(colorOf(sc.overall), 35)}`, borderRadius: 10, padding: 16, display: 'grid', gap: 10, justifyItems: 'start', boxShadow: 'var(--x-card-shadow)' }}>
           <Ring value={sc.overall} size={96} stroke={11} label="Overall" />
           <div style={{ display: 'grid', gap: 4 }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: T.muted, letterSpacing: '0.05em' }}>OVERALL</span>
@@ -115,7 +115,7 @@ export default function ScorecardPage() {
         </Card>
       </div>
 
-      <section style={{ border: `1px dashed ${T.border}`, borderRadius: 14, padding: '12px 18px', display: 'grid', gap: 8 }}>
+      <section style={{ border: `1px dashed ${T.border}`, borderRadius: 10, padding: '12px 18px', display: 'grid', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: T.muted }}>Money proven so far: <b style={{ color: T.text }}>{moneyL(value.totals.proven)}</b>, each line backed by an invoice paid, a bill cut or an order not placed.</span>
           {proven.length > 0 && <button type="button" onClick={() => setProofOpen(o => !o)} style={{ background: 'none', border: 'none', color: T.orange, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, padding: 0 }}>{proofOpen ? 'Hide' : 'Show the proof'}</button>}
@@ -130,7 +130,7 @@ export default function ScorecardPage() {
 
 function ScoreTile({ s }: { s: Score }) {
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14, display: 'grid', gap: 6, alignContent: 'start', boxShadow: 'var(--x-card-shadow)' }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: 14, display: 'grid', gap: 6, alignContent: 'start', boxShadow: 'var(--x-card-shadow)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Ring value={s.score} size={58} stroke={7} label={s.label} />
         <div style={{ display: 'grid' }}>

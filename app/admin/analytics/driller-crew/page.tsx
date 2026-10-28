@@ -72,7 +72,7 @@ export default function DrillersDashboard() {
                 <ZAxis type="number" dataKey="own" range={[60, 420]} />
                 <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
                   const d = active && payload?.[0]?.payload as (typeof rows)[number] | undefined
-                  return d ? <div style={{ background: 'var(--x-side)', border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 12px', fontSize: 12.5, color: T.text }}>
+                  return d ? <div style={{ background: 'var(--x-panel)', border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 12px', fontSize: 12.5, color: T.text }}>
                     <b>{d.name}</b> · {d.rigs.join(', ')}<br />{n1(d.metres)} m · {d.rop.toFixed(2)} m an hour · {n1(d.own)} h own stops</div> : null
                 }} />
                 {owners.map((o, i) => <Scatter key={o} name={o} data={c.drillers.filter(d => d.owner === o)} fill={rigColour(i)} fillOpacity={0.75} isAnimationActive={false} />)}

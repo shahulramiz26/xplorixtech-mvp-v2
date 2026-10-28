@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
         {BOARDS.map(b => (
           <Link key={b.href} href={b.href} className="xpl-row" style={{
-            display: 'flex', gap: 14, alignItems: 'center', padding: '18px 18px', borderRadius: 14, textDecoration: 'none',
+            display: 'flex', gap: 14, alignItems: 'center', padding: '18px 18px', borderRadius: 10, textDecoration: 'none',
             background: T.card, border: `1px solid ${T.border}`,
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>

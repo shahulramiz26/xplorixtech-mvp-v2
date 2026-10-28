@@ -10,7 +10,7 @@ import { useInventory, rigHoldings, TODAY } from '../../lib/inventory-store'
 import { equipment as EQUIPMENT, incidentTypes, severityTypes } from '../../lib/mock-data'
 import { projectHoles } from '../../lib/projects'
 import { checkShift, describeChanges, type LogCheck } from '../../lib/log-checks'
-import { T, tint, Btn, Seg, inputStyle } from './kit'
+import { T, tint, Btn, Seg, inputStyle, num as figure } from './kit'
 import { SURVEY_TOOLS } from '../../lib/survey'
 
 /* ==========================================================================
@@ -60,7 +60,7 @@ const str = (n: number | undefined) => (n == null || Number.isNaN(n) ? '' : Stri
 
 function Panel({ title, right, children, hint }: { title?: ReactNode; right?: ReactNode; children: ReactNode; hint?: string }) {
   return (
-    <section style={{ border: `1px solid ${T.border}`, borderRadius: 14, background: T.card, padding: '18px 20px' }}>
+    <section style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: T.card, padding: '18px 20px' }}>
       {(title || right) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
           <div>
@@ -110,7 +110,7 @@ function Toggle({ on, onChange, label, hint }: { on: boolean; onChange: (v: bool
         <div style={{ fontSize: 12, color: T.faint, marginTop: 3, lineHeight: 1.45 }}>{hint}</div>
       </div>
       <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} style={{
-        width: 44, height: 24, borderRadius: 12, flexShrink: 0, cursor: 'pointer', border: 'none', padding: 0,
+        width: 44, height: 24, borderRadius: 10, flexShrink: 0, cursor: 'pointer', border: 'none', padding: 0,
         position: 'relative', background: on ? T.orange : 'var(--x-border3)', transition: 'background 0.15s',
       }}>
         <span style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
@@ -568,7 +568,7 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
             <Toggle on={f.closed} onChange={v => u({ closed: v })} label="Hole Closed This Shift?"
               hint="Enable if this hole was completed. If a new hole was started in the same shift, enter it below." />
             {f.closed && (
-              <div style={{ marginTop: 14, padding: '16px 16px', borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, display: 'grid', gap: 14 }}>
+              <div style={{ marginTop: 14, padding: '16px 16px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, display: 'grid', gap: 14 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: T.orange }}>New Hole Started This Shift</div>
                 <div style={grid(220)}>
                   <L label="New Hole Number" hint="Leave empty if no new hole was opened this shift.">
@@ -854,7 +854,7 @@ function ChecksPanel({ checks, reasons, setReason, tried }: {
     </div>
   )
   return (
-    <section aria-label="XPLORIX checks" style={{ border: `1px solid ${stops.length ? tint(T.red, 35) : tint(T.amber, 40)}`, borderRadius: 14, background: T.card, overflow: 'hidden' }}>
+    <section aria-label="XPLORIX checks" style={{ border: `1px solid ${stops.length ? tint(T.red, 35) : tint(T.amber, 40)}`, borderRadius: 10, background: T.card, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '13px 18px', background: stops.length ? tint(T.red, 6) : tint(T.amber, 7), borderBottom: `1px solid ${T.line}` }}>
         <ShieldAlert size={17} style={{ color: stops.length ? T.red : T.amber, flexShrink: 0 }} />
         <div>

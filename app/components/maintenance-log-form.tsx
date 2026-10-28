@@ -31,7 +31,7 @@ const grid = (min: number): React.CSSProperties => ({ display: 'grid', gridTempl
 
 function Panel({ title, children }: { title?: ReactNode; children: ReactNode }) {
   return (
-    <section style={{ border: `1px solid ${T.border}`, borderRadius: 14, background: T.card, padding: '18px 20px' }}>
+    <section style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: T.card, padding: '18px 20px' }}>
       {title && <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 14 }}>{title}</div>}
       {children}
     </section>
@@ -277,7 +277,7 @@ export function MaintenanceLogForm({ variant, scopes, existing, lockSupervisor, 
         </div>
       </Panel>
 
-      <section style={{ border: `1px solid ${T.border}`, borderRadius: 14, background: T.card, padding: '18px 20px' }}>
+      <section style={{ border: `1px solid ${T.border}`, borderRadius: 10, background: T.card, padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: T.text }}><Paperclip size={15} style={{ color: T.faint }} /> Maintenance Attachments</span>
           <input ref={fileInput} type="file" multiple style={{ display: 'none' }} onChange={e => { u({ files: [...f.files, ...Array.from(e.target.files ?? []).map(x => x.name)] }); e.target.value = '' }} />

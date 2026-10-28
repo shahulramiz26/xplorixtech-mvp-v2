@@ -16,8 +16,7 @@ import { useInbox } from '../../components/inbox'
 import { BriefCard } from '../../components/ai'
 import {
   Page, Card, Btn, Table, Status, Legend, Tip, Delta, Empty,
-  th, thR, td, tdR, rowLine, T, tint, display, axisTick, gridStroke,
-} from '../../components/kit'
+  th, thR, td, tdR, rowLine, T, tint, display, axisTick, gridStroke, num as figure, eyebrow } from '../../components/kit'
 
 /* DASHBOARD — the company at a glance.
  *
@@ -86,7 +85,7 @@ export default function AdminDashboard() {
     <Page>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Your company today</h1>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text }}>Your company today</h1>
           <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>{day(TODAY)} · from today&apos;s drill logs, the maintenance log, costing and stores.{IS_DEMO ? ' Demo data.' : ''}</p>
         </div>
         <Link href="/admin/tasks" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 40, padding: '0 14px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.card, color: T.text, textDecoration: 'none', fontSize: 13.5, fontWeight: 600 }}>
@@ -253,23 +252,23 @@ export default function AdminDashboard() {
 
 function Kpi({ label, value, note, href, bad }: { label: string; value: string; note?: React.ReactNode; href?: string; bad?: boolean }) {
   const inner = <>
-    <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{label}</span>
-    <span style={{ fontFamily: display, fontSize: 24, fontWeight: 700, color: bad ? 'var(--x-bad-text)' : T.text, lineHeight: 1.15 }}>{value}</span>
-    {note && <span style={{ fontSize: 11.5, color: T.faint, lineHeight: 1.4 }}>{note}</span>}
+    <span style={{ ...eyebrow }}>{label}</span>
+    <span style={{ ...figure, fontSize: 24, fontWeight: 600, color: bad ? 'var(--x-bad-text)' : T.text, lineHeight: 1.15 }}>{value}</span>
+    {note && <span style={{ fontSize: 12, color: T.faint, lineHeight: 1.45 }}>{note}</span>}
   </>
-  const style: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '13px 15px', display: 'grid', gap: 4, alignContent: 'start', boxShadow: 'var(--x-card-shadow)', textDecoration: 'none' }
+  const style: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '13px 15px', display: 'grid', gap: 6, alignContent: 'start', boxShadow: bad ? 'inset 3px 0 0 var(--x-red)' : 'var(--x-card-shadow)', textDecoration: 'none' }
   return href ? <Link href={href} className="xpl-row" style={style}>{inner}</Link> : <div style={style}>{inner}</div>
 }
 function Mini({ label, value, bad }: { label: string; value: string; bad?: boolean }) {
   return <div style={{ padding: '10px 12px', borderRadius: 10, background: bad ? tint(T.red, 7) : 'rgba(var(--x-ov),0.035)', display: 'grid', gap: 3 }}>
     <span style={{ fontSize: 12, color: bad ? 'var(--x-bad-text)' : T.muted, fontWeight: 600 }}>{label}</span>
-    <span style={{ fontFamily: display, fontSize: 19, fontWeight: 700, color: bad ? 'var(--x-bad-text)' : T.text }}>{value}</span>
+    <span style={{ ...figure, fontSize: 19, fontWeight: 600, color: bad ? 'var(--x-bad-text)' : T.text }}>{value}</span>
   </div>
 }
 function Fig({ label, value, note }: { label: string; value: string; note: React.ReactNode }) {
   return <div style={{ display: 'grid', gap: 3 }}>
     <span style={{ fontSize: 12.5, color: T.muted }}>{label}</span>
-    <span style={{ fontFamily: display, fontSize: 21, fontWeight: 700, color: T.text }}>{value}</span>
+    <span style={{ ...figure, fontSize: 21, fontWeight: 600, color: T.text }}>{value}</span>
     <span style={{ fontSize: 12 }}>{note}</span>
   </div>
 }

@@ -121,7 +121,7 @@ export default function HoleLog() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 14 }}>
           {h.trays.map(x => (
             <Link key={x.id} href={`/admin/geology/trays/${x.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Tray {x.no} · {x.from.toFixed(1)}–{x.usedTo.toFixed(1)} m</span>
                   {review.checked[x.id] ? <Status tone="good">Checked</Status> : <Status tone="warn">To check</Status>}

@@ -2514,7 +2514,7 @@ export const LAYER = { operating: C.amber, ownership: C.purple, full: C.orange, 
 
 export const iStyle: React.CSSProperties = {
   padding: '6px 10px', background: C.bg, border: `1px solid ${C.border}`,
-  borderRadius: 7, color: C.text, fontSize: 12.5, outline: 'none',
+  borderRadius: 7, color: C.text, fontSize: 12.5,
   fontFamily: 'inherit', width: '100%',
 }
 export const derivedStyle: React.CSSProperties = {

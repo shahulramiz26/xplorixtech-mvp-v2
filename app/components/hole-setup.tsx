@@ -114,7 +114,7 @@ export function HoleSetupModal({ project, holes, plans, only, onClose, onSave }:
         </div>
         {zoneBad && <Note tone="warn">Enter the UTM zone, for example 43N, so the holes can be put on the map.</Note>}
 
-        <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ maxHeight: 420, overflowY: 'auto' }}>
             <Table>
               <thead><tr>

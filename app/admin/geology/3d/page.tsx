@@ -164,7 +164,7 @@ export default function Core3DPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 220px', gap: 14, alignItems: 'start' }} className="core3d-grid">
         <Card pad={false}>
-          <div style={{ position: 'relative', background: `linear-gradient(180deg, ${tint(T.orange, 4)}, transparent)`, borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', background: `linear-gradient(180deg, ${tint(T.orange, 4)}, transparent)`, borderRadius: 10, overflow: 'hidden' }}>
             {!all.ready ? <Empty>Loading the core photos…</Empty> : holes.length === 0 ? <Empty>No surveyed holes on this project yet.</Empty> : (
               <Core3D holes={shown} showPlan={plan} focus={focus} pinned={at}
                 onHover={setHover} onPick={p => setPinned(p)} />

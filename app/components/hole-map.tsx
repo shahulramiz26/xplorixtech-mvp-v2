@@ -69,7 +69,7 @@ export function HoleMap({ holes, height = 440, onOpen }: { holes: MapHole[]; hei
     } else m.setView([20, 78], 4)
   }
 
-  return <div ref={box} style={{ height, width: '100%', borderRadius: 12, overflow: 'hidden', border: `1px solid ${T.border}`, background: '#e5e7eb', zIndex: 0, position: 'relative' }} />
+  return <div ref={box} style={{ height, width: '100%', borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.border}`, background: '#e5e7eb', zIndex: 0, position: 'relative' }} />
 }
 
 export function MapLegend() {

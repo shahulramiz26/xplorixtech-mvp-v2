@@ -7,7 +7,7 @@ import { Gauge, Ruler, MessageSquareQuote, Target } from 'lucide-react'
 import { learning, type Learning, type Learned } from '../../lib/ai/learn'
 import { dw, n0 } from '../../lib/ai/record'
 import { useAiCtx, AiMark } from './ai'
-import { Card, T, tint, display, axisTick, gridStroke, Tip, Legend } from './kit'
+import { Card, T, tint, display, axisTick, gridStroke, Tip, Legend, num } from './kit'
 
 /* ==========================================================================
  * FORECASTS THAT LEARN, ON SCREEN
@@ -42,7 +42,7 @@ export function ForecastCheck({ l }: { l: Learning | null }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 20, alignItems: 'start' }}>
         <div>
           <div style={{ display: 'flex', gap: 18, alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 8 }}>
-            <div><div style={{ fontFamily: display, fontSize: 28, fontWeight: 700, color: T.text }}>{l.accuracy != null ? `${Math.round(l.accuracy)}%` : '—'}</div><div style={{ fontSize: 12, color: T.muted }}>accuracy, last {l.weeks.length} weeks</div></div>
+            <div><div style={{ ...num, fontSize: 28, fontWeight: 600, color: T.text }}>{l.accuracy != null ? `${Math.round(l.accuracy)}%` : '—'}</div><div style={{ fontSize: 12, color: T.muted }}>accuracy, last {l.weeks.length} weeks</div></div>
             <div style={{ fontSize: 12.5, color: T.muted, maxWidth: 260, lineHeight: 1.5 }}>{l.trend === 'better' ? 'The misses are getting smaller as more shifts come in.' : l.trend === 'worse' ? 'The misses grew in the middle weeks; the reasons are listed alongside.' : 'Steady. Most misses are stops nobody could see coming.'}</div>
           </div>
           <Legend items={[{ color: tint(T.orange, 55), label: 'Forecast' }, { color: T.bar, label: 'Drilled' }]} />
