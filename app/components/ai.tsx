@@ -3,7 +3,7 @@
 import { createContext, Fragment, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Send, X, Copy, Check, Pencil, ArrowRight, Mail, MessageCircle, ShoppingCart, FileText, Wrench, ArrowLeftRight, StickyNote } from 'lucide-react'
+import { Sparkles, Send, X, Copy, Check, Pencil, ArrowRight, Mail, ShoppingCart, FileText, Wrench, ArrowLeftRight, StickyNote } from 'lucide-react'
 import { useCosting } from '../../lib/costing-store'
 import { useInventory, TODAY } from '../../lib/inventory-store'
 import { IS_DEMO } from '../../lib/company'
@@ -51,7 +51,7 @@ export function Md({ text }: { text: string }) {
 }
 
 const DRAFT_ICON: Record<Draft['kind'], React.ElementType> = {
-  email: Mail, whatsapp: MessageCircle, po: ShoppingCart, invoice: FileText, workorder: Wrench, transfer: ArrowLeftRight, note: StickyNote,
+  email: Mail, po: ShoppingCart, invoice: FileText, workorder: Wrench, transfer: ArrowLeftRight, note: StickyNote,
 }
 
 const smallBtn: React.CSSProperties = {

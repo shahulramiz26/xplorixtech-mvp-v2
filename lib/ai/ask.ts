@@ -61,7 +61,7 @@ export function ask(question: string, c: AiCtx): Answer {
     if (task && !has(q, 'draft', 'write')) return taskAnswer(task, c)
     if (has(q, 'brief', 'summary', 'summarise', 'summarize', 'how are we doing', 'how is it going', 'overview')) return briefAnswer(c, has(q, 'week'))
     if (has(q, 'reply') && has(q, 'standby')) return standbyReply(c)
-    if (has(q, 'draft', 'write', 'reply', 'message', 'email', 'whatsapp', 'remind')) return draftAnswer(q, c, rigs, holes)
+    if (has(q, 'draft', 'write', 'reply', 'message', 'email', 'remind')) return draftAnswer(q, c, rigs, holes)
     if (has(q, 'need me', 'needs me', 'should i do', 'to do today', 'priorit', 'urgent', 'act on', 'my tasks', 'what first')) return todayAnswer(c)
     if (has(q, 'cost per metre', 'cost a metre', 'cost/m', 'cpm', 'cost per meter') || (has(q, 'cost') && has(q, 'metre', 'meter'))) return rigs.length ? rigAnswer(rigs[0], c) : costAnswer(c, has(q, 'why', 'change', 'up', 'rise', 'went', 'increase', 'drop'), ground)
     if (has(q, 'why') && rigs.length >= 1 && has(q, 'slow', 'faster', 'slower', 'behind')) return slowAnswer(rigs, c)

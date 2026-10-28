@@ -34,13 +34,13 @@ import {
 export interface Why { text: string; href?: string }
 
 export interface Draft {
-  kind: 'email' | 'whatsapp' | 'po' | 'invoice' | 'workorder' | 'transfer' | 'note'
+  kind: 'email' | 'po' | 'invoice' | 'workorder' | 'transfer' | 'note'
   to: string                 // who it goes to, in words
-  via: string                // Email, WhatsApp, Purchase order…
+  via: string                // Email, Message, Purchase order…
   subject?: string
   body: string
   table?: { cols: string[]; rows: string[][]; total?: [string, string] }
-  approve: string            // the button: "Approve and send"
+  approve: string            // the button: "Approve", "Approve order"
   done: string               // kept on the task once approved
 }
 
@@ -147,7 +147,7 @@ function part(u: InboxUnit, c: AiCtx): Explanation {
       kind: 'email', to: `${po.supplier}${sup?.contact ? ` (${sup.contact})` : ''}`, via: 'Email',
       subject: `${po.number}: ${p.name} now ${daysBetween(po.promisedDate!, c.today)} days late`,
       body: `${greet(sup?.contact || po.supplier)}\n\nOur order ${po.number} for ${n0(owed(po))} × ${p.name} was promised for ${dw(po.promisedDate)} and has not arrived. Our rigs are drilling and need it now.\n\nPlease confirm by tomorrow the date it will reach site and the transport details. If it cannot reach us within 7 days, tell us today so we can buy it elsewhere and cancel this line.${sign()}`,
-      approve: 'Approve and send', done: `Chased ${po.supplier} for ${po.number}`,
+      approve: 'Approve', done: `Chased ${po.supplier} for ${po.number}`,
     }
   } else {
     // The forecast counts wear at the catalogue life; where the ground wears the part faster, order for the real life.
@@ -219,7 +219,7 @@ function overdue(u: InboxUnit, c: AiCtx): Explanation {
     draft: {
       kind: 'email', to: `${inv.client}, accounts`, via: 'Email', subject: `Payment reminder: ${inv.number}, ${money(owed)} due ${dw(inv.dueDate)}`,
       body: `${greet(`${inv.client} accounts team`)}\n\nOur invoice ${inv.number} dated ${dw(inv.date)} for ${money(owed)} was due on ${dw(inv.dueDate)}${inv.ownerStatus === 'approved' ? ', and every line of it was approved in the client portal' : ''}. It covers holes ${list(inv.holeNumbers)}.\n\nCould you confirm the date of payment? A statement of account is attached. If anything is holding it, tell us and we will sort it the same day.${sign()}`,
-      approve: 'Approve and send', done: `Payment reminder sent for ${inv.number}`,
+      approve: 'Approve', done: `Payment reminder sent for ${inv.number}`,
     },
   }
 }
@@ -269,7 +269,7 @@ function stuck(u: InboxUnit, c: AiCtx): Explanation {
       { text: `Until it is closed it cannot be approved, invoiced or paid: ${moneyL(s.reduce((a, h) => a + h.value, 0))} is held by a missing tick.` },
     ],
     basis: 'Read from the planned depths and the last shift on each hole.', sources: [{ label: 'Projects & holes', href: '/admin/projects' }], confidence: 'High',
-    draft: { kind: 'whatsapp', to: sup ?? 'Supervisor', via: 'WhatsApp', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${list(s.map(h => h.hole))} ${s.length === 1 ? 'has' : 'have'} reached planned depth. Please tick "Hole closed" on the last shift in XPLORIX today so we can send ${s.length === 1 ? 'it' : 'them'} to the client. Thanks.`, approve: 'Approve and send', done: `Asked ${sup ?? 'the supervisor'} to close ${list(s.map(h => h.hole))}` },
+    draft: { kind: 'note', to: sup ?? 'Supervisor', via: 'Message', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${list(s.map(h => h.hole))} ${s.length === 1 ? 'has' : 'have'} reached planned depth. Please tick "Hole closed" on the last shift in XPLORIX today so we can send ${s.length === 1 ? 'it' : 'them'} to the client. Thanks.`, approve: 'Approve', done: `Asked ${sup ?? 'the supervisor'} to close ${list(s.map(h => h.hole))}` },
   }
 }
 
@@ -306,7 +306,7 @@ function rates(u: InboxUnit, c: AiCtx): Explanation {
     basis: 'Read from the rate proposal and the contract rates in force.', sources: [{ label: 'Projects', href: '/admin/projects' }], confidence: 'Medium',
     draft: { kind: 'email', to: p?.client ?? 'Client', via: 'Email', subject: `New rates for ${p?.name ?? 'the project'}: waiting for your approval`,
       body: `${greet(p?.client ?? 'Sir/Madam')}\n\nWe sent revised rates for ${p?.name ?? 'the project'}${prop ? ` on ${dw(prop.proposedAt.slice(0, 10))}` : ''}${prop?.rate.note ? ` (${prop.rate.note})` : ''}. They are in your XPLORIX portal for approval.\n\nCould you approve them or let us know what you would like to discuss this week? Until then we continue to bill at the current rates.${sign()}`,
-      approve: 'Approve and send', done: 'Client reminded about the new rates' },
+      approve: 'Approve', done: 'Client reminded about the new rates' },
   }
 }
 
@@ -347,7 +347,7 @@ function lateWo(u: InboxUnit, c: AiCtx): Explanation {
       ...(rule ? [{ text: 'The work order has a late-completion deduction, so the delay can be charged to him.' }] : []),
     ],
     basis: 'Read from the work order and the contractor’s checked shifts.', sources: [{ label: 'Contractors', href: '/admin/contractors' }], confidence: 'Medium',
-    draft: { kind: 'email', to: name, via: 'Email', subject: `${wo.number}: past the finish date`, body: `${greet(name)}\n\n${wo.number} was due to finish on ${dw(wo.endDate)}. ${n0(left)} m remain. Please send by tomorrow a recovery plan with the rigs, crew and dates to finish${rule ? `, noting that the late-completion terms of the work order apply from the due date` : ''}.${sign()}`, approve: 'Approve and send', done: `Recovery plan requested from ${name}` },
+    draft: { kind: 'email', to: name, via: 'Email', subject: `${wo.number}: past the finish date`, body: `${greet(name)}\n\n${wo.number} was due to finish on ${dw(wo.endDate)}. ${n0(left)} m remain. Please send by tomorrow a recovery plan with the rigs, crew and dates to finish${rule ? `, noting that the late-completion terms of the work order apply from the due date` : ''}.${sign()}`, approve: 'Approve', done: `Recovery plan requested from ${name}` },
   }
 }
 
@@ -403,7 +403,7 @@ function breakdown(u: InboxUnit, c: AiCtx): Explanation {
   if (own[0]) why.push({ text: `In its drill logs the biggest own stop is "${own[0].reason}", ${n1(own[0].hours)} h in 30 days.` })
   if (loss) why.push({ text: `Each stopped day costs about ${moneyL(loss.money)} in metres not drilled.` })
   return { why: why.length ? why : [{ text: u.detail }], basis: 'Read from the maintenance log and the rig’s drill logs.', sources: [{ label: 'Maintenance', href: '/admin/logs/maintenance' }], confidence: m.length ? 'High' : 'Medium',
-    draft: { kind: 'note', to: 'Workshop', via: 'Note', body: `Look at ${rig}'s ${m[0]?.component.toLowerCase() ?? 'repeat stops'} before it fails again: find the cause, not just the fix, and log what was found.`, approve: 'Approve and send', done: `Workshop asked to find the cause on ${rig}` } }
+    draft: { kind: 'note', to: 'Workshop', via: 'Note', body: `Look at ${rig}'s ${m[0]?.component.toLowerCase() ?? 'repeat stops'} before it fails again: find the cause, not just the fix, and log what was found.`, approve: 'Approve', done: `Workshop asked to find the cause on ${rig}` } }
 }
 
 function fatigue(u: InboxUnit, c: AiCtx): Explanation {
@@ -459,7 +459,7 @@ function slow(u: InboxUnit, c: AiCtx): Explanation {
   const sup = supervisorOf(c, a)
   return {
     why: why.length ? why : [{ text: u.detail }], basis: `Read from ${plural(la.length, 'shift')} on ${a} in the last 30 days${b ? ` and the same on ${b}` : ''}.`, sources: [{ label: 'Operations analytics', href: '/admin/analytics/operation' }], confidence: why.length >= 2 ? 'High' : 'Medium',
-    draft: { kind: 'whatsapp', to: sup ?? 'Supervisor', via: 'WhatsApp', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${a} is running ${u.title.match(/\d+%/)?.[0] ?? 'well'} slower than ${b ?? 'the fleet'}. ${own[0] ? `Its biggest own stop is ${own[0].reason.toLowerCase()}. ` : ''}Please check bit choice for the ground and trip times this week, and note any reason in the log. Thanks.`, approve: 'Approve and send', done: `Supervisor asked to look at ${a}` },
+    draft: { kind: 'note', to: sup ?? 'Supervisor', via: 'Message', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${a} is running ${u.title.match(/\d+%/)?.[0] ?? 'well'} slower than ${b ?? 'the fleet'}. ${own[0] ? `Its biggest own stop is ${own[0].reason.toLowerCase()}. ` : ''}Please check bit choice for the ground and trip times this week, and note any reason in the log. Thanks.`, approve: 'Approve', done: `Supervisor asked to look at ${a}` },
   }
 }
 
@@ -479,7 +479,7 @@ function fuel(u: InboxUnit, c: AiCtx): Explanation {
   if (engineOff.length) why.push({ text: `On ${plural(engineOff.length, 'shift')} the engine ran with no metres drilled: idling on standby is fuel with nothing to show for it.` })
   return {
     why, basis: `Read from fuel, engine hours and metres on ${plural(la.length, 'shift')}.`, sources: [{ label: 'Consumables analytics', href: '/admin/analytics/consumables' }], confidence: 'Medium',
-    draft: { kind: 'note', to: 'Site in-charge', via: 'Note', body: `Check ${rig}'s fuel issue register against the drill logs for the last two weeks, and switch the engine off on standby longer than an hour.`, approve: 'Approve and send', done: `Fuel check on ${rig} asked for` },
+    draft: { kind: 'note', to: 'Site in-charge', via: 'Note', body: `Check ${rig}'s fuel issue register against the drill logs for the last two weeks, and switch the engine off on standby longer than an hour.`, approve: 'Approve', done: `Fuel check on ${rig} asked for` },
   }
 }
 
@@ -495,7 +495,7 @@ function idle(u: InboxUnit, c: AiCtx): Explanation {
     why, basis: 'Read from the hole plan and each rig’s pace over the last 30 days.', sources: [{ label: 'Outlook', href: '/admin/intelligence/months' }], confidence: 'High',
     draft: { kind: 'email', to: p?.client ?? 'Client', via: 'Email', subject: `${project}: next holes needed by ${dw(addDays(rigs.map(r => r.lastHoleEnds ?? r.idleFrom ?? c.today).sort()[0], -10))}`,
       body: `${greet(p?.client ?? 'Sir/Madam')}\n\nOn ${project}, the holes released to us will be finished around ${list(rigs.map(r => `${dw(r.lastHoleEnds ?? r.idleFrom)} (${r.rig})`))}. To keep the rigs drilling without a stand-down, could you release the next holes, with collars and planned depths, at least ten days before then?\n\nWe can share the forecast in your portal if useful.${sign()}`,
-      approve: 'Approve and send', done: `Asked ${p?.client ?? 'the client'} for the next holes` },
+      approve: 'Approve', done: `Asked ${p?.client ?? 'the client'} for the next holes` },
   }
 }
 
@@ -513,7 +513,7 @@ function copies(u: InboxUnit, c: AiCtx): Explanation {
       ...(contractorRigs.length ? [{ text: `${list(contractorRigs)} ${contractorRigs.length === 1 ? 'is a contractor rig' : 'are contractor rigs'}: copied shifts there are copied metres you pay for.` }] : []),
     ],
     basis: 'Read by comparing every shift with the shifts before it on the same rig.', sources: [{ label: 'Drill log check', href: '/admin/intelligence/drill-logs' }], confidence: 'High',
-    draft: { kind: 'whatsapp', to: sups.length ? list(sups) : 'Supervisors', via: 'WhatsApp', body: `Hi, XPLORIX found shifts on ${list(rigs.slice(0, 3))} with every figure the same as the shift before. Please check each one against the rig's own figures today, and correct it or add the reason in the log. Thanks.`, approve: 'Approve and send', done: 'Supervisors asked to check copied shifts' },
+    draft: { kind: 'note', to: sups.length ? list(sups) : 'Supervisors', via: 'Message', body: `Hi, XPLORIX found shifts on ${list(rigs.slice(0, 3))} with every figure the same as the shift before. Please check each one against the rig's own figures today, and correct it or add the reason in the log. Thanks.`, approve: 'Approve', done: 'Supervisors asked to check copied shifts' },
   }
 }
 
@@ -528,7 +528,7 @@ function missing(u: InboxUnit, c: AiCtx): Explanation {
       { text: `A missing shift is missing metres, cost and billing${loss ? `: about ${moneyL(loss.money / 2)} a shift on this rig` : ''}, and every forecast built on it reads low.` },
     ],
     basis: 'Read from the shifts expected for every rig on a project.', sources: [{ label: 'Drill logs', href: '/admin/logs/drill' }], confidence: 'High',
-    draft: { kind: 'whatsapp', to: sup ?? 'Supervisor', via: 'WhatsApp', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${rig}'s ${f.detail.replace(/\.$/, '')} shift log is not in XPLORIX. Please enter it today, or log the rig as stood down if it did not work. Thanks.`, approve: 'Approve and send', done: `${sup ?? 'Supervisor'} asked for ${rig}'s missing shift` },
+    draft: { kind: 'note', to: sup ?? 'Supervisor', via: 'Message', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${rig}'s ${f.detail.replace(/\.$/, '')} shift log is not in XPLORIX. Please enter it today, or log the rig as stood down if it did not work. Thanks.`, approve: 'Approve', done: `${sup ?? 'Supervisor'} asked for ${rig}'s missing shift` },
   }
 }
 
@@ -537,7 +537,7 @@ function badLog(u: InboxUnit, c: AiCtx): Explanation {
   return {
     why: [{ text: f.detail }, { text: 'A figure that cannot be right flows into cost per metre, the hole’s value and the invoice. Finance will not approve the hole until it is corrected.' }],
     basis: 'Read by checking the shift against the shifts before and after it.', sources: [{ label: 'Drill log', href: f.href ?? '/admin/logs/drill' }], confidence: 'High',
-    draft: { kind: 'whatsapp', to: f.owner, via: 'WhatsApp', body: `Hi, ${f.title}. Please open the shift in XPLORIX and correct it today: the hole cannot be billed until it is right. Thanks.`, approve: 'Approve and send', done: 'Correction asked for' },
+    draft: { kind: 'note', to: f.owner, via: 'Message', body: `Hi, ${f.title}. Please open the shift in XPLORIX and correct it today: the hole cannot be billed until it is right. Thanks.`, approve: 'Approve', done: 'Correction asked for' },
   }
 }
 
@@ -561,8 +561,8 @@ function survey(u: InboxUnit, c: AiCtx): Explanation {
     why: [{ text: u.detail }, ...(hole ? [{ text: `Every metre drilled off line makes the correction longer; the geologist decides whether to wedge, correct or accept it.` }] : [])],
     basis: 'Read from the survey readings against the planned line.', sources: [{ label: 'Projects & holes', href: '/admin/projects' }], confidence: 'Medium',
     draft: !hole ? undefined : u.items[0].id.startsWith('live:sv_gap_')
-      ? { kind: 'whatsapp', to: sup ?? 'Supervisor', via: 'WhatsApp', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${hole} has ${u.title.split(': ')[1]?.replace(' since the last survey', '') ?? 'gone a long way'} since its last survey reading. Please take a reading at the next rod change and enter it in the drill log. Thanks.`, approve: 'Approve and send', done: `Survey reading asked for on ${hole}` }
-      : { kind: 'whatsapp', to: sup ? `${sup} and the geologist` : 'Supervisor and geologist', via: 'WhatsApp', body: `${hole} is ${u.title.split(': ')[1] ?? 'off its planned line'}. Please hold the next run until the geologist has looked at the survey and agreed what to do. Thanks.`, approve: 'Approve and send', done: `Survey on ${hole} sent to site` },
+      ? { kind: 'note', to: sup ?? 'Supervisor', via: 'Message', body: `${sup ? `Hi ${sup.split(' ')[0]}, ` : ''}${hole} has ${u.title.split(': ')[1]?.replace(' since the last survey', '') ?? 'gone a long way'} since its last survey reading. Please take a reading at the next rod change and enter it in the drill log. Thanks.`, approve: 'Approve', done: `Survey reading asked for on ${hole}` }
+      : { kind: 'note', to: sup ? `${sup} and the geologist` : 'Supervisor and geologist', via: 'Message', body: `${hole} is ${u.title.split(': ')[1] ?? 'off its planned line'}. Please hold the next run until the geologist has looked at the survey and agreed what to do. Thanks.`, approve: 'Approve', done: `Survey on ${hole} sent to site` },
   }
 }
 
@@ -574,7 +574,7 @@ function core(u: InboxUnit, c: AiCtx): Explanation {
   return {
     why: [{ text: u.items[0].detail }, ...(mix ? [{ text: `${hole} is mostly in ${mix.g.toLowerCase()} ground, where recovery drops when runs are long or the bit is pushed fast.` }] : [])],
     basis: 'Read from the drill logs and the tray photos.', sources: [{ label: `${hole ?? 'Hole'} log`, href: u.href ?? '/admin/geology' }], confidence: 'Medium',
-    draft: { kind: 'whatsapp', to: sup ?? 'Supervisor', via: 'WhatsApp', body: `${hole ?? 'This hole'}: core recovery on the tray photos is below 85%. Please shorten the runs, check the core lifters and slow the feed in this ground, and measure recovery the same way as the geologist. Thanks.`, approve: 'Approve and send', done: 'Crew told about core recovery' },
+    draft: { kind: 'note', to: sup ?? 'Supervisor', via: 'Message', body: `${hole ?? 'This hole'}: core recovery on the tray photos is below 85%. Please shorten the runs, check the core lifters and slow the feed in this ground, and measure recovery the same way as the geologist. Thanks.`, approve: 'Approve', done: 'Crew told about core recovery' },
   }
 }
 
@@ -587,6 +587,6 @@ function general(u: InboxUnit, c: AiCtx): Explanation {
   ;(u.items[0].evidence ?? []).slice(0, 3).forEach(e => why.push({ text: `Behind it: ${e}.` }))
   return {
     why, basis: 'Read from the figures behind this task.', sources: u.href ? [{ label: 'Open', href: u.href }] : [], confidence: 'Medium',
-    draft: u.action ? { kind: 'note', to: u.owner, via: 'Note', body: u.action, approve: 'Approve and send', done: `Sent to ${u.owner}` } : undefined,
+    draft: u.action ? { kind: 'note', to: u.owner, via: 'Note', body: u.action, approve: 'Approve', done: `Sent to ${u.owner}` } : undefined,
   }
 }
