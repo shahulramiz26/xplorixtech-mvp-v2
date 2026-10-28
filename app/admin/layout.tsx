@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
-  Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill,
+  Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill, PanelLeftClose, PanelLeftOpen, Radio,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'
 import { CurrencyProvider } from '../components/currency-context'
@@ -59,6 +59,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
       { href: '/admin/people', label: 'Drillers & crew', icon: HardHat },
       { href: '/admin/logs/drill', label: 'Drill logs', icon: Activity, badge: ['data', 'crew', 'safety'], also: ['/admin/intelligence/drill-logs'] },
       { href: '/admin/logs/maintenance', label: 'Maintenance', icon: Wrench, badge: ['maintenance'] },
+      { href: '/admin/pulse', label: 'Pulse · live sensors', icon: Radio },
     ],
   },
   { title: 'Contractors', items: [{ href: '/admin/contractors', label: 'Contractors', icon: Handshake, badge: ['contractors'], also: ['/admin/intelligence/contractors'] }] },
@@ -127,6 +128,21 @@ function menuFor(demo: boolean, owner: boolean) {
 }
 
 const SHELL_CSS = `
+  /* The menu on a wide screen: a 64px rail of icons that opens when it is
+   * touched, hovered or tabbed into, and stays open once pinned. */
+  @media (min-width: 1024px) {
+    .xpl-side { transition: width .18s ease-out, box-shadow .18s; }
+    .xpl-side.is-float { position: fixed !important; top: 0; bottom: 0; height: 100vh; }
+    .xpl-side.is-float.is-peek { box-shadow: 12px 0 40px rgba(var(--x-shadow),0.45); }
+    .xpl-side.is-rail { width: 64px !important; }
+    .xpl-side.is-rail .xpl-label, .xpl-side.is-rail .xpl-railhide { display: none !important; }
+    .xpl-side.is-rail .xpl-navlink { justify-content: center; padding: 0 !important; }
+    .xpl-side.is-rail .xpl-gtitle { font-size: 0 !important; height: 1px; padding: 0 !important; margin: 0 8px 8px; background: var(--x-side-line); }
+    .xpl-side.is-rail .xpl-badge { position: absolute; top: 6px; right: 8px; min-width: 8px !important; width: 8px; height: 8px !important; padding: 0 !important; font-size: 0 !important; border-radius: 4px !important; box-shadow: 0 0 0 2px var(--x-side); }
+    .xpl-side.is-rail .xpl-sidehead { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+    .xpl-side.is-rail .xpl-userrow { justify-content: center; padding: 0 !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { .xpl-side { transition: none !important; } }
   @media (max-width: 640px) { .xpl-main { padding: 16px !important; } .xpl-head { padding: 0 12px !important; } .xpl-search { width: 40px !important; min-width: 40px; justify-content: center; padding: 9px !important; } .xpl-search span, .xpl-search kbd { display: none !important; } }
   @media (pointer: coarse) { .xpl-navlink { min-height: 44px !important; } .xpl-head button, .xpl-head a { min-width: 44px; min-height: 44px; justify-content: center; } }
   .xpl-side-nav:hover { background: var(--x-side-hover); color: var(--x-side-text) !important; }
@@ -154,6 +170,14 @@ function longDate(d: string) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  /* Wide screens: the menu is pinned open, or rests as a rail of icons and
+   * opens over the page when touched, hovered or tabbed into ("peek"). */
+  const [pinned, setPinned] = useState(false)
+  const [peek, setPeek] = useState(false)
+  const railAtTap = useRef(false)
+  useEffect(() => { try { setPinned(localStorage.getItem('xplorix_side') === 'pinned') } catch {} }, [])
+  const pin = (v: boolean) => { setPinned(v); setPeek(false); try { v ? localStorage.setItem('xplorix_side', 'pinned') : localStorage.removeItem('xplorix_side') } catch {} }
+  const rail = !pinned && !peek
   const [palette, setPalette] = useState(false)
   const [bell, setBell] = useState(false)
   const pathname = usePathname()
@@ -200,20 +224,32 @@ function Shell({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-  useEffect(() => { setOpen(false); setBell(false) }, [pathname])
+  useEffect(() => { setOpen(false); setBell(false); setPeek(false) }, [pathname])
 
   return (
     <div className="min-h-screen flex xpl-app" style={{ background: T.bg, color: T.text }}>
       <style dangerouslySetInnerHTML={{ __html: SHELL_CSS }} />
 
+      {/* Holds the rail's width in the row while the menu floats over the page. */}
+      {!pinned && <div aria-hidden className="hidden lg:block" style={{ width: 64, flexShrink: 0 }} />}
+      {!pinned && peek && <div className="hidden lg:block fixed inset-0 z-40" onClick={() => setPeek(false)} />}
       {open && <div className="lg:hidden fixed inset-0 z-40" style={{ background: 'rgba(var(--x-shadow),0.7)' }} onClick={() => setOpen(false)} />}
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex flex-col w-60 lg:h-screen transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`xpl-side ${pinned ? 'is-pinned' : 'is-float'} ${rail ? 'is-rail' : 'is-peek'} fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex flex-col w-60 lg:h-screen transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        onPointerEnter={e => { if (e.pointerType === 'mouse' && !pinned) setPeek(true) }}
+        onPointerLeave={e => { if (e.pointerType === 'mouse' && !pinned) setPeek(false) }}
+        onPointerDown={e => { railAtTap.current = e.pointerType !== 'mouse' && rail && window.innerWidth >= 1024 }}
+        onClickCapture={e => {
+          // A tap on the closed rail opens it; the next tap picks the page.
+          if (railAtTap.current) { railAtTap.current = false; e.preventDefault(); e.stopPropagation(); setPeek(true) }
+        }}
+        onFocus={() => { if (!pinned) setPeek(true) }}
+        onBlur={e => { if (!pinned && !e.currentTarget.contains(e.relatedTarget as Node)) setPeek(false) }}
         style={{ background: 'var(--x-side)', borderRight: '1px solid var(--x-side-line)' }}
       >
-        <div className="flex items-center justify-between" style={{ padding: '14px 14px 13px', borderBottom: '1px solid var(--x-side-line)' }}>
+        <div className="flex items-center justify-between xpl-sidehead" style={{ padding: '14px 14px 13px', borderBottom: '1px solid var(--x-side-line)' }}>
           <Link href="/admin/dashboard" className="flex items-center gap-3" style={{ textDecoration: 'none', minWidth: 0 }}>
             {/* The logo as it always was, on its own paper tile so the dark half reads on the slate. */}
             <span style={{ width: 36, height: 36, borderRadius: 8, background: '#F6EDE5', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -223,17 +259,22 @@ function Shell({ children }: { children: React.ReactNode }) {
               <polygon points="50,50 95,5 70,5" fill="#EA580C" /><polygon points="50,50 95,95 70,95" fill="#EA580C" />
             </svg>
             </span>
-            <div style={{ minWidth: 0 }}>
+            <div className="xpl-label" style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--x-side-text)', letterSpacing: '0.08em', fontFamily: display }}>XPLORIX</div>
               <div style={{ fontSize: 12, color: 'var(--x-side-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{COMPANY_NAME}</div>
             </div>
           </Link>
+          <button type="button" className="hidden lg:flex xpl-side-hit xpl-railhide" onClick={() => pin(!pinned)}
+            aria-label={pinned ? 'Collapse the menu to icons' : 'Keep the menu open'} title={pinned ? 'Collapse the menu to icons' : 'Keep the menu open'}
+            style={{ color: 'var(--x-side-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 7, flexShrink: 0 }}>
+            {pinned ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+          </button>
           <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu"
             style={{ color: 'var(--x-side-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}><X size={18} /></button>
         </div>
 
         {!geoOnly && (
-          <div role="tablist" aria-label="Workspace" style={{ margin: '12px 12px 4px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 3, borderRadius: 8, background: 'rgba(0,0,0,0.22)', border: '1px solid var(--x-side-line)' }}>
+          <div role="tablist" aria-label="Workspace" className="xpl-railhide" style={{ margin: '12px 12px 4px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 3, borderRadius: 8, background: 'rgba(0,0,0,0.22)', border: '1px solid var(--x-side-line)' }}>
             {([['Drilling', '/admin/dashboard', !geology], ['Geology', '/admin/geology', geology]] as const).map(([label, href, on]) => (
               <Link key={label} href={href} role="tab" aria-selected={on} style={{
                 textAlign: 'center', padding: '6px 0', borderRadius: 6, fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
@@ -246,21 +287,22 @@ function Shell({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 overflow-y-auto" style={{ padding: '8px 10px 14px', scrollbarWidth: 'none' }}>
           {menu.map((g, gi) => (
             <div key={g.title ?? 'top'} style={{ marginTop: gi === 0 ? 4 : 14 }}>
-              {g.title && <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--x-side-faint)', padding: '0 10px 6px', letterSpacing: '0.09em', textTransform: 'uppercase' }}>{g.title}</div>}
+              {g.title && <div className="xpl-gtitle" style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--x-side-faint)', padding: '0 10px 6px', letterSpacing: '0.09em', textTransform: 'uppercase' }}>{g.title}</div>}
               {g.items.map(item => {
                 const active = lit?.href === item.href || (item.href.includes('?') && pathname === item.href.split('?')[0] && geology)
                 const n = badge(item.badge, item.href)
                 return (
-                  <Link key={item.href} href={item.href} className={active ? 'xpl-navlink' : 'xpl-navlink xpl-side-nav'} aria-current={active ? 'page' : undefined} style={{
+                  <Link key={item.href} href={item.href} className={active ? 'xpl-navlink' : 'xpl-navlink xpl-side-nav'} aria-current={active ? 'page' : undefined}
+                    aria-label={n > 0 ? `${item.label}, ${n} to act on now` : item.label} title={rail ? item.label : undefined} style={{
                     position: 'relative', display: 'flex', alignItems: 'center', gap: 10, minHeight: 36, padding: '0 10px', borderRadius: 7, marginBottom: 1,
                     textDecoration: 'none', fontSize: 13.5, fontWeight: active ? 600 : 500, transition: 'background-color .15s, color .15s',
                     background: active ? 'var(--x-side-active)' : 'transparent', color: active ? '#FFFFFF' : 'var(--x-side-muted)',
                   }}>
                     {active && <span aria-hidden style={{ position: 'absolute', left: -10, top: 8, bottom: 8, width: 3, borderRadius: '0 3px 3px 0', background: 'var(--x-orange-b)' }} />}
                     <item.icon size={16} style={{ color: active ? 'var(--x-orange-b)' : 'var(--x-side-faint)', flexShrink: 0 }} />
-                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                    <span className="xpl-label" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                     {n > 0 && (
-                      <span aria-label={`${n} to act on now`} style={{
+                      <span aria-hidden className="xpl-badge" style={{
                         minWidth: 20, height: 18, padding: '0 6px', borderRadius: 5, fontSize: 11, fontWeight: 600, fontFamily: mono,
                         background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>{n}</span>
@@ -274,7 +316,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
         <div style={{ padding: 12, borderTop: '1px solid var(--x-side-line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {demo && (
-          <Link href="/admin/billing" className="xpl-side-hit" style={{
+          <Link href="/admin/billing" className="xpl-side-hit xpl-railhide" style={{
             display: 'block', padding: '9px 11px', borderRadius: 8, textDecoration: 'none',
             border: '1px solid rgba(249,115,22,0.35)', background: 'rgba(249,115,22,0.10)',
           }}>
@@ -282,15 +324,15 @@ function Shell({ children }: { children: React.ReactNode }) {
             <div style={{ fontSize: 12, color: 'var(--x-side-muted)', marginTop: 2 }}>See plans and upgrade</div>
           </Link>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px 2px 4px' }}>
+          <div className="xpl-userrow" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px 2px 4px' }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: 'rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 12.5, color: 'var(--x-side-text)' }}>{geoOnly ? 'P' : 'A'}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="xpl-label" style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--x-side-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.status === 'in' ? session.user.name : geoOnly ? core.review.reviewer.replace(/ \(geologist\)$/, '') : 'Admin User'}</div>
               <div style={{ fontSize: 12, color: 'var(--x-side-muted)' }}>{geoOnly ? 'Geologist' : 'Company admin'}</div>
             </div>
             {session.status === 'in'
-              ? <button type="button" onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className="xpl-side-hit" style={{ padding: 9, color: 'var(--x-side-muted)', borderRadius: 8, display: 'flex', background: 'none', border: 'none', cursor: 'pointer' }}><LogOut size={15} /></button>
-              : <Link href="/auth/login" aria-label="Sign out" title="Sign out" className="xpl-side-hit" style={{ padding: 9, color: 'var(--x-side-muted)', borderRadius: 8, display: 'flex' }}><LogOut size={15} /></Link>}
+              ? <button type="button" onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className="xpl-side-hit xpl-railhide" style={{ padding: 9, color: 'var(--x-side-muted)', borderRadius: 8, display: 'flex', background: 'none', border: 'none', cursor: 'pointer' }}><LogOut size={15} /></button>
+              : <Link href="/auth/login" aria-label="Sign out" title="Sign out" className="xpl-side-hit xpl-railhide" style={{ padding: 9, color: 'var(--x-side-muted)', borderRadius: 8, display: 'flex' }}><LogOut size={15} /></Link>}
           </div>
         </div>
       </aside>

@@ -1,0 +1,341 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Pause, Play, Radio, Wifi, WifiOff, ArrowRight } from 'lucide-react'
+import { useAdminOverview } from '../../../lib/admin-overview'
+import {
+  METRICS, METRIC_KEYS, MODE_LABEL, OPEN_AT, alarms, buildFleet, clock, depthAt, history, level, reading, sensorMetres,
+  type Level, type Metric, type MetricKey, type PulseRig,
+} from '../../../lib/pulse'
+import { Page, PageHead, Card, Tile, Grid, Btn, T, num, eyebrow, mono, radius, tint, th, thR, td, tdR, tdStrong, rowLine, Status } from '../../components/kit'
+import { AiMark, Md } from '../../components/ai'
+
+/* ==========================================================================
+ * XPLORIX PULSE — what the rigs are doing right now, from their sensors
+ *
+ * Fleet first (one card a rig), then the chosen rig's live gauges and its
+ * last 30 minutes, then the alarms the readings raise with the reason for
+ * each, then the check every manager wants: does the sensor agree with the
+ * shift log? The feed is simulated (lib/pulse.ts) and the screen says so.
+ * ========================================================================== */
+
+const LEVEL_COLOR: Record<Level, string> = { good: T.green, warn: T.amber, bad: T.red, neutral: T.faint }
+const LEVEL_WORD: Record<Level, string> = { good: 'Normal', warn: 'Watch', bad: 'Out of range', neutral: 'Not running' }
+const fmt = (m: Metric, v: number | null) => v == null ? '—' : v.toLocaleString('en-IN', { maximumFractionDigits: m.dp, minimumFractionDigits: m.dp })
+
+export default function PulsePage() {
+  const o = useAdminOverview()
+  const fleet = useMemo(() => buildFleet(o.rigs), [o.rigs])
+  const [t, setT] = useState(OPEN_AT)
+  const [live, setLive] = useState(true)
+  const [pick, setPick] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!live) return
+    const id = window.setInterval(() => setT(x => x + 2), 2000)
+    return () => window.clearInterval(id)
+  }, [live])
+  useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get('rig')
+    if (r) setPick(r)
+  }, [])
+
+  const al = useMemo(() => alarms(fleet, t), [fleet, t])
+  const sel = fleet.find(p => p.rig === pick) ?? fleet.find(p => al.some(a => a.rig === p.rig && a.level === 'act')) ?? fleet[0]
+  const sending = fleet.filter(p => p.mode !== 'offline').length
+  const drilling = fleet.filter(p => p.mode === 'drilling').length
+  const act = al.filter(a => a.level === 'act').length
+  const metresNow = fleet.reduce((s, p) => s + sensorMetres(p, t), 0)
+  const fleetRop = fleet.filter(p => p.mode === 'drilling').map(p => reading(p, 'rop', t) ?? 0)
+
+  if (!sel) return <Page><PageHead question="What are the rigs doing right now?" answer="No rigs yet. Add a rig and its sensors will show here." /></Page>
+
+  return (
+    <Page>
+      <PageHead
+        question="What are the rigs doing right now?"
+        tone={act ? 'bad' : al.length ? 'warn' : 'good'}
+        answer={<>{sending} of {fleet.length} rigs sending, {drilling} drilling. {act ? `${act} ${act === 1 ? 'alarm needs' : 'alarms need'} someone now` : al.length ? `${al.length} to watch` : 'Every reading is in range'}.</>}
+        right={<>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 11px', minHeight: 36, borderRadius: 7, border: `1px solid ${T.border}`, background: T.card, fontSize: 12.5, color: T.muted }}>
+            <span aria-hidden className={live ? 'xpl-pulse-dot' : ''} style={{ width: 8, height: 8, borderRadius: 4, background: live ? T.green : T.faint }} />
+            <span style={{ ...num, color: T.text, fontWeight: 600 }}>{clock(t)}</span>
+            <span>{live ? 'live' : 'paused'}</span>
+          </span>
+          <Btn onClick={() => setLive(v => !v)}>{live ? <><Pause size={14} /> Pause feed</> : <><Play size={14} /> Resume feed</>}</Btn>
+        </>}
+      />
+      <style>{`
+        @keyframes xplPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--x-green) 55%, transparent) } 70% { box-shadow: 0 0 0 7px transparent } 100% { box-shadow: 0 0 0 0 transparent } }
+        .xpl-pulse-dot { animation: xplPulse 2s infinite; }
+        @media (prefers-reduced-motion: reduce) { .xpl-pulse-dot { animation: none; } }
+        .xpl-rigcard:hover { border-color: var(--x-border3) !important; }
+        .xpl-rigcard:focus-visible { outline: 2px solid var(--x-orange); outline-offset: 2px; }
+        @media (max-width: 900px) { .xpl-pulse-2 { grid-template-columns: minmax(0,1fr) !important; } }
+      `}</style>
+
+      <div role="note" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 14px', borderRadius: radius, border: `1px dashed ${T.border}`, background: tint('var(--x-blue)', 6), fontSize: 12.5, color: T.muted, lineHeight: 1.55 }}>
+        <Radio size={15} style={{ color: T.blue, flexShrink: 0, marginTop: 2 }} aria-hidden />
+        <span><b style={{ color: T.text }}>Simulated feed.</b> No rig is fitted with sensors yet. This shows how Pulse will look once they are: the readings follow what today&rsquo;s drill logs say each rig is doing, and a few rigs play out patterns real sensors catch.</span>
+      </div>
+
+      <Grid min={180}>
+        <Tile label="Rigs sending" value={`${sending}/${fleet.length}`} note={fleet.length - sending ? `${fleet.length - sending} with no signal` : 'All on line'} tone={fleet.length - sending ? 'warn' : 'good'} />
+        <Tile label="Metres by sensor today" value={`${metresNow.toLocaleString('en-IN', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} m`} note="Counted by the depth encoders" />
+        <Tile label="Fleet penetration now" value={fleetRop.length ? `${(fleetRop.reduce((s, v) => s + v, 0) / fleetRop.length).toFixed(1)} m/h` : '—'} note={`Average of ${fleetRop.length} drilling ${fleetRop.length === 1 ? 'rig' : 'rigs'}`} />
+        <Tile label="Alarms" value={al.length} note={act ? `${act} to act on now` : al.length ? 'To watch, none urgent' : 'None'} tone={act ? 'bad' : al.length ? 'warn' : 'good'} />
+      </Grid>
+
+      {/* FLEET */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 45%), 1fr))', gap: 12 }}>
+        {fleet.map(p => <RigCard key={p.rig} p={p} t={t} on={p.rig === sel.rig} alarm={al.filter(a => a.rig === p.rig)} onPick={() => setPick(p.rig)} />)}
+      </div>
+
+      {/* SELECTED RIG */}
+      <Card title={`${sel.rig} live`} subtitle={[sel.project, sel.hole ? `hole ${sel.hole}` : null, MODE_LABEL[sel.mode]].filter(Boolean).join(' · ')}
+        right={<span style={{ ...num, fontSize: 13, color: T.muted }}>Bit at <b style={{ color: T.text, fontSize: 15 }}>{depthAt(sel, t).toFixed(2)} m</b></span>}>
+        {sel.mode === 'offline' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '22px 4px', color: T.muted, fontSize: 13.5 }}>
+            <WifiOff size={18} aria-hidden /> No signal from {sel.rig}. The gateway keeps readings while it is out of range and sends them when it is back.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 45%), 1fr))', gap: 10 }}>
+            {METRIC_KEYS.map(k => <Gauge key={k} m={METRICS[k]} v={reading(sel, k, t)} p={sel} />)}
+          </div>
+        )}
+      </Card>
+
+      {sel.mode !== 'offline' && (
+        <Card title="Last 30 minutes" subtitle={`${sel.rig} · one reading a minute · shaded band is the normal range`}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 12 }}>
+            {(['rpm', 'wob', 'torque', 'pressure', 'flow', 'rop', 'engine', 'fuel'] as MetricKey[]).map(k => <Trend key={k} m={METRICS[k]} p={sel} t={t} />)}
+          </div>
+        </Card>
+      )}
+
+      <div className="xpl-pulse-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.25fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }}>
+        {/* ALARMS */}
+        <Card title="What the sensors are telling you" subtitle={`${al.length} across the fleet · newest pattern first within each level`}>
+          {al.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>Every reading is in its normal range.</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {al.map(a => (
+              <div key={a.id} style={{ position: 'relative', padding: '12px 14px 12px 16px', borderRadius: 9, border: `1px solid ${T.border}`, background: T.card, boxShadow: `inset 3px 0 0 ${a.level === 'act' ? T.red : T.amber}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <Status tone={a.level === 'act' ? 'bad' : 'warn'}>{a.level === 'act' ? 'Act now' : 'Watch'}</Status>
+                  <button onClick={() => setPick(a.rig)} style={{ ...num, fontSize: 12.5, fontWeight: 600, color: T.text, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: T.border, textUnderlineOffset: 3 }}>{a.rig}</button>
+                  <span style={{ fontSize: 12, color: T.faint }}>since {clock(a.since, false)}</span>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginTop: 7, lineHeight: 1.4 }}>{a.title}</div>
+                <div style={{ marginTop: 8 }}><AiMark label="Why" size={11} /></div>
+                <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, margin: '4px 0 0' }}><Md text={a.why} /></p>
+                <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, margin: '6px 0 0' }}><b style={{ color: T.text }}>What to do: </b>{a.todo}</p>
+                <Link href={a.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 9, fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>{a.action} <ArrowRight size={13} /></Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <LogCheck fleet={fleet} t={t} />
+          <Fitted p={sel} t={t} />
+        </div>
+      </div>
+    </Page>
+  )
+}
+
+/* ── One card a rig ─────────────────────────────────────────────────────── */
+
+function RigCard({ p, t, on, alarm, onPick }: { p: PulseRig; t: number; on: boolean; alarm: { level: string }[]; onPick: () => void }) {
+  const worst = alarm.some(a => a.level === 'act') ? 'bad' : alarm.length ? 'warn' : p.mode === 'drilling' ? 'good' : 'neutral'
+  const color = LEVEL_COLOR[worst as Level]
+  const rop = history(p, 'rop', t).map(h => h.v ?? 0)
+  return (
+    <button onClick={onPick} aria-pressed={on} className="xpl-rigcard" style={{
+      textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', padding: '12px 14px', borderRadius: radius, minWidth: 0,
+      background: T.card, border: `1px solid ${on ? 'var(--x-orange)' : T.border}`, boxShadow: on ? '0 0 0 1px var(--x-orange)' : 'var(--x-card-shadow)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ ...num, fontSize: 14, fontWeight: 600, color: T.text }}>{p.rig}</span>
+        <Signal bars={p.signal} />
+      </div>
+      <div style={{ fontSize: 12, color: T.faint, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {p.hole ? `${p.hole} · ` : ''}{MODE_LABEL[p.mode]}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, marginTop: 10 }}>
+        <div>
+          <div style={eyebrow}>Depth</div>
+          <div style={{ ...num, fontSize: 19, fontWeight: 600, color: T.text, marginTop: 3 }}>{depthAt(p, t).toFixed(1)}<span style={{ fontSize: 12, color: T.faint, marginLeft: 3 }}>m</span></div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={eyebrow}>m/h</div>
+          <div style={{ ...num, fontSize: 15, fontWeight: 600, color: T.text, marginTop: 3 }}>{p.mode === 'drilling' ? (reading(p, 'rop', t) ?? 0).toFixed(1) : '—'}</div>
+        </div>
+      </div>
+      <MiniLine values={rop} color={p.mode === 'drilling' ? 'var(--x-blue)' : 'var(--x-faint)'} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: alarm.length ? T.text : T.faint, fontWeight: alarm.length ? 600 : 400 }}>
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 2, background: color }} />
+        {alarm.length ? `${alarm.length} ${alarm.length === 1 ? 'alarm' : 'alarms'}` : p.mode === 'drilling' ? 'All readings normal' : p.mode === 'offline' ? 'Waiting for signal' : 'Not drilling'}
+      </div>
+    </button>
+  )
+}
+
+function Signal({ bars }: { bars: number }) {
+  return (
+    <span role="img" aria-label={bars ? `Signal ${bars} of 4` : 'No signal'} style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 12 }}>
+      {bars === 0 ? <WifiOff size={13} style={{ color: T.faint }} /> : [1, 2, 3, 4].map(i => (
+        <span key={i} style={{ width: 3, height: 3 + i * 2.2, borderRadius: 1, background: i <= bars ? T.muted : 'var(--x-border)' }} />
+      ))}
+    </span>
+  )
+}
+
+function MiniLine({ values, color }: { values: number[]; color: string }) {
+  const w = 200, h = 30, max = Math.max(1, ...values)
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${(i / (values.length - 1)) * w},${h - 2 - (v / max) * (h - 4)}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden style={{ display: 'block', width: '100%', height: h, marginTop: 8 }}>
+      <path d={`${d} L${w},${h} L0,${h} Z`} fill={tint(color, 12)} />
+      <path d={d} fill="none" stroke={color} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
+    </svg>
+  )
+}
+
+/* ── Live gauge: an arc with its normal band, the value, and a word ─────── */
+
+const A0 = -120, A1 = 120
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const a = (deg - 90) * Math.PI / 180
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+}
+function arc(cx: number, cy: number, r: number, d0: number, d1: number) {
+  const [x0, y0] = polar(cx, cy, r, d0), [x1, y1] = polar(cx, cy, r, d1)
+  return `M${x0},${y0} A${r},${r} 0 ${d1 - d0 > 180 ? 1 : 0} 1 ${x1},${y1}`
+}
+function Gauge({ m, v, p }: { m: Metric; v: number | null; p: PulseRig }) {
+  const lv = level(m, v, p.mode)
+  const c = LEVEL_COLOR[lv]
+  const at = (x: number) => A0 + (Math.max(m.min, Math.min(m.max, x)) - m.min) / (m.max - m.min) * (A1 - A0)
+  const cx = 60, cy = 58, r = 46
+  return (
+    <div style={{ padding: '10px 10px 12px', borderRadius: 9, border: `1px solid ${T.border}`, background: 'var(--x-raised)', textAlign: 'center' }}>
+      <div style={{ ...eyebrow, textAlign: 'left' }}>{m.label}</div>
+      <svg viewBox="0 0 120 96" style={{ display: 'block', width: '100%', maxWidth: 150, margin: '2px auto 0' }} role="img" aria-label={`${m.label} ${fmt(m, v)} ${m.unit}, ${LEVEL_WORD[lv]}`}>
+        <path d={arc(cx, cy, r, A0, A1)} fill="none" stroke="var(--x-border)" strokeWidth={8} strokeLinecap="round" />
+        <path d={arc(cx, cy, r, at(m.lo), at(m.hi))} fill="none" stroke={tint('var(--x-green)', 30)} strokeWidth={8} />
+        {v != null && at(v) > A0 + 0.5 && <path d={arc(cx, cy, r, A0, at(v))} fill="none" stroke={c} strokeWidth={8} strokeLinecap="round" style={{ transition: 'd .6s' }} />}
+        <text x={cx} y={cy + 4} textAnchor="middle" style={{ fontFamily: mono, fontSize: 19, fontWeight: 600, fill: 'var(--x-text)' }}>{fmt(m, v)}</text>
+        <text x={cx} y={cy + 19} textAnchor="middle" style={{ fontSize: 10.5, fill: 'var(--x-faint)' }}>{m.unit}</text>
+        <text x={polar(cx, cy, r, A0)[0]} y={92} textAnchor="middle" style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>{m.min}</text>
+        <text x={polar(cx, cy, r, A1)[0]} y={92} textAnchor="middle" style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>{m.max}</text>
+      </svg>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: lv === 'neutral' ? T.faint : T.text }}>
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 4, background: c }} />{LEVEL_WORD[lv]}
+      </div>
+    </div>
+  )
+}
+
+/* ── One small chart for one reading over 30 minutes ───────────────────── */
+
+function Trend({ m, p, t }: { m: Metric; p: PulseRig; t: number }) {
+  const h = history(p, m.key, t)
+  const W = 300, H = 92, L = 34, R = 6, Tp = 8, B = 18
+  const vals = h.map(x => x.v).filter((x): x is number => x != null)
+  const lo = Math.min(m.lo, ...vals), hi = Math.max(m.hi, ...vals)
+  const pad = (hi - lo) * 0.12 || 1
+  const y0 = Math.max(m.min, lo - pad), y1 = hi + pad
+  const X = (i: number) => L + (i / (h.length - 1)) * (W - L - R)
+  const Y = (v: number) => Tp + (1 - (v - y0) / (y1 - y0)) * (H - Tp - B)
+  const d = h.map((x, i) => x.v == null ? '' : `${i && h[i - 1].v != null ? 'L' : 'M'}${X(i).toFixed(1)},${Y(x.v).toFixed(1)}`).join(' ')
+  const now = h[h.length - 1].v
+  const lv = level(m, now, p.mode)
+  const tick = (v: number) => v >= 100 ? Math.round(v).toString() : v.toFixed(m.dp ? 1 : 0)
+  return (
+    <div style={{ padding: '10px 12px 6px', borderRadius: 9, border: `1px solid ${T.border}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>{m.label}</span>
+        <span style={{ ...num, fontSize: 13, fontWeight: 600, color: T.text }}>{fmt(m, now)} <span style={{ fontSize: 11, color: T.faint, fontWeight: 400 }}>{m.unit}</span>
+          <span aria-hidden style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 4, background: LEVEL_COLOR[lv], marginLeft: 6 }} /></span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: '100%', height: 'auto', marginTop: 4 }} role="img" aria-label={`${m.label} over the last 30 minutes, now ${fmt(m, now)} ${m.unit}`}>
+        <rect x={L} width={W - L - R} y={Y(Math.min(m.hi, y1))} height={Math.max(0, Y(Math.max(m.lo, y0)) - Y(Math.min(m.hi, y1)))} fill={tint('var(--x-green)', 9)} />
+        {[y0, (y0 + y1) / 2, y1].map((v, i) => (
+          <g key={i}>
+            <line x1={L} x2={W - R} y1={Y(v)} y2={Y(v)} stroke="var(--x-border)" strokeDasharray="2 3" strokeWidth={0.7} />
+            <text x={L - 5} y={Y(v) + 3} textAnchor="end" style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>{tick(v)}</text>
+          </g>
+        ))}
+        <path d={d} fill="none" stroke={lv === 'bad' ? 'var(--x-red)' : lv === 'warn' ? 'var(--x-amber)' : 'var(--x-blue)'} strokeWidth={1.8} strokeLinejoin="round" />
+        {now != null && <circle cx={X(h.length - 1)} cy={Y(now)} r={3} fill={LEVEL_COLOR[lv]} />}
+        <text x={L} y={H - 4} style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>{clock(h[0].t, false)}</text>
+        <text x={W - R} y={H - 4} textAnchor="end" style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>now</text>
+      </svg>
+    </div>
+  )
+}
+
+/* ── Sensor against shift log ──────────────────────────────────────────── */
+
+function LogCheck({ fleet, t }: { fleet: PulseRig[]; t: number }) {
+  const rows = fleet.filter(p => p.logged != null || p.mode === 'drilling')
+  return (
+    <Card title="Sensor against shift log" subtitle="Metres today: what the crew logged, what the depth sensor counted" pad={false}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr><th style={th}>Rig</th><th style={thR}>Log</th><th style={thR}>Sensor</th><th style={th}>Check</th></tr></thead>
+          <tbody>
+            {rows.map(p => {
+              const s = sensorMetres(p, t)
+              const gap = p.logged == null ? null : s - p.logged
+              const tone = p.logged == null ? 'warn' : gap! > Math.max(2, p.logged * 0.06) ? 'warn' : 'good'
+              return (
+                <tr key={p.rig} style={{ borderTop: rowLine }}>
+                  <td style={{ ...tdStrong, fontFamily: mono }}>{p.rig}</td>
+                  <td style={tdR}>{p.logged == null ? '—' : `${p.logged.toFixed(1)} m`}</td>
+                  <td style={tdR}>{s.toFixed(1)} m</td>
+                  <td style={td}><Status tone={tone}>{p.logged == null ? 'Not checked yet' : tone === 'good' ? (Math.abs(gap!) < 0.5 ? 'Agrees' : `Agrees, +${gap!.toFixed(1)} m since`) : `${gap!.toFixed(1)} m not logged`}</Status></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ padding: '10px 14px', fontSize: 12, color: T.faint, borderTop: rowLine, lineHeight: 1.5 }}>
+        Small gaps are metres drilled since the log was sent. A gap over 6% is raised as an alarm.
+      </div>
+    </Card>
+  )
+}
+
+/* ── What is fitted on the chosen rig ──────────────────────────────────── */
+
+function Fitted({ p, t }: { p: PulseRig; t: number }) {
+  const rows = [
+    ...METRIC_KEYS.map(k => ({ name: METRICS[k].label, how: METRICS[k].how, every: k === 'fuel' ? '1 min' : '2 s' })),
+    { name: 'Depth', how: 'Encoder on the feed frame', every: '2 s' },
+    { name: 'Gateway', how: '4G with on-rig storage when signal drops', every: '—' },
+  ]
+  const off = p.mode === 'offline'
+  return (
+    <Card title={`Sensors on ${p.rig}`} subtitle={off ? 'No signal: last reading before 07:00' : `All reporting · last reading ${clock(t)}`} pad={false}
+      right={off ? <WifiOff size={15} style={{ color: T.faint }} aria-label="No signal" /> : <Wifi size={15} style={{ color: T.green }} aria-label="On line" />}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr><th style={th}>Sensor</th><th style={th}>How</th><th style={thR}>Every</th></tr></thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.name} style={{ borderTop: rowLine }}>
+              <td style={tdStrong}><span aria-hidden style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 4, marginRight: 8, background: off ? T.faint : T.green }} />{r.name}</td>
+              <td style={{ ...td, whiteSpace: 'normal', fontSize: 12.5 }}>{r.how}</td>
+              <td style={tdR}>{r.every}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  )
+}
