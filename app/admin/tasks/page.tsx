@@ -10,6 +10,7 @@ import { DEPTS, deptLabel, type Dept } from '../../../lib/findings'
 import { placeTasks, DEPT_COLOR, type TaskItem } from '../../../lib/tasks'
 import { useInbox, UnitActions } from '../../components/inbox'
 import { Page, T, tint, display, useEscape } from '../../components/kit'
+import { TaskAi } from '../../components/ai'
 
 /* ==========================================================================
  * TASKS — every notification on the day it is due
@@ -44,7 +45,7 @@ function Tasks() {
   const inGroup = (ds: Dept[]) => dept === 'all' || ds.some(d => (group.length ? group : [dept as Dept]).includes(d))
   const [view, setView] = useState<View>('week')
   const [anchor, setAnchor] = useState(TODAY)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(params.get('open'))
 
   const all = useMemo(() => placeTasks(inbox.open, inbox.reminders, TODAY), [inbox.open, inbox.reminders])
   const counts = useMemo(() => {
@@ -216,7 +217,7 @@ function TaskPanel({ t, color, onClose }: { t: TaskItem; color: string; onClose:
   const u = t.u
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(var(--x-shadow),0.45)', display: 'flex', justifyContent: 'flex-end' }}>
-      <aside role="dialog" aria-modal aria-label={u.title} onClick={e => e.stopPropagation()} style={{ width: 'min(480px, 100%)', height: '100%', overflowY: 'auto', background: T.card, borderLeft: `5px solid ${color}`, padding: '18px 20px', display: 'grid', alignContent: 'start', gap: 12 }}>
+      <aside role="dialog" aria-modal aria-label={u.title} onClick={e => e.stopPropagation()} style={{ width: 'min(560px, 100%)', height: '100%', overflowY: 'auto', background: T.card, borderLeft: `5px solid ${color}`, padding: '18px 20px', display: 'grid', alignContent: 'start', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color }}>{deptLabel(u.dept).toUpperCase()}</span>
           <button type="button" aria-label="Close" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, padding: 0 }}><X size={18} /></button>
@@ -229,7 +230,7 @@ function TaskPanel({ t, color, onClose }: { t: TaskItem; color: string; onClose:
         {u.items.length > 1 ? (
           <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4, fontSize: 13.5, color: T.text, lineHeight: 1.5 }}>{u.items.map(f => <li key={f.id}>{f.title}</li>)}</ol>
         ) : <p style={{ margin: 0, fontSize: 13.5, color: T.muted, lineHeight: 1.6 }}>{u.detail}</p>}
-        {u.action && <p style={{ margin: 0, fontSize: 13.5, color: T.text, lineHeight: 1.6 }}><b>What to do: </b>{u.action}</p>}
+        <TaskAi u={u} />
         <div style={{ paddingTop: 6 }}><UnitActions u={u} moveWord="Move to…" /></div>
       </aside>
     </div>

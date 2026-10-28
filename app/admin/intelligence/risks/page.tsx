@@ -13,6 +13,7 @@ import {
 } from '../../../components/kit'
 import { Basis } from '../../../components/outlook'
 import { useIntel, IntelTabs, n0 } from '../shared'
+import { useInbox } from '../../../components/inbox'
 
 /* ==========================================================================
  * RISK ANALYSIS — what can go wrong, how likely, how big, and what to do
@@ -46,6 +47,7 @@ function laneOf(when: string, thisMonth: string, nextMonth: string): 'Now' | 'Th
 
 export default function RiskAnalysis() {
   const { state, f } = useIntel()
+  const inbox = useInbox()
   const [area, setArea] = useState<'all' | RiskArea>('all')
   const all = useMemo(() => buildRiskRegister(f, state), [f, state])
   const numbered = all.map((r, i) => ({ ...r, n: i + 1 }))
@@ -150,7 +152,7 @@ export default function RiskAnalysis() {
         </div>
 
         <Card title="Risk register" pad={false}
-          subtitle="Most pressing first. Each line has a date, what is at stake and one thing to do."
+          subtitle="Most pressing first. Each risk is also a task: open it for the cause and a drafted next step."
           right={<Seg<'all' | RiskArea> value={area} onChange={setArea} options={[{ value: 'all', label: `All · ${all.length}` }, ...areas.filter(a => a.count).map(a => ({ value: a.area, label: `${RISK_AREA_LABEL[a.area]} · ${a.count}` }))]} />}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
@@ -180,7 +182,12 @@ export default function RiskAnalysis() {
                       <td style={cell}><Status tone={b.tone}>{b.word}</Status><div style={{ fontSize: 11.5, color: T.faint, marginTop: 4 }}>{r.score} of 9</div></td>
                       <td style={cell}>
                         <div style={{ color: T.text }}>{r.action}</div>
-                        <Link href={r.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>{r.linkLabel} <ArrowRight size={13} /></Link>
+                        {(() => {
+                          const task = inbox.units.find(u => u.items.some(i => i.id === `risk:${r.key}`))
+                          return task
+                            ? <Link href={`/admin/tasks?dept=all&open=${encodeURIComponent(task.id)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>Why, and the drafted next step <ArrowRight size={13} /></Link>
+                            : <Link href={r.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 12.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>{r.linkLabel} <ArrowRight size={13} /></Link>
+                        })()}
                       </td>
                     </tr>
                   )

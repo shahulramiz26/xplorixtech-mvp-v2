@@ -9,6 +9,7 @@ import { TODAY, addDays } from '../../../lib/inventory-store'
 import { deptLabel, type Dept } from '../../../lib/findings'
 import { useInbox, useMark, SevTag, dayWord } from '../../components/inbox'
 import { Page, T, tint, display, inputStyle } from '../../components/kit'
+import { TaskAi } from '../../components/ai'
 
 /* ==========================================================================
  * ONE BY ONE — every open story in turn
@@ -125,7 +126,7 @@ function Review() {
                 <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 12, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>At stake</div><div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: T.text }}>{current.money ? moneyL(current.money) : '—'}</div><div style={{ fontSize: 12, color: T.muted }}>{current.moneyNote ?? 'not put in money'}</div></div>
                 <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 12, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>Who</div><div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: T.text }}>{current.owner}</div><div style={{ fontSize: 12, color: T.muted }}>{current.due ? (current.due <= TODAY ? 'by today' : `by ${dayWord(current.due)}`) : 'as soon as it can be done'}</div></div>
               </div>
-              {current.action && <div style={{ display: 'grid', gap: 4 }}><h2 style={{ margin: 0, fontSize: 14, color: T.text }}>What to do</h2><p style={{ margin: 0, color: T.text, lineHeight: 1.55 }}>{current.action}</p></div>}
+              <TaskAi u={current} />
               {current.items.some(f => f.evidence?.length) && (
                 <details>
                   <summary style={{ cursor: 'pointer', fontWeight: 600, minHeight: 30, color: T.text }}>The shifts, orders and holes behind it</summary>

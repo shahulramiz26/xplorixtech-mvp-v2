@@ -9,10 +9,11 @@ import { earlyWarnings } from '../../../lib/outlook-analytics'
 import { answersOf, buildScorecard, scoreWord, type Score } from '../../../lib/scorecard'
 import { useInbox } from '../../components/inbox'
 import { WarningCard } from '../../components/outlook-charts'
+import { LearnedCard, useLearning } from '../../components/ai-learn'
 import { Page, Card, Table, Empty, T, tint, display, th, thR, td, tdR, tdStrong, rowLine } from '../../components/kit'
 
 /* ==========================================================================
- * SCORECARD — is XPLORIX helping, and is the team using it?
+ * AI SCORECARD — is XPLORIX AI right, and is the team acting on it?
  *
  * Four scores out of 100 from the record (lib/scorecard.ts), the overall
  * score, how they move month by month, the departments, what was set aside
@@ -42,6 +43,7 @@ export default function ScorecardPage() {
   const { state: inv } = useInventory()
   const inbox = useInbox()
   const [proofOpen, setProofOpen] = useState(false)
+  const learned = useLearning()
   const answers = useMemo(() => answersOf(state.findingStatus ?? {}), [state.findingStatus])
   const warnings = useMemo(() => earlyWarnings(state, inv, TODAY), [state, inv])
   const sc = useMemo(() => buildScorecard(answers, inbox, warnings), [answers, inbox, warnings])
@@ -52,8 +54,8 @@ export default function ScorecardPage() {
   return (
     <Page>
       <div>
-        <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Scorecard</h1>
-        <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Is XPLORIX helping, and is the team using it? Four scores out of 100, all from your own record. <span style={{ display: 'inline-block', fontSize: 11.5, fontWeight: 600, padding: '1px 8px', borderRadius: 99, background: tint(T.blue, 12), color: T.text }}>Demo data</span></p>
+        <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>AI Scorecard</h1>
+        <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Is XPLORIX AI right, and is the team acting on it? Four scores out of 100, all from your own record. <span style={{ display: 'inline-block', fontSize: 11.5, fontWeight: 600, padding: '1px 8px', borderRadius: 99, background: tint(T.blue, 12), color: T.text }}>Demo data</span></p>
       </div>
 
       <section aria-label="Overall score" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: 12 }}>
@@ -102,14 +104,7 @@ export default function ScorecardPage() {
       </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(460px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
-        <Card title="Set aside as not relevant" subtitle="Where XPLORIX was wrong, in your words. Each reason is how the checks get sharper." pad={false}>
-          {sc.setAside.length === 0 ? <Empty>Nothing set aside.</Empty> : sc.setAside.map((a, i) => (
-            <div key={a.id} style={{ padding: '11px 18px', borderTop: i ? rowLine : 'none', display: 'grid', gap: 3 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13.5 }}><b style={{ color: T.text }}>{a.title}</b><span style={{ color: T.faint, whiteSpace: 'nowrap', fontSize: 12.5 }}>{day(a.at)}</span></div>
-              <span style={{ fontSize: 12.5, color: T.muted }}>&ldquo;{a.note ?? 'No reason given'}&rdquo;</span>
-            </div>
-          ))}
-        </Card>
+        <LearnedCard l={learned} />
         <Card title="Recently answered" subtitle="Found, and how many days until someone answered it." pad={false}>
           {sc.answers.slice(0, 8).map((a, i) => (
             <div key={a.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, padding: '10px 18px', borderTop: i ? rowLine : 'none', alignItems: 'center' }}>

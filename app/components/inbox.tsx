@@ -8,6 +8,7 @@ import { useInventory, TODAY, addDays } from '../../lib/inventory-store'
 import { buildInbox, type InboxResult, type InboxUnit } from '../../lib/inbox'
 import { deptLabel, SEVERITY_LABEL, type Dept, type Severity } from '../../lib/findings'
 import { T, tint, inputStyle, display } from './kit'
+import { TaskAi } from './ai'
 
 /* ==========================================================================
  * THE INBOX ON SCREEN
@@ -206,12 +207,12 @@ export function InboxRow({ u, open, onToggle, first, showDept = true }: { u: Inb
               ))}
             </ol>
           ) : <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.55 }}>{u.detail}</div>}
-          {u.action && <div style={{ fontSize: 13, color: T.text, lineHeight: 1.55 }}><b style={{ fontWeight: 600 }}>What to do: </b>{u.action}</div>}
           <div style={{ fontSize: 12, color: T.muted, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><UserRound size={13} aria-hidden />{u.state === 'handed' ? `Handed to ${u.status?.to}` : u.owner}</span>
             {u.moneyNote && u.money ? <span>{moneyL(u.money)} {u.moneyNote}</span> : null}
-            {closed && u.status?.note ? <span>Reason: {u.status.note}</span> : null}
+            {closed && u.status?.note ? <span>{u.state === 'done' ? 'Done: ' : 'Reason: '}{u.status.note}</span> : null}
           </div>
+          <TaskAi u={u} />
           <UnitActions u={u} />
         </div>
       )}

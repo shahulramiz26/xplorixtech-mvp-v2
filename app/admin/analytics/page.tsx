@@ -19,7 +19,7 @@ const BOARDS = [
 export default function AnalyticsPage() {
   return (
     <Page>
-      <Head title="Analytics" sub="Six dashboards, worked out from your own shift and maintenance logs. Each has its own insights at the top. Pick the question you are asking." />
+      <Head title="Analytics" sub="Six dashboards, worked out from your own shift and maintenance logs. Each opens on the question it answers; ask XPLORIX about anything on them." />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
         {BOARDS.map(b => (
           <Link key={b.href} href={b.href} className="xpl-row" style={{

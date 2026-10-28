@@ -14,6 +14,7 @@ import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
 import { deptLabel, type Dept } from '../../lib/findings'
 import { InboxProvider, useInbox } from '../components/inbox'
+import { AskProvider, AskButton } from '../components/ai'
 import { DeptTabs } from '../components/dept-tabs'
 import { useAdminOverview, financeLink, type Tone } from '../../lib/admin-overview'
 import { T, display, toneColor } from '../components/kit'
@@ -67,7 +68,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: 'Management',
     items: [
-      { href: '/admin/value', label: 'Scorecard', icon: Gauge },
+      { href: '/admin/value', label: 'AI Scorecard', icon: Gauge },
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/intelligence/months', label: 'Outlook', icon: CalendarRange, also: ['/admin/intelligence/risks'] },
     ],
@@ -305,6 +306,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span className="hidden md:inline" style={{ fontSize: 12.5, color: T.faint, whiteSpace: 'nowrap' }}>{longDate(o.today)}</span>
+              {!geology && <AskButton />}
               <SavedState />
               <ThemeToggle />
               <div style={{ position: 'relative' }}>
@@ -450,7 +452,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <CurrencyProvider>
       <CostingProvider>
         <ThemeScope />
-        <Guard role="admin"><CoreProvider><InboxProvider><Shell>{children}</Shell></InboxProvider></CoreProvider></Guard>
+        <Guard role="admin"><CoreProvider><InboxProvider><AskProvider><Shell>{children}</Shell></AskProvider></InboxProvider></CoreProvider></Guard>
       </CostingProvider>
     </CurrencyProvider>
   )

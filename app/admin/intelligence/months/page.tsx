@@ -1,5 +1,6 @@
 'use client'
 
+import { ForecastCheck, useLearning } from '../../../components/ai-learn'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { money, moneyL, monthLabel, monthOf } from '../../../../lib/costing-store'
@@ -328,6 +329,7 @@ export default function MonthsPage() {
   const thisName = monthLabel(f.thisMonth), nextName = monthLabel(f.nextMonth)
   const points = useMemo(() => monthSeries(state, inv, f), [state, inv, f])
   const warnings = useMemo(() => earlyWarnings(state, inv, f.today), [state, inv, f.today])
+  const learned = useLearning()
   const lv = useMemo(() => levers(f), [f])
   const risks = useMemo(() => buildRiskRegister(f, state), [f, state])
   const cur = points.find(p => p.kind === 'current'), next = points.find(p => p.kind === 'forecast')
@@ -351,7 +353,7 @@ export default function MonthsPage() {
           <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Forecast, what drives it, what could change it, and what is starting to turn. From your own record, as of {shortDate(f.today)}.</p>
         </div>
         <nav aria-label="On this page" className="xpl-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[['#forecast', 'Forecast'], ['#drivers', 'Drivers'], ['#scenarios', 'Scenarios'], ['#warnings', 'Early warnings'], ['#risks', 'Risks'], ['#detail', 'Month in detail']].map(([h, l]) => (
+          {[['#forecast', 'Forecast'], ['#accuracy', 'Accuracy'], ['#drivers', 'Drivers'], ['#scenarios', 'Scenarios'], ['#warnings', 'Early warnings'], ['#detail', 'Month in detail']].map(([h, l]) => (
             <a key={h} href={h} style={{ fontSize: 12.5, fontWeight: 600, color: T.text, textDecoration: 'none', padding: '6px 11px', borderRadius: 99, border: `1px solid ${T.border}`, background: T.card }}>{l}</a>
           ))}
         </nav>
@@ -372,6 +374,10 @@ export default function MonthsPage() {
             <Key fill="var(--x-muted)" label="Closed" /><Key fill={T.orange} label="Logged this month" /><Key hatch label="Forecast" /><span>│ Slowest to best</span>
           </div>
         </Card>
+      </div>
+
+      <div id="accuracy" style={{ scrollMarginTop: 80 }}>
+        <ForecastCheck l={learned} />
       </div>
 
       <div id="drivers" style={{ scrollMarginTop: 80 }}>
@@ -418,15 +424,10 @@ export default function MonthsPage() {
       </div>
 
       <div id="risks" style={{ scrollMarginTop: 80 }}>
-        <Card title="Top risks" subtitle="From the risk register, most pressing first." right={<Link href="/admin/intelligence/risks" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Full risk register →</Link>} pad={false}>
-          {risks.slice(0, 5).map((r, i) => (
-            <div key={r.key} style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', gap: 14, alignItems: 'center', padding: '12px 18px', borderTop: i ? rowLine : 'none' }}>
-              <span style={{ width: 30, height: 30, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#fff', background: r.score >= 6 ? T.red : r.score >= 3 ? T.amber : 'var(--x-muted)' }}>{r.score}</span>
-              <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{r.title}</div><div style={{ fontSize: 12, color: T.faint }}>{r.likelihood} chance · {r.when} · {r.action}</div></div>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>{r.impact != null ? moneyL(r.impact) : '—'}</span>
-            </div>
-          ))}
-        </Card>
+        <Link href="/admin/tasks?dept=all" className="xpl-row" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, textDecoration: 'none' }}>
+          <span style={{ fontSize: 13.5, color: T.text }}><b>{risks.length} risks</b> found in this forecast are in Tasks, each with its cause and a drafted next step{risks.filter(r => r.score >= 6).length ? <>, <b style={{ color: 'var(--x-bad-text)' }}>{risks.filter(r => r.score >= 6).length} to act on now</b></> : null}.</span>
+          <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 600, color: T.orange }}>Open Tasks →</span>
+        </Link>
       </div>
 
       <div id="detail" style={{ scrollMarginTop: 80, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
@@ -436,8 +437,7 @@ export default function MonthsPage() {
       {tab === 'this' ? <ThisMonth f={f} /> : <NextMonth f={f} />}
 
       <Basis lines={f.basis} note={<>
-        This is a projection from your own records, not a trained model. It updates every time a shift is logged, a hole is planned, a rate is changed or stock is received.
-        Prediction that learns from past projects, ground and core is in development.
+        A projection from your own records, walked forward day by day. It is checked every week against what the rigs then drilled (Accuracy, above), and each rig's pace and each part's life are read again from the record, so the next forecast starts from what really happened.
       </>} />
     </Page>
   )

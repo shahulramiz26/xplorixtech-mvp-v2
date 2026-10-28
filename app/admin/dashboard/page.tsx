@@ -13,6 +13,7 @@ import { stockBySite } from '../../../lib/stores-overview'
 import { num } from '../../../lib/client-record'
 import { photoTotal } from '../../../lib/core/photo-summary'
 import { useInbox } from '../../components/inbox'
+import { BriefCard } from '../../components/ai'
 import {
   Page, Card, Btn, Table, Status, Legend, Tip, Delta, Empty,
   th, thR, td, tdR, rowLine, T, tint, display, axisTick, gridStroke,
@@ -94,6 +95,7 @@ export default function AdminDashboard() {
       </div>
 
       <StartHere />
+      <BriefCard />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <Kpi label="Metres today" value={`${num(c.today.metres)} m`} note={prevPerDay ? <>{lastMonth} averaged {prevPerDay.toFixed(0)} m a day</> : undefined} />
