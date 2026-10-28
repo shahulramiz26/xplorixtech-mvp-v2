@@ -3,8 +3,8 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { CalendarDays, ArrowRight } from 'lucide-react'
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts'
-import { moneyL, perUnit, monthLabel, shiftMonth, useCosting } from '../../../lib/costing-store'
+import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts'
+import { moneyL, perUnit, monthLabel, shiftMonth, daysInMonth, useCosting } from '../../../lib/costing-store'
 import { useInventory, TODAY, PROJECTS, COMPLETED_PROJECTS, RIGS, countLosses } from '../../../lib/inventory-store'
 import { IS_DEMO } from '../../../lib/company'
 import { useAdminOverview, financeLink } from '../../../lib/admin-overview'
@@ -14,6 +14,7 @@ import { num } from '../../../lib/client-record'
 import { photoTotal } from '../../../lib/core/photo-summary'
 import { useInbox } from '../../components/inbox'
 import { BriefCard } from '../../components/ai'
+import { MoneyPanel, VizTile, SparkBars, Ring, SplitBar, GroundDonut, StockBar, CostBullet } from '../../components/dash-viz'
 import {
   Page, Card, Btn, Table, Status, Legend, Tip, Delta, Empty,
   th, thR, td, tdR, rowLine, T, tint, display, axisTick, gridStroke, num as figure, eyebrow } from '../../components/kit'
@@ -27,7 +28,6 @@ import {
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const day = (d?: string) => d ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}` : ''
-const GROUND_COLOR: Record<string, string> = { Soft: 'color-mix(in srgb, var(--x-green) 70%, white)', Medium: 'var(--x-amber)', Hard: 'var(--x-orange)', 'Very Hard': 'var(--x-red)' }
 
 function StartHere() {
   const { state } = useCosting()
@@ -77,9 +77,9 @@ export default function AdminDashboard() {
   }, [costing.shiftLogs, inv])
   const lastMonth = monthLabel(shiftMonth(o.month, -1)).split(' ')[0]
   const prevPerDay = o.prev.rigDays ? o.prev.metres / o.dayOfMonth : 0
-  const groundMax = Math.max(1, ...c.lithology.map(g => g.month))
   const core = useMemo(() => photoTotal(costing.shiftLogs), [costing.shiftLogs])
   const dueToday = inbox.open.filter(u => u.severity === 'act').length
+  const f = inbox.forecast
 
   return (
     <Page>
@@ -96,85 +96,106 @@ export default function AdminDashboard() {
       <StartHere />
       <BriefCard />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <Kpi label="Metres today" value={`${num(c.today.metres)} m`} note={prevPerDay ? <>{lastMonth} averaged {prevPerDay.toFixed(0)} m a day</> : undefined} />
-        <Kpi label="Rigs drilling" value={`${c.today.rigsActive} of ${c.today.rigsOnProjects}`} note={`${c.today.ownActive} yours, ${c.today.rigsActive - c.today.ownActive} contractors'`} href="/admin/rigs" />
-        <Kpi label="Drillers on shift" value={String(c.today.drillers)} note="Your own, named on today's logs" href="/admin/people" />
-        <Kpi label="Downtime today" value={`${num(c.today.downtime)} h`} note={`${num(c.today.ownDowntime)} h your side or the contractor's, the rest client standby`} bad={c.today.ownDowntime > 0} />
-        <Kpi label="Cost a metre today" value={c.today.cpm != null ? perUnit(c.today.cpm) : '—'} note="Your own rigs, all-in" href="/admin/finance" />
-        {core && <Kpi label="Core recovery, tray photos" value={`${core.recovery.toFixed(0)}%`} note={`Drill logs say ${core.driller.toFixed(0)}% · RQD ${core.rqd.toFixed(0)}% · ${num(core.metres)} m photographed`} href="/admin/geology" bad={core.recovery < 90} />}
-        <Kpi label="Stock you hold" value={moneyL(stock.store + stock.rigs)} note={`${moneyL(stock.store)} in stores, ${moneyL(stock.rigs)} on rigs`} href="/admin/inventory" />
+      <MoneyPanel
+        today={c.moneyToday}
+        month={{ revenue: f.mtd.revenue, cost: f.mtd.cost, margin: f.mtd.margin, metres: f.mtd.metres }}
+        monthClose={{ revenue: f.thisMonthTotal.revenue, cost: f.thisMonthTotal.cost, margin: f.thisMonthTotal.margin, metres: f.thisMonthTotal.metres }}
+        next={{ revenue: f.next.revenue, cost: f.next.cost, margin: f.next.margin, metres: f.next.metres }}
+        lastSameDays={{ revenue: o.prev.revenue, cost: o.prev.cost, margin: o.prev.margin }}
+        monthName={monthLabel(o.month).split(' ')[0]} nextName={monthLabel(f.nextMonth).split(' ')[0]}
+        dayOfMonth={o.dayOfMonth} daysInMonth={daysInMonth(o.month)} series={c.moneyDays} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: 12 }}>
+        <VizTile label="Metres today" value={`${num(c.today.metres)} m`} note={prevPerDay ? <>{lastMonth} averaged {prevPerDay.toFixed(0)} m a day</> : undefined}>
+          <SparkBars values={o.daily.slice(-14).map(d => d.metres)} />
+        </VizTile>
+        <VizTile label="Rigs drilling" value={`${c.today.rigsActive} of ${c.today.rigsOnProjects}`} note={`${c.today.ownActive} yours, ${c.today.rigsActive - c.today.ownActive} contractors'`} href="/admin/rigs">
+          <Ring share={c.today.rigsOnProjects ? c.today.rigsActive / c.today.rigsOnProjects : 0} color="var(--x-blue)" />
+        </VizTile>
+        <VizTile label="Drillers on shift" value={String(c.today.drillers)} note="Your own, named on today's logs" href="/admin/people" />
+        <VizTile label="Downtime today" value={`${num(c.today.downtime)} h`} tone={c.today.ownDowntime > 0 ? 'bad' : undefined}
+          note={<><span style={{ color: 'var(--x-bad-text)' }}>■</span> {num(c.today.ownDowntime)} h yours or the contractor&apos;s · <span style={{ color: 'var(--x-amber)' }}>■</span> {num(c.today.downtime - c.today.ownDowntime)} h client standby</>}>
+          <SplitBar a={c.today.ownDowntime} b={c.today.downtime - c.today.ownDowntime} w={72} />
+        </VizTile>
+        {core && <VizTile label="Core recovery, tray photos" value={`${core.recovery.toFixed(0)}%`} tone={core.recovery < 90 ? 'warn' : undefined} href="/admin/geology"
+          note={`Drill logs say ${core.driller.toFixed(0)}% · RQD ${core.rqd.toFixed(0)}%`}>
+          <Ring share={core.recovery / 100} color={core.recovery < 90 ? 'var(--x-amber)' : 'var(--x-green)'} />
+        </VizTile>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
         <Card title={`Metres per day, ${monthLabel(o.month)}`} subtitle="All rigs, yours and contractors'">
-          {prevPerDay > 0 && <div style={{ marginBottom: 10 }}><Legend items={[{ color: T.bar, label: 'Metres drilled' }, { color: T.muted, label: `${lastMonth} average, ${prevPerDay.toFixed(0)} m a day`, line: true }]} /></div>}
-          <ResponsiveContainer width="100%" height={210}>
+          {prevPerDay > 0 && <div style={{ marginBottom: 10 }}><Legend items={[{ color: T.bar, label: 'Metres drilled' }, { color: T.muted, label: `${lastMonth} average, ${prevPerDay.toFixed(0)} m a day`, line: true, dash: true }]} /></div>}
+          <ResponsiveContainer width="100%" height={196}>
             <BarChart data={o.daily} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke={gridStroke} vertical={false} />
               <XAxis dataKey="day" tick={axisTick} tickLine={false} axisLine={{ stroke: T.border }} interval={0} />
               <YAxis tick={axisTick} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => `${v} m`} />
               <Tooltip cursor={{ fill: 'rgba(var(--x-ov),0.03)' }} content={({ active, payload, label }) => active && payload?.length ? <Tip active label={`${label} ${monthLabel(o.month).split(' ')[0]}`} unit=" m" payload={[{ dataKey: 'metres', name: 'Metres drilled', value: payload[0].value as number, color: T.bar }]} /> : null} />
-              {prevPerDay > 0 && <ReferenceLine y={prevPerDay} stroke={T.muted} />}
-              <Bar dataKey="metres" fill={T.bar} maxBarSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              {prevPerDay > 0 && <ReferenceLine y={prevPerDay} stroke={T.muted} strokeDasharray="4 3" />}
+              <Bar dataKey="metres" maxBarSize={20} radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                {o.daily.map((d, i) => <Cell key={i} fill={i === o.daily.length - 1 ? 'var(--x-orange)' : T.bar} />)}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </Card>
         <Card title="Metres by ground" subtitle={`${monthLabel(o.month)} so far, and today`}>
-          {c.lithology.length === 0 ? <Empty>No metres logged this month.</Empty> : (
-            <div style={{ display: 'grid', gap: 14 }}>
-              {c.lithology.map(g => (
-                <div key={g.name} style={{ display: 'grid', gap: 5 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.text }}>
-                    <span style={{ fontWeight: 600 }}>{g.name}</span>
-                    <span><b>{num(g.month)} m</b> <span style={{ color: T.faint }}>· {num(g.today)} m today</span></span>
-                  </div>
-                  <div aria-hidden style={{ height: 10, borderRadius: 99, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(g.month / groundMax) * 100}%`, background: GROUND_COLOR[g.name] ?? T.bar, borderRadius: 99 }} />
-                  </div>
-                </div>
-              ))}
-              <span style={{ fontSize: 12, color: T.faint }}>{Math.round((c.lithology.filter(g => g.name === 'Hard' || g.name === 'Very Hard').reduce((s, g) => s + g.month, 0) / Math.max(1, c.lithology.reduce((s, g) => s + g.month, 0))) * 100)}% of this month&apos;s metres in hard or very hard ground.</span>
-            </div>
-          )}
+          {c.lithology.length === 0 ? <Empty>No metres logged this month.</Empty> : <GroundDonut rows={c.lithology} />}
         </Card>
       </div>
 
-      <Card title="Every rig today" subtitle="Cost a metre is all-in for your rigs, and what the work order pays for a contractor's. Where today is not costed yet, the latest costed day is named." pad={false}
+      <Card title="Every rig today" subtitle="Bar: what a metre cost on the rig's latest costed day. Tick: what that metre earned. Red when it cost more than it earned." pad={false}
         right={<Link href="/admin/finance" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Finance →</Link>}>
-        {c.rigs.length === 0 ? <Empty>No rig has logged a shift this month.</Empty> : (
-          <Table>
-            <thead><tr><th style={th}>Rig</th><th style={th}>Project and hole</th><th style={thR}>Metres today</th><th style={thR}>Downtime today</th><th style={thR}>Cost a metre</th><th style={thR}>Earned a metre</th><th style={thR}>This month</th><th style={thR}>Month cost a metre</th><th style={th} /></tr></thead>
-            <tbody>
-              {c.rigs.map(r => (
-                <tr key={`${r.project}|${r.rig}`} style={{ borderTop: rowLine }}>
-                  <td style={td}><div style={{ color: T.text, fontWeight: 700, fontFamily: display }}>{r.rig}</div><div style={{ fontSize: 11.5, color: T.faint }}>{r.contractor ?? 'Your rig'}</div></td>
-                  <td style={td}><div style={{ color: T.text }}>{r.hole ?? '—'}</div><div style={{ fontSize: 11.5, color: T.faint }}>{r.project}</div></td>
-                  <td style={{ ...tdR, color: T.text, fontWeight: 600 }}>{r.reported ? `${num(r.metresToday)} m` : <span style={{ color: 'var(--x-bad-text)' }}>No log</span>}{r.unchecked ? <div style={{ fontSize: 11.5, color: T.faint, fontWeight: 400 }}>reported, not checked</div> : null}</td>
-                  <td style={{ ...tdR, color: r.ownDowntimeToday ? 'var(--x-bad-text)' : T.muted }}>{r.downtimeToday ? `${num(r.downtimeToday)} h` : '0'}{r.downtimeToday && !r.ownDowntimeToday ? <div style={{ fontSize: 11.5, color: T.faint }}>client standby</div> : null}</td>
-                  <td style={{ ...tdR, color: T.text, fontWeight: 700 }}>{r.cpm != null ? perUnit(r.cpm) : '—'}{r.cpmDate && <div style={{ fontSize: 11.5, color: T.faint, fontWeight: 400 }}>on {day(r.cpmDate)}</div>}</td>
-                  <td style={tdR}>{r.rate != null ? perUnit(r.rate) : '—'}</td>
-                  <td style={tdR}>{num(r.monthMetres)} m</td>
-                  <td style={tdR}>{r.monthCpm != null ? perUnit(r.monthCpm) : '—'}</td>
-                  <td style={{ ...td, textAlign: 'right' }}><Btn size="sm" href={financeLink({ project: r.project, rig: r.rig, month: o.month })}>Costing</Btn></td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
+        {c.rigs.length === 0 ? <Empty>No rig has logged a shift this month.</Empty> : (() => {
+          const maxM = Math.max(1, ...c.rigs.map(r => r.metresToday))
+          const maxC = Math.max(1, ...c.rigs.flatMap(r => [r.cpm ?? 0, r.rate ?? 0]))
+          return (
+            <Table>
+              <thead><tr><th style={th}>Rig</th><th style={th}>Project and hole</th><th style={th}>Metres today</th><th style={th}>Cost against earned, a metre</th><th style={thR}>Downtime</th><th style={thR}>This month</th><th style={th} /></tr></thead>
+              <tbody>
+                {c.rigs.map(r => (
+                  <tr key={`${r.project}|${r.rig}`} style={{ borderTop: rowLine }}>
+                    <td style={td}><div style={{ color: T.text, fontWeight: 600 }}>{r.rig}</div><div style={{ fontSize: 12, color: T.faint }}>{r.contractor ?? 'Your rig'}</div></td>
+                    <td style={td}><div style={{ color: T.text }}>{r.hole ?? '—'}</div><div style={{ fontSize: 12, color: T.faint }}>{r.project}</div></td>
+                    <td style={{ ...td, minWidth: 150 }}>
+                      {r.reported ? <div style={{ display: 'grid', gap: 4 }}>
+                        <span style={{ ...figure, fontSize: 13, color: T.text, fontWeight: 600 }}>{num(r.metresToday)} m{r.unchecked ? <span style={{ fontFamily: 'inherit', fontSize: 11.5, color: T.faint, fontWeight: 400 }}> · not checked</span> : null}</span>
+                        <span aria-hidden style={{ height: 6, borderRadius: 3, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden', width: 120 }}><span style={{ display: 'block', height: '100%', width: `${(r.metresToday / maxM) * 100}%`, background: T.bar }} /></span>
+                      </div> : <span style={{ color: 'var(--x-bad-text)', fontWeight: 600 }}>No log</span>}
+                    </td>
+                    <td style={{ ...td, minWidth: 210 }}>
+                      <div style={{ display: 'grid', gap: 4 }}>
+                        <CostBullet cost={r.cpm} earned={r.rate} max={maxC * 1.05} w={150} />
+                        <span style={{ ...figure, fontSize: 12, color: T.muted }}>{r.cpm != null ? perUnit(r.cpm) : '—'} <span style={{ color: T.faint }}>against</span> {r.rate != null ? perUnit(r.rate) : '—'}{r.cpmDate ? <span style={{ fontFamily: 'inherit', color: T.faint }}> · {day(r.cpmDate)}</span> : null}</span>
+                      </div>
+                    </td>
+                    <td style={{ ...tdR, color: r.ownDowntimeToday ? 'var(--x-bad-text)' : T.muted }}>{r.downtimeToday ? `${num(r.downtimeToday)} h` : '0'}{r.downtimeToday && !r.ownDowntimeToday ? <div style={{ fontFamily: 'inherit', fontSize: 11.5, color: T.faint }}>client standby</div> : null}</td>
+                    <td style={tdR}>{num(r.monthMetres)} m<div style={{ fontSize: 11.5, color: T.faint }}>{r.monthCpm != null ? perUnit(r.monthCpm) : '—'}</div></td>
+                    <td style={{ ...td, textAlign: 'right' }}><Btn size="sm" href={financeLink({ project: r.project, rig: r.rig, month: o.month })}>Costing</Btn></td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )
+        })()}
       </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
         <Card title="Projects" subtitle="Metres drilled against the metres planned." right={<Link href="/admin/projects" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>All projects →</Link>}>
           <div style={{ display: 'grid', gap: 16 }}>
             {c.projects.map(p => (
-              <Link key={p.id} href={`/admin/projects/${p.id}`} style={{ display: 'grid', gap: 6, textDecoration: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{p.name} <span style={{ fontWeight: 400, color: T.faint, fontSize: 12.5 }}>· {p.client}</span></span>
-                  {p.status === 'completed' ? <Status tone="neutral">Completed</Status> : <span style={{ fontSize: 13, color: T.text }}><b>{num(p.drilled)}</b> of {num(p.planned)} m</span>}
+              <Link key={p.id} href={`/admin/projects/${p.id}`} style={{ display: 'grid', gridTemplateColumns: p.status === 'completed' ? '1fr' : 'auto minmax(0, 1fr)', gap: 14, alignItems: 'center', textDecoration: 'none' }}>
+                {p.status !== 'completed' && <div style={{ position: 'relative', width: 52, height: 52 }}>
+                  <Ring share={(p.pct ?? 0) / 100} size={52} stroke={6} color="var(--x-green)" />
+                  <span style={{ ...figure, position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 600, color: T.text }}>{(p.pct ?? 0).toFixed(0)}%</span>
+                </div>}
+                <div style={{ minWidth: 0, display: 'grid', gap: 3 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{p.name} <span style={{ fontWeight: 400, color: T.faint, fontSize: 12.5 }}>· {p.client}</span></span>
+                    {p.status === 'completed' ? <Status tone="neutral">Completed</Status> : <span style={{ ...figure, fontSize: 12.5, color: T.text }}><b>{num(p.drilled)}</b> of {num(p.planned)} m</span>}
+                  </div>
+                  <span style={{ fontSize: 12, color: T.faint }}>{p.status === 'completed' ? 'Finished before this month' : `${p.holesDone} of ${p.holes} holes finished · ${p.rigs} ${p.rigs === 1 ? 'rig' : 'rigs'} · ${num(p.monthMetres)} m this month`}</span>
                 </div>
-                {p.status !== 'completed' && <div aria-hidden style={{ height: 10, borderRadius: 99, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${p.pct ?? 0}%`, background: T.green, borderRadius: 99 }} /></div>}
-                <span style={{ fontSize: 12, color: T.faint }}>{p.status === 'completed' ? 'Finished before this month' : `${(p.pct ?? 0).toFixed(0)}% · ${p.holesDone} of ${p.holes} holes finished · ${p.rigs} ${p.rigs === 1 ? 'rig' : 'rigs'} this month · ${num(p.monthMetres)} m this month`}</span>
               </Link>
             ))}
           </div>
@@ -189,94 +210,70 @@ export default function AdminDashboard() {
           <div style={{ marginTop: 12, fontSize: 13, color: T.text, lineHeight: 1.55 }}>
             {c.maintenance.down.length || c.maintenance.repair.length
               ? <>Down now: <b style={{ color: 'var(--x-bad-text)' }}>{Array.from(new Set([...c.maintenance.down, ...c.maintenance.repair])).join(', ')}</b>.</>
-              : 'Every rig is running today.'}
+              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span aria-hidden style={{ width: 8, height: 8, borderRadius: 9, background: T.green }} />Every rig is running today.</span>}
           </div>
-          {c.maintenance.recent.length > 0 && (
-            <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
-              {c.maintenance.recent.map(m => (
-                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12.5, color: T.muted }}>
-                  <span><b style={{ color: T.text }}>{m.rig}</b> · {m.maintenanceType} · {m.component}</span><span style={{ whiteSpace: 'nowrap' }}>{day(m.date)} · {m.hours} h</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
-        <Card title="Drill logs in today" subtitle="Two shifts a rig: day and night." right={<Link href="/admin/logs/drill" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Drill logs →</Link>}>
-          <LogBar label="Your rigs" n={c.logsIn.ownIn} of={c.logsIn.ownExpected} note={c.logsIn.missing.length ? `Missing from ${c.logsIn.missing.join(', ')}` : 'All in'} />
-          <div style={{ height: 14 }} />
-          <LogBar label="Contractors" n={c.logsIn.ctrReported} of={c.logsIn.ctrExpected} note={c.logsIn.ctrUnchecked ? `${c.logsIn.ctrUnchecked} reported, waiting to be checked` : 'All checked'} />
-        </Card>
-        <Card title="Contractors" subtitle="Today, and their cost a metre this month." pad={false} right={<Link href="/admin/contractors" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none', marginRight: 2 }}>Contractors →</Link>}>
-          {c.contractors.length === 0 ? <Empty>No contractor rigs this month.</Empty> : (
-            <Table>
-              <thead><tr><th style={th}>Contractor</th><th style={thR}>Metres today</th><th style={thR}>Downtime today</th><th style={thR}>Cost a metre</th><th style={thR}>This month</th></tr></thead>
-              <tbody>
-                {c.contractors.map(x => (
-                  <tr key={x.id} style={{ borderTop: rowLine }}>
-                    <td style={td}><div style={{ color: T.text, fontWeight: 600 }}>{x.name}</div><div style={{ fontSize: 11.5, color: T.faint }}>{x.rigs.join(', ')}</div></td>
-                    <td style={tdR}>{num(x.metresToday)} m{x.uncheckedToday ? <div style={{ fontSize: 11.5, color: T.faint }}>not checked yet</div> : null}</td>
-                    <td style={{ ...tdR, color: x.downtimeToday ? 'var(--x-bad-text)' : T.muted }}>{x.downtimeToday ? `${num(x.downtimeToday)} h` : '0'}</td>
-                    <td style={{ ...tdR, color: T.text, fontWeight: 700 }}>{x.cpm != null ? perUnit(x.cpm) : '—'}</td>
-                    <td style={tdR}>{num(x.monthMetres)} m</td>
-                  </tr>
+          {c.maintenance.recent.length > 0 && (() => {
+            const maxH = Math.max(1, ...c.maintenance.recent.map(m => m.hours))
+            return (
+              <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                {c.maintenance.recent.map(m => (
+                  <div key={m.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px auto', gap: 10, alignItems: 'center', fontSize: 12.5, color: T.muted }}>
+                    <span style={{ minWidth: 0 }}><b style={{ color: T.text }}>{m.rig}</b> · {m.maintenanceType} · {m.component}</span>
+                    <span aria-hidden style={{ height: 6, borderRadius: 3, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: `${(m.hours / maxH) * 100}%`, background: m.maintenanceType === 'Breakdown' ? 'var(--x-red)' : 'var(--x-plan)' }} /></span>
+                    <span style={{ ...figure, whiteSpace: 'nowrap', fontSize: 12 }}>{day(m.date)} · {m.hours} h</span>
+                  </div>
                 ))}
-              </tbody>
-            </Table>
-          )}
+              </div>
+            )
+          })()}
         </Card>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
-        <Card title={`${monthLabel(o.month)} so far`} subtitle={`Against the first ${o.dayOfMonth} days of ${lastMonth}`}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: 14 }}>
-            <Fig label="Metres" value={`${num(o.now.metres)} m`} note={<Delta now={o.now.metres} before={o.prev.metres} />} />
-            <Fig label="Billable value" value={moneyL(o.now.revenue)} note={<Delta now={o.now.revenue} before={o.prev.revenue} />} />
-            <Fig label="Cost a metre" value={perUnit(o.now.costPerMetre)} note={<Delta now={o.now.costPerMetre} before={o.prev.costPerMetre} goodWhenUp={false} />} />
-            <Fig label="Margin" value={`${o.now.marginPct.toFixed(1)}%`} note={<Delta now={o.now.marginPct} before={o.prev.marginPct} unit="pts" />} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
+        <Card title="Drill logs in today" subtitle="Two shifts a rig: day and night." right={<Link href="/admin/logs/drill" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Drill logs →</Link>}>
+          <div style={{ display: 'grid', gap: 14 }}>
+            {[{ l: 'Your rigs', n: c.logsIn.ownIn, of: c.logsIn.ownExpected, note: c.logsIn.missing.length ? `Missing from ${c.logsIn.missing.join(', ')}` : 'All in' },
+              { l: 'Contractors', n: c.logsIn.ctrReported, of: c.logsIn.ctrExpected, note: c.logsIn.ctrUnchecked ? `${c.logsIn.ctrUnchecked} reported, waiting to be checked` : 'All checked' }].map(x => (
+              <div key={x.l} style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr)', gap: 12, alignItems: 'center' }}>
+                <div style={{ position: 'relative', width: 52, height: 52 }}>
+                  <Ring share={x.of ? x.n / x.of : 0} size={52} color={x.of && x.n < x.of ? 'var(--x-amber)' : 'var(--x-green)'} />
+                  <span style={{ ...figure, position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 600, color: T.text }}>{x.n}/{x.of}</span>
+                </div>
+                <div><div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{x.l}</div><div style={{ fontSize: 12.5, color: T.faint }}>{x.note}</div></div>
+              </div>
+            ))}
           </div>
+        </Card>
+        <Card title="Contractors" subtitle="This month's metres, and what a metre costs you." right={<Link href="/admin/contractors" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Contractors →</Link>}>
+          {c.contractors.length === 0 ? <Empty>No contractor rigs this month.</Empty> : (() => {
+            const maxM = Math.max(1, ...c.contractors.map(x => x.monthMetres))
+            return (
+              <div style={{ display: 'grid', gap: 14 }}>
+                {c.contractors.map(x => (
+                  <div key={x.id} style={{ display: 'grid', gap: 5 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{x.name} <span style={{ fontWeight: 400, fontSize: 12, color: T.faint }}>{x.rigs.join(', ')}</span></span>
+                      <span style={{ ...figure, fontSize: 12.5, color: T.text, fontWeight: 600 }}>{x.cpm != null ? perUnit(x.cpm) : '—'}</span>
+                    </div>
+                    <span aria-hidden style={{ height: 8, borderRadius: 3, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: `${(x.monthMetres / maxM) * 100}%`, background: 'var(--x-purple)' }} /></span>
+                    <span style={{ fontSize: 12, color: T.faint }}>{num(x.monthMetres)} m this month · {num(x.metresToday)} m today{x.uncheckedToday ? ' (not checked yet)' : ''}{x.downtimeToday ? ` · ${num(x.downtimeToday)} h stopped` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </Card>
         <Card title="Stores" subtitle="What you hold, and what is not moving." right={<Link href="/admin/inventory" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Stores →</Link>}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
-            <Mini label="In the stores" value={moneyL(stock.store)} />
-            <Mini label="On the rigs" value={moneyL(stock.rigs)} />
-            <Mini label={`Idle ${inv.alerts.idleDays}+ days`} value={moneyL(stock.idle)} bad={stock.idle > 0} />
-          </div>
+          <StockBar store={stock.store} rigs={stock.rigs} idle={stock.idle} idleDays={inv.alerts.idleDays} />
         </Card>
       </div>
     </Page>
   )
 }
 
-function Kpi({ label, value, note, href, bad }: { label: string; value: string; note?: React.ReactNode; href?: string; bad?: boolean }) {
-  const inner = <>
-    <span style={{ ...eyebrow }}>{label}</span>
-    <span style={{ ...figure, fontSize: 24, fontWeight: 600, color: bad ? 'var(--x-bad-text)' : T.text, lineHeight: 1.15 }}>{value}</span>
-    {note && <span style={{ fontSize: 12, color: T.faint, lineHeight: 1.45 }}>{note}</span>}
-  </>
-  const style: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '13px 15px', display: 'grid', gap: 6, alignContent: 'start', boxShadow: bad ? 'inset 3px 0 0 var(--x-red)' : 'var(--x-card-shadow)', textDecoration: 'none' }
-  return href ? <Link href={href} className="xpl-row" style={style}>{inner}</Link> : <div style={style}>{inner}</div>
-}
 function Mini({ label, value, bad }: { label: string; value: string; bad?: boolean }) {
   return <div style={{ padding: '10px 12px', borderRadius: 10, background: bad ? tint(T.red, 7) : 'rgba(var(--x-ov),0.035)', display: 'grid', gap: 3 }}>
     <span style={{ fontSize: 12, color: bad ? 'var(--x-bad-text)' : T.muted, fontWeight: 600 }}>{label}</span>
     <span style={{ ...figure, fontSize: 19, fontWeight: 600, color: bad ? 'var(--x-bad-text)' : T.text }}>{value}</span>
-  </div>
-}
-function Fig({ label, value, note }: { label: string; value: string; note: React.ReactNode }) {
-  return <div style={{ display: 'grid', gap: 3 }}>
-    <span style={{ fontSize: 12.5, color: T.muted }}>{label}</span>
-    <span style={{ ...figure, fontSize: 21, fontWeight: 600, color: T.text }}>{value}</span>
-    <span style={{ fontSize: 12 }}>{note}</span>
-  </div>
-}
-function LogBar({ label, n, of, note }: { label: string; n: number; of: number; note: string }) {
-  const full = of > 0 && n >= of
-  return <div style={{ display: 'grid', gap: 6 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: T.text }}><b>{label}</b><span><b>{n}</b> of {of} shifts</span></div>
-    <div aria-hidden style={{ height: 10, borderRadius: 99, background: 'rgba(var(--x-ov),0.06)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${of ? Math.min(100, (n / of) * 100) : 0}%`, background: full ? T.green : T.amber, borderRadius: 99 }} /></div>
-    <span style={{ fontSize: 12, color: full ? T.faint : 'var(--x-bad-text)' }}>{note}</span>
   </div>
 }

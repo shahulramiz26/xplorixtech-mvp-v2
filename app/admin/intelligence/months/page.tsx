@@ -9,7 +9,7 @@ import { shortDate } from '../../../../lib/client-record'
 import type { Forecast, PartNeed, PeriodNumbers } from '../../../../lib/forecast'
 import {
   T, tint, display, Page, PageHead, Card, Tile, Grid, Split, Seg, Status, Table, Empty,
-  th, thR, td, tdR, tdStrong, rowLine, type Tone, num } from '../../../components/kit'
+  th, thR, td, tdR, tdStrong, rowLine, type Tone, num, eyebrow } from '../../../components/kit'
 import { Timeline, TimelineKey, RangeBar, Basis, type Lane } from '../../../components/outlook'
 import { ForecastBars, Waterfall, Tornado, WarningCard, shortMoney, type Metric } from '../../../components/outlook-charts'
 import { monthSeries, bridge, levers, whatIf, earlyWarnings, type WhatIf } from '../../../../lib/outlook-analytics'
@@ -358,11 +358,28 @@ export default function MonthsPage() {
         </nav>
       </div>
 
-      <section aria-label="Summary" style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 10, padding: '18px 22px', display: 'grid', gap: 10 }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', opacity: 0.7 }}>THE SHORT VERSION</span>
-        {cur && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{tName} closes at about {n0(cur.metres)} m and a {short(cur.margin)} margin</b> ({Math.round(f.thisMonthTotal.marginPct)}%), between {short(cur.low?.margin ?? cur.margin)} if every rig drills at its slowest and {short(cur.high?.margin ?? cur.margin)} at its best.{prev && biggest ? <> That is {cur.margin >= prev.margin ? 'up' : 'down'} {short(Math.abs(cur.margin - prev.margin))} on {MONTHS[Number(prev.month.slice(5, 7)) - 1]}, mostly from {biggest[0]}.</> : null}</p>}
-        {next && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}><b>{nName} is forecast at {short(next.margin)}</b> on {n0(next.metres)} m. The biggest thing that could move it: {lv[0].label.toLowerCase()}, worth up to {short(Math.max(Math.abs(lv[0].low), Math.abs(lv[0].high)))}.</p>}
-        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55 }}>{worse.length ? <><b>Turning the wrong way:</b> {worse.map(x => x.label.toLowerCase()).join(', ')}.</> : <><b>No measure is turning the wrong way</b> over the last two weeks.</>}{risks[0] ? <> First risk to act on: {risks[0].title.replace(/\.$/, '')}.</> : null}</p>
+      <section aria-label="Summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 12 }}>
+        {cur && (
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px', display: 'grid', gap: 6, boxShadow: 'inset 3px 0 0 var(--x-orange)' }}>
+            <span style={{ ...eyebrow }}>{tName} closes at about</span>
+            <span style={{ ...num, fontSize: 26, fontWeight: 600, color: T.text }}>{short(cur.margin)} <span style={{ fontSize: 14, color: T.faint, fontWeight: 500 }}>margin</span></span>
+            <RangeLine low={cur.low?.margin ?? cur.margin} mid={cur.margin} high={cur.high?.margin ?? cur.margin} fmt={short} />
+            <span style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>{n0(cur.metres)} m, {Math.round(f.thisMonthTotal.marginPct)}% margin.{prev && biggest ? <> {cur.margin >= prev.margin ? 'Up' : 'Down'} {short(Math.abs(cur.margin - prev.margin))} on {MONTHS[Number(prev.month.slice(5, 7)) - 1]}, mostly from {biggest[0]}.</> : null}</span>
+          </div>
+        )}
+        {next && (
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px', display: 'grid', gap: 6 }}>
+            <span style={{ ...eyebrow }}>{nName} is forecast at</span>
+            <span style={{ ...num, fontSize: 26, fontWeight: 600, color: T.text }}>{short(next.margin)} <span style={{ fontSize: 14, color: T.faint, fontWeight: 500 }}>margin</span></span>
+            <RangeLine low={next.margin - Math.max(Math.abs(lv[0]?.low ?? 0), 0)} mid={next.margin} high={next.margin + Math.max(lv[0]?.high ?? 0, 0)} fmt={short} />
+            <span style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>{n0(next.metres)} m. Biggest swing: {lv[0]?.label.toLowerCase()}, worth up to {short(Math.max(Math.abs(lv[0]?.low ?? 0), Math.abs(lv[0]?.high ?? 0)))}.</span>
+          </div>
+        )}
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px', display: 'grid', gap: 6, boxShadow: worse.length ? 'inset 3px 0 0 var(--x-red)' : 'inset 3px 0 0 var(--x-green)' }}>
+          <span style={{ ...eyebrow }}>Starting to turn</span>
+          <span style={{ ...num, fontSize: 26, fontWeight: 600, color: worse.length ? 'var(--x-bad-text)' : T.text }}>{worse.length} <span style={{ fontSize: 14, color: T.faint, fontWeight: 500, fontFamily: display }}>of {warnings.length} measures</span></span>
+          <span style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>{worse.length ? <>Turning the wrong way: {worse.map(x => x.label.toLowerCase()).join(', ')}.</> : 'No measure is turning the wrong way over the last two weeks.'}{risks[0] ? <> First risk to act on: {risks[0].title.replace(/\.$/, '')}.</> : null}</span>
+        </div>
       </section>
 
       <div id="forecast" style={{ scrollMarginTop: 80 }}>
@@ -454,5 +471,19 @@ function Slider({ label, unit, min, max, value, onChange }: { label: string; uni
       <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.text }}><span>{label}</span><b>{value > 0 && unit === '%' ? '+' : ''}{value}{unit}</b></span>
       <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--x-orange)' }} />
     </label>
+  )
+}
+
+/* Slow, expected and best case on one line, the expected marked. */
+function RangeLine({ low, mid, high, fmt }: { low: number; mid: number; high: number; fmt: (n: number) => string }) {
+  const span = Math.max(1, high - low)
+  const at = ((mid - low) / span) * 100
+  return (
+    <div style={{ display: 'grid', gap: 3 }}>
+      <div aria-label={`Range ${fmt(low)} to ${fmt(high)}`} style={{ position: 'relative', height: 8, borderRadius: 4, background: tint(T.orange, 16) }}>
+        <span style={{ position: 'absolute', top: -3, left: `calc(${Math.max(0, Math.min(100, at))}% - 1.5px)`, width: 3, height: 14, borderRadius: 2, background: T.orange }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: T.faint, fontFamily: num.fontFamily }}><span>{fmt(low)}</span><span>{fmt(high)}</span></div>
+    </div>
   )
 }
