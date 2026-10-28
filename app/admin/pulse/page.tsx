@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Pause, Play, Radio, Wifi, WifiOff, ArrowRight } from 'lucide-react'
 import { useAdminOverview } from '../../../lib/admin-overview'
+import { useCosting, perUnit, moneyL } from '../../../lib/costing-store'
+import { useInventory, TODAY } from '../../../lib/inventory-store'
+import { companyToday, type RigToday } from '../../../lib/company-overview'
+import { CostBullet } from '../../components/dash-viz'
 import {
   METRICS, METRIC_KEYS, MODE_LABEL, OPEN_AT, alarms, buildFleet, clock, depthAt, history, level, reading, sensorMetres,
   type Level, type Metric, type MetricKey, type PulseRig,
@@ -22,11 +26,31 @@ import { AiMark, Md } from '../../components/ai'
 
 const LEVEL_COLOR: Record<Level, string> = { good: T.green, warn: T.amber, bad: T.red, neutral: T.faint }
 const LEVEL_WORD: Record<Level, string> = { good: 'Normal', warn: 'Watch', bad: 'Out of range', neutral: 'Not running' }
+/* Cost a metre, live. An own rig costs its day rate whether it drills or not,
+ * so cost so far starts from today's costed shifts (the same figure as the
+ * Dashboard) and grows by the hour, while metres come from the depth sensor:
+ * it climbs the moment a rig slows. A contractor's rig is paid by the metre,
+ * so its cost a metre holds. */
+interface Live { cpm: number | null; rate: number | null; costSoFar: number | null; metres: number; how: 'time' | 'contract' | 'none' }
+function liveCost(p: PulseRig, t: number, m?: RigToday): Live {
+  const metres = sensorMetres(p, t)
+  if (!m || (m.contractor ? m.cpm == null : m.dayCost == null)) return { cpm: null, rate: m?.rate ?? null, costSoFar: null, metres, how: 'none' }
+  if (m.contractor) return { cpm: m.cpm, rate: m.rate, costSoFar: (m.cpm as number) * metres, metres, how: 'contract' }
+  const day = m.dayCost as number
+  // Costed today: start from the logged cost and keep adding the hourly day
+  // rate as the clock runs. Not costed today: spread the last day over the hours gone.
+  const costSoFar = m.cpmDate ? day * (t % 86400) / 86400 : day + day / 24 * Math.max(0, t - OPEN_AT) / 3600
+  return { cpm: metres >= 1 ? costSoFar / metres : null, rate: m.rate, costSoFar, metres, how: 'time' }
+}
+
 const fmt = (m: Metric, v: number | null) => v == null ? '—' : v.toLocaleString('en-IN', { maximumFractionDigits: m.dp, minimumFractionDigits: m.dp })
 
 export default function PulsePage() {
   const o = useAdminOverview()
   const fleet = useMemo(() => buildFleet(o.rigs), [o.rigs])
+  const { state: costing } = useCosting()
+  const { state: inv } = useInventory()
+  const money = useMemo(() => new Map(companyToday(costing, inv, TODAY).rigs.map(r => [r.rig, r])), [costing, inv])
   const [t, setT] = useState(OPEN_AT)
   const [live, setLive] = useState(true)
   const [pick, setPick] = useState<string | null>(null)
@@ -47,6 +71,9 @@ export default function PulsePage() {
   const drilling = fleet.filter(p => p.mode === 'drilling').length
   const act = al.filter(a => a.level === 'act').length
   const metresNow = fleet.reduce((s, p) => s + sensorMetres(p, t), 0)
+  const lives = new Map(fleet.map(p => [p.rig, liveCost(p, t, money.get(p.rig))]))
+  const costed = Array.from(lives.values()).filter(l => l.cpm != null && l.costSoFar != null)
+  const fleetCpm = costed.reduce((s, l) => s + l.metres, 0) ? costed.reduce((s, l) => s + (l.costSoFar as number), 0) / costed.reduce((s, l) => s + l.metres, 0) : null
   const fleetRop = fleet.filter(p => p.mode === 'drilling').map(p => reading(p, 'rop', t) ?? 0)
 
   if (!sel) return <Page><PageHead question="What are the rigs doing right now?" answer="No rigs yet. Add a rig and its sensors will show here." /></Page>
@@ -84,13 +111,51 @@ export default function PulsePage() {
         <Tile label="Rigs sending" value={`${sending}/${fleet.length}`} note={fleet.length - sending ? `${fleet.length - sending} with no signal` : 'All on line'} tone={fleet.length - sending ? 'warn' : 'good'} />
         <Tile label="Metres by sensor today" value={`${metresNow.toLocaleString('en-IN', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} m`} note="Counted by the depth encoders" />
         <Tile label="Fleet penetration now" value={fleetRop.length ? `${(fleetRop.reduce((s, v) => s + v, 0) / fleetRop.length).toFixed(1)} m/h` : '—'} note={`Average of ${fleetRop.length} drilling ${fleetRop.length === 1 ? 'rig' : 'rigs'}`} />
+        <Tile label="Cost a metre now" value={fleetCpm != null ? perUnit(fleetCpm) : '—'} note={`Fleet, live: today's cost so far over sensor metres`} />
         <Tile label="Alarms" value={al.length} note={act ? `${act} to act on now` : al.length ? 'To watch, none urgent' : 'None'} tone={act ? 'bad' : al.length ? 'warn' : 'good'} />
       </Grid>
 
       {/* FLEET */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 45%), 1fr))', gap: 12 }}>
-        {fleet.map(p => <RigCard key={p.rig} p={p} t={t} on={p.rig === sel.rig} alarm={al.filter(a => a.rig === p.rig)} onPick={() => setPick(p.rig)} />)}
+        {fleet.map(p => <RigCard key={p.rig} p={p} t={t} live={lives.get(p.rig)!} on={p.rig === sel.rig} alarm={al.filter(a => a.rig === p.rig)} onPick={() => setPick(p.rig)} />)}
       </div>
+
+      {/* COST A METRE, LIVE */}
+      <Card title="Cost a metre, live" subtitle={`Every rig at ${clock(t)}. Your rigs: today's cost so far, growing by the hour, over the metres the sensor has counted. Contractor rigs: their rate a metre.`} pad={false}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr><th style={th}>Rig</th><th style={thR}>Metres today</th><th style={thR}>Cost so far</th><th style={th}>Cost a metre now</th><th style={thR}>Earned a metre</th></tr></thead>
+            <tbody>
+              {(() => {
+                const max = Math.max(1, ...Array.from(lives.values()).flatMap(l => [l.cpm ?? 0, l.rate ?? 0]))
+                return fleet.map(p => {
+                  const l = lives.get(p.rig)!
+                  const over = l.cpm != null && l.rate != null && l.cpm > l.rate
+                  return (
+                    <tr key={p.rig} style={{ borderTop: rowLine }}>
+                      <td style={td}><div style={{ ...num, color: T.text, fontWeight: 600 }}>{p.rig}</div><div style={{ fontSize: 12, color: T.faint }}>{l.how === 'contract' ? 'Contractor, paid a metre' : MODE_LABEL[p.mode]}</div></td>
+                      <td style={tdR}>{l.metres.toFixed(1)} m</td>
+                      <td style={tdR}>{l.costSoFar != null ? moneyL(l.costSoFar) : '—'}</td>
+                      <td style={{ ...td, minWidth: 200 }}>
+                        {l.cpm == null ? <span style={{ color: T.faint }}>{l.how === 'none' ? 'No costed day yet' : 'No metres yet'}</span> : (
+                          <div style={{ display: 'grid', gap: 4 }}>
+                            <span style={{ ...num, fontSize: 13.5, fontWeight: 600, color: over ? 'var(--x-bad-text)' : T.text }}>{perUnit(l.cpm)}{over && <span style={{ fontFamily: 'inherit', fontSize: 11.5, fontWeight: 600 }}> · costing more than it earns</span>}</span>
+                            <CostBullet cost={l.cpm} earned={l.rate} max={max * 1.05} w={160} />
+                          </div>
+                        )}
+                      </td>
+                      <td style={tdR}>{l.rate != null ? perUnit(l.rate) : '—'}</td>
+                    </tr>
+                  )
+                })
+              })()}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: '10px 14px', fontSize: 12, color: T.faint, borderTop: rowLine, lineHeight: 1.5 }}>
+          Updates with every reading. It starts from today&rsquo;s costed shifts, the same figure as the Dashboard, so the two agree when the feed opens; it differs only where the sensor counts metres the log does not.
+        </div>
+      </Card>
 
       {/* SELECTED RIG */}
       <Card title={`${sel.rig} live`} subtitle={[sel.project, sel.hole ? `hole ${sel.hole}` : null, MODE_LABEL[sel.mode]].filter(Boolean).join(' · ')}
@@ -147,7 +212,7 @@ export default function PulsePage() {
 
 /* ── One card a rig ─────────────────────────────────────────────────────── */
 
-function RigCard({ p, t, on, alarm, onPick }: { p: PulseRig; t: number; on: boolean; alarm: { level: string }[]; onPick: () => void }) {
+function RigCard({ p, t, live, on, alarm, onPick }: { p: PulseRig; t: number; live: Live; on: boolean; alarm: { level: string }[]; onPick: () => void }) {
   const worst = alarm.some(a => a.level === 'act') ? 'bad' : alarm.length ? 'warn' : p.mode === 'drilling' ? 'good' : 'neutral'
   const color = LEVEL_COLOR[worst as Level]
   const rop = history(p, 'rop', t).map(h => h.v ?? 0)
@@ -176,6 +241,10 @@ function RigCard({ p, t, on, alarm, onPick }: { p: PulseRig; t: number; on: bool
         </div>
       </div>
       <MiniLine values={rop} color={p.mode === 'drilling' ? 'var(--x-blue)' : 'var(--x-faint)'} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+        <span style={eyebrow}>Cost a metre</span>
+        <span style={{ ...num, fontSize: 13, fontWeight: 600, color: live.cpm != null && live.rate != null && live.cpm > live.rate ? 'var(--x-bad-text)' : T.text }}>{live.cpm != null ? perUnit(live.cpm) : '—'}</span>
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: alarm.length ? T.text : T.faint, fontWeight: alarm.length ? 600 : 400 }}>
         <span aria-hidden style={{ width: 7, height: 7, borderRadius: 2, background: color }} />
         {alarm.length ? `${alarm.length} ${alarm.length === 1 ? 'alarm' : 'alarms'}` : p.mode === 'drilling' ? 'All readings normal' : p.mode === 'offline' ? 'Waiting for signal' : 'Not drilling'}

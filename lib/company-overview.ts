@@ -24,6 +24,7 @@ export interface RigToday {
   cpm: number | null            // cost per metre on the latest costed day
   cpmDate?: string              // that day, when it is not today
   rate: number | null           // earned per metre that day
+  dayCost: number | null        // what that whole rig-day cost
   monthCpm: number | null
   monthMetres: number
   reported: boolean             // today's shifts are in (or reported, for a contractor)
@@ -78,6 +79,7 @@ export function companyToday(costing: OverviewCosting, inv: OverviewInv, today: 
       ownDowntimeToday: mine.filter(l => l.downtimeSide !== 'client').reduce((s, l) => s + l.downtimeHours, 0) + reps.reduce((s, r) => s + r.breakdownHours, 0),
       cpm: last ? last.total / last.units : null, cpmDate: last && last.date !== today ? last.date : undefined,
       rate: last && last.units ? last.revenue / last.units : null,
+      dayCost: last ? last.total : null,
       monthCpm: monthUnits ? monthCost / monthUnits : null, monthMetres: monthUnits,
       reported: mine.length > 0 || reps.length > 0, unchecked: reps.length,
     }

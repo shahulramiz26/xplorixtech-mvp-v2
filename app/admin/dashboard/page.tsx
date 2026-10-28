@@ -144,14 +144,14 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      <Card title="Every rig today" subtitle="Bar: what a metre cost on the rig's latest costed day. Tick: what that metre earned. Red when it cost more than it earned." pad={false}
+      <Card title="Every rig today" subtitle="Cost a metre today for every rig. Bar: what a metre cost today. Tick: what it earned. Red when it cost more than it earned. Live estimate as the rig drills: Pulse." pad={false}
         right={<Link href="/admin/finance" style={{ fontSize: 12.5, color: T.orange, fontWeight: 600, textDecoration: 'none' }}>Finance →</Link>}>
         {c.rigs.length === 0 ? <Empty>No rig has logged a shift this month.</Empty> : (() => {
           const maxM = Math.max(1, ...c.rigs.map(r => r.metresToday))
-          const maxC = Math.max(1, ...c.rigs.flatMap(r => [r.cpm ?? 0, r.rate ?? 0]))
+          const maxC = Math.max(1, ...c.rigs.filter(r => !r.cpmDate).flatMap(r => [r.cpm ?? 0, r.rate ?? 0]))
           return (
             <Table>
-              <thead><tr><th style={th}>Rig</th><th style={th}>Project and hole</th><th style={th}>Metres today</th><th style={th}>Cost against earned, a metre</th><th style={thR}>Downtime</th><th style={thR}>This month</th><th style={th} /></tr></thead>
+              <thead><tr><th style={th}>Rig</th><th style={th}>Project and hole</th><th style={th}>Metres today</th><th style={th}>Cost a metre today</th><th style={thR}>Downtime</th><th style={thR}>This month</th><th style={th} /></tr></thead>
               <tbody>
                 {c.rigs.map(r => (
                   <tr key={`${r.project}|${r.rig}`} style={{ borderTop: rowLine }}>
@@ -164,10 +164,17 @@ export default function AdminDashboard() {
                       </div> : <span style={{ color: 'var(--x-bad-text)', fontWeight: 600 }}>No log</span>}
                     </td>
                     <td style={{ ...td, minWidth: 210 }}>
-                      <div style={{ display: 'grid', gap: 4 }}>
-                        <CostBullet cost={r.cpm} earned={r.rate} max={maxC * 1.05} w={150} />
-                        <span style={{ ...figure, fontSize: 12, color: T.muted }}>{r.cpm != null ? perUnit(r.cpm) : '—'} <span style={{ color: T.faint }}>against</span> {r.rate != null ? perUnit(r.rate) : '—'}{r.cpmDate ? <span style={{ fontFamily: 'inherit', color: T.faint }}> · {day(r.cpmDate)}</span> : null}</span>
-                      </div>
+                      {r.cpm != null && !r.cpmDate ? (
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          <span style={{ ...figure, fontSize: 13.5, color: r.rate != null && r.cpm > r.rate ? 'var(--x-bad-text)' : T.text, fontWeight: 600 }}>{perUnit(r.cpm)} <span style={{ fontFamily: 'inherit', fontSize: 12, fontWeight: 400, color: T.faint }}>earned {r.rate != null ? perUnit(r.rate) : '—'}</span></span>
+                          <CostBullet cost={r.cpm} earned={r.rate} max={maxC * 1.05} w={150} />
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gap: 3 }}>
+                          <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{r.unchecked ? 'Shift to check first' : 'Not costed yet today'}</span>
+                          {r.cpm != null && <span style={{ ...figure, fontSize: 12, color: T.faint }}>last {perUnit(r.cpm)}<span style={{ fontFamily: 'inherit' }}> on {day(r.cpmDate)}</span></span>}
+                        </div>
+                      )}
                     </td>
                     <td style={{ ...tdR, color: r.ownDowntimeToday ? 'var(--x-bad-text)' : T.muted }}>{r.downtimeToday ? `${num(r.downtimeToday)} h` : '0'}{r.downtimeToday && !r.ownDowntimeToday ? <div style={{ fontFamily: 'inherit', fontSize: 11.5, color: T.faint }}>client standby</div> : null}</td>
                     <td style={tdR}>{num(r.monthMetres)} m<div style={{ fontSize: 11.5, color: T.faint }}>{r.monthCpm != null ? perUnit(r.monthCpm) : '—'}</div></td>
