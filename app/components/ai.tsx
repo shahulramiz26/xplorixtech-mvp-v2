@@ -237,12 +237,12 @@ function AskPanel({ first, onFirst, onClose }: { first: string | null; onFirst: 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(var(--x-shadow),0.35)', display: 'flex', justifyContent: 'flex-end' }}>
       <aside role="dialog" aria-modal aria-label="Ask XPLORIX" onClick={e => e.stopPropagation()}
-        style={{ width: 'min(480px, 100%)', height: '100%', background: T.card, borderLeft: `1px solid ${T.border}`, display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', boxShadow: '-20px 0 60px rgba(var(--x-shadow),0.35)' }}>
+        style={{ fontFamily: display, color: T.text, width: 'min(480px, 100%)', height: '100%', background: T.card, borderLeft: `1px solid ${T.border}`, display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', boxShadow: '-20px 0 60px rgba(var(--x-shadow),0.35)' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: `1px solid ${T.line}` }}>
           <span aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: tint(T.orange, 14) }}><Sparkles size={17} style={{ color: T.orange }} /></span>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: T.text }}>Ask XPLORIX</div>
-            <div style={{ fontSize: 12, color: T.faint }}>Answers from your drill logs, costs, stores and invoices</div>
+            <div style={{ fontSize: 12, color: T.faint }}>Answers from your drill logs, costs, stores, invoices and rig sensors</div>
           </div>
           <button type="button" aria-label="Close" onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4 }}><X size={18} /></button>
         </header>
