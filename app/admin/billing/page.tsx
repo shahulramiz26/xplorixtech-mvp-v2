@@ -49,7 +49,7 @@ export default function BillingPage() {
       <Card title="Plans" subtitle="Pricing depends on fleet size. Longer billing periods cost less.">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
           {PLANS.map(p => (
-            <div key={p.name} style={{ padding: '14px 16px', borderRadius: 12, border: `1px solid ${p.current ? 'color-mix(in srgb, var(--x-orange) 45%, transparent)' : T.border}`, background: p.current ? 'color-mix(in srgb, var(--x-orange) 5%, transparent)' : 'transparent' }}>
+            <div key={p.name} style={{ padding: '14px 16px', borderRadius: 10, border: `1px solid ${p.current ? 'color-mix(in srgb, var(--x-orange) 45%, transparent)' : T.border}`, background: p.current ? 'color-mix(in srgb, var(--x-orange) 5%, transparent)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 14.5, fontWeight: 700, color: T.text }}>{p.name}</span>
                 {p.current && <Status tone="info">Your plan</Status>}

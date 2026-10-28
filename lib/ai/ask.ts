@@ -1,6 +1,8 @@
 import { monthOf, monthLabel, perUnit, outstanding, isOverdue } from '../costing-store'
 import { addDays, normFormation } from '../inventory-store'
 import { companyToday } from '../company-overview'
+import { computeOverview } from '../admin-overview'
+import { buildFleet, alarms as sensorAlarms, sensorMetres, reading, depthAt, MODE_LABEL, OPEN_AT, clock } from '../pulse'
 import { holesFromLogs } from '../client-record'
 import { standbyLedger } from '../money-checks'
 import { contractorName } from '../contracting'
@@ -44,6 +46,7 @@ export function suggestions(path: string): string[] {
   if (path.startsWith('/admin/inventory')) return ['Which parts run out first?', 'Why does the HQ core lifter run out so fast?', 'What stock is sitting idle?', 'What do we need to order this week?']
   if (path.startsWith('/admin/contractors')) return ['Compare my contractors', 'Why is CQ-01 slower than RIG-003?', 'Which contractor bills are above the record?']
   if (path.startsWith('/admin/logs/maintenance')) return ['Which rigs are due a service?', 'Why did CP-02 break down?', 'What does a stopped day cost?']
+  if (path.startsWith('/admin/pulse')) return ['What are the sensors telling me?', 'Why is RIG-002 water pressure up?', 'Do the sensors agree with the shift logs?', 'Which rigs are drilling right now?']
   if (path.startsWith('/admin/logs/drill')) return ['Which shifts look copied?', 'Which shifts are missing?', 'Who are my fastest drillers?']
   if (path.startsWith('/admin/projects')) return ['When will DH-013 finish?', 'Which holes cannot be billed?', 'When do the planned holes run out?']
   if (path.startsWith('/admin/intelligence') || path.startsWith('/admin/analytics')) return ['How will this month close?', 'Why did cost per metre change this month?', 'Which rig is best in very hard ground?', 'What are the biggest risks?']
@@ -62,6 +65,7 @@ export function ask(question: string, c: AiCtx): Answer {
     if (has(q, 'brief', 'summary', 'summarise', 'summarize', 'how are we doing', 'how is it going', 'overview')) return briefAnswer(c, has(q, 'week'))
     if (has(q, 'reply') && has(q, 'standby')) return standbyReply(c)
     if (has(q, 'draft', 'write', 'reply', 'message', 'email', 'remind')) return draftAnswer(q, c, rigs, holes)
+    if (has(q, 'sensor', 'pulse', 'alarm', 'drilling right now', 'live sensor', 'water pressure', 'water flow', 'torque', 'engine temp', 'running hot', 'overheat', 'idling')) return sensorAnswer(q, c, rigs)
     if (has(q, 'need me', 'needs me', 'should i do', 'to do today', 'priorit', 'urgent', 'act on', 'my tasks', 'what first')) return todayAnswer(c)
     if (has(q, 'cost per metre', 'cost a metre', 'cost/m', 'cpm', 'cost per meter') || (has(q, 'cost') && has(q, 'metre', 'meter'))) return rigs.length ? rigAnswer(rigs[0], c) : costAnswer(c, has(q, 'why', 'change', 'up', 'rise', 'went', 'increase', 'drop'), ground)
     if (has(q, 'why') && rigs.length >= 1 && has(q, 'slow', 'faster', 'slower', 'behind')) return slowAnswer(rigs, c)
@@ -399,3 +403,50 @@ function stopCostAnswer(c: AiCtx): Answer {
 }
 
 export const contractorLabel = (c: AiCtx, id?: string) => contractorName(c.costing, id)
+
+/* XPLORIX Pulse: the simulated rig sensors, read at the last reading. */
+function sensorAnswer(q: string, c: AiCtx, rigs: string[]): Answer {
+  const fleet = buildFleet(computeOverview(c.costing, c.inv).rigs)
+  const t = OPEN_AT
+  const al = sensorAlarms(fleet, t)
+  const sources = [{ label: 'Pulse · live sensors', href: '/admin/pulse' }]
+  const note = 'Pulse runs on a simulated sensor feed until rigs are fitted with sensors.'
+  if (has(q, 'agree', 'log', 'match', 'against')) {
+    const rows = fleet.filter(p => p.logged != null || p.mode === 'drilling').map(p => {
+      const s = sensorMetres(p, t)
+      return [p.rig, p.logged == null ? '—' : `${n1(p.logged)} m`, `${n1(s)} m`, p.logged == null ? 'Not checked yet' : s - p.logged > Math.max(2, p.logged * 0.06) ? `${n1(s - p.logged)} m not logged` : 'Agrees']
+    })
+    const off = rows.filter(r => r[3] !== 'Agrees')
+    return {
+      understood: true,
+      text: [off.length ? `**${off.length} of ${rows.length} rigs** do not match their shift log yet: ${list(off.map(r => `${r[0]} (${r[3].toLowerCase()})`))}.` : 'Every rig\'s depth sensor agrees with its shift log.', note],
+      table: { cols: ['Rig', 'Log', 'Sensor', 'Check'], rows }, sources, followups: ['What are the sensors telling me?'],
+    }
+  }
+  const one = rigs.map(r => fleet.find(p => p.rig === r)).find(Boolean)
+  if (one) {
+    const mine = al.filter(a => a.rig === one.rig || a.why.includes(`**${one.rig}**`))
+    const r = (k: Parameters<typeof reading>[1]) => reading(one, k, t)
+    return {
+      understood: true,
+      text: [
+        `**${one.rig}** at ${clock(t, false)}: ${MODE_LABEL[one.mode].toLowerCase()}${one.mode === 'drilling' ? `, bit at ${n1(depthAt(one, t))} m, ${n1(r('rop') ?? 0)} m/h, water ${n1(r('pressure') ?? 0)} bar and ${n0(r('flow') ?? 0)} L/min, engine ${n0(r('engine') ?? 0)} °C` : ''}.`,
+        ...(mine.length ? mine.flatMap(a => [`**${a.title}.** ${a.why}`, `What to do: ${a.todo}`]) : ['Every reading is in its normal range.']),
+        note,
+      ],
+      sources, followups: ['What are the sensors telling me?', 'Do the sensors agree with the shift logs?'],
+    }
+  }
+  const drilling = fleet.filter(p => p.mode === 'drilling')
+  const act = al.filter(a => a.level === 'act')
+  return {
+    understood: true,
+    text: [
+      `**${drilling.length} of ${fleet.length} rigs drilling** at ${clock(t, false)}. ${al.length ? `${al.length} ${al.length === 1 ? 'alarm' : 'alarms'}, ${act.length} to act on now.` : 'Every reading is in range.'}`,
+      ...al.slice(0, 4).map(a => `• **${a.rig}: ${a.title}.** ${a.todo}`),
+      note,
+    ],
+    table: { cols: ['Rig', 'Doing', 'Depth', 'm/h'], rows: fleet.map(p => [p.rig, MODE_LABEL[p.mode], `${n1(depthAt(p, t))} m`, p.mode === 'drilling' ? n1(reading(p, 'rop', t) ?? 0) : '—']) },
+    sources, followups: al[0] ? [`Why is ${al[0].rig} ${al[0].key === 'engine' ? 'running hot' : 'water pressure up'}?`, 'Do the sensors agree with the shift logs?'] : ['Do the sensors agree with the shift logs?'],
+  }
+}

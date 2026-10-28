@@ -19,7 +19,7 @@ const C = {
   border: 'var(--x-border)', text: 'var(--x-text)', dim: 'var(--x-muted)',
   muted: 'var(--x-faint)', faint: 'var(--x-dim)', green: 'var(--x-green)', amber: 'var(--x-yellow)',
 }
-const display = "'Space Grotesk', sans-serif"
+import { display, num } from '../../components/kit'
 
 const WINDOWS: [string, number][] = [['2 weeks', 14], ['30 days', 30], ['90 days', 90], ['Any', 9999]]
 
@@ -146,14 +146,14 @@ function CrewCard({ c, onRequest }: { c: CrewProfile; onRequest: (c: CrewProfile
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
-        background: C.panel, borderRadius: 14, padding: 18,
+        background: C.panel, borderRadius: 10, padding: 18,
         border: `1px solid ${hover ? C.accentBorder : C.border}`,
         transition: 'border-color .2s', display: 'flex', flexDirection: 'column',
       }}>
 
       <div style={{ display: 'flex', gap: 13, marginBottom: 14 }}>
         <div style={{
-          width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+          width: 46, height: 46, borderRadius: 10, flexShrink: 0,
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--x-orange) 18%, transparent), color-mix(in srgb, var(--x-amber) 10%, transparent))',
           border: `1px solid ${C.accentBorder}`, display: 'flex', alignItems: 'center',
           justifyContent: 'center', fontFamily: display, fontWeight: 700, fontSize: 15, color: C.accent,
@@ -250,7 +250,7 @@ function JobRow({ j }: { j: JobPosting }) {
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
-        background: C.panel, borderRadius: 13, padding: 18,
+        background: C.panel, borderRadius: 10, padding: 18,
         border: `1px solid ${hover ? C.accentBorder : C.border}`,
         transition: 'border-color .2s', display: 'grid',
         gridTemplateColumns: 'minmax(0,1fr) auto', gap: 20, alignItems: 'center',
@@ -283,7 +283,7 @@ function JobRow({ j }: { j: JobPosting }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: C.text, fontFamily: display, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: C.text, ...num, fontVariantNumeric: 'tabular-nums' }}>
             {j.applicants}
           </div>
           <div style={{ fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
@@ -297,7 +297,7 @@ function JobRow({ j }: { j: JobPosting }) {
         </div>
 
         <div style={{ textAlign: 'right', paddingLeft: 22, borderLeft: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: C.accent, fontFamily: display, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: C.accent, ...num, fontVariantNumeric: 'tabular-nums' }}>
             {j.poolMatches}
           </div>
           <div style={{ fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
@@ -388,7 +388,7 @@ export default function CrewPage() {
 
       {/* ---------- header ---------- */}
       <div style={{
-        position: 'relative', overflow: 'hidden', borderRadius: 18, padding: '26px 30px',
+        position: 'relative', overflow: 'hidden', borderRadius: 10, padding: '26px 30px',
         background: `linear-gradient(135deg, ${C.panelHi} 0%, ${C.bg} 70%)`,
         border: `1px solid ${C.border}`, marginBottom: 20,
       }}>
@@ -423,7 +423,7 @@ export default function CrewPage() {
               [CREW_STATS.newApplicants, 'New applicants', C.green],
             ].map(([v, k, col]) => (
               <div key={String(k)}>
-                <div style={{ fontSize: 21, fontWeight: 700, color: col as string, fontFamily: display, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
+                <div style={{ fontSize: 21, fontWeight: 600, color: col as string, ...num, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
                   {v}
                 </div>
                 <div style={{ fontSize: 10, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginTop: 2 }}>
@@ -444,7 +444,7 @@ export default function CrewPage() {
       </div>
 
       {/* ---------- tabs ---------- */}
-      <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(var(--x-ov),0.03)', border: `1px solid ${C.border}`, width: 'fit-content', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'rgba(var(--x-ov),0.03)', border: `1px solid ${C.border}`, width: 'fit-content', marginBottom: 20 }}>
         {([['pool', 'Availability pool', Users], ['jobs', 'My job postings', Briefcase]] as const).map(([id, label, Icon]) => {
           const on = tab === id
           return (
@@ -467,7 +467,7 @@ export default function CrewPage() {
               width: 252, flexShrink: 0, position: 'sticky', top: 88,
               maxHeight: 'calc(100vh - 110px)', overflowY: 'auto',
               background: C.panel, border: `1px solid ${C.border}`,
-              borderRadius: 14, padding: '4px 14px 14px', scrollbarWidth: 'thin',
+              borderRadius: 10, padding: '4px 14px 14px', scrollbarWidth: 'thin',
             }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 0' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: C.text, fontFamily: display }}>Filters</span>
@@ -565,7 +565,7 @@ export default function CrewPage() {
             {/* search */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '12px 15px',
-              borderRadius: 12, marginBottom: 14,
+              borderRadius: 10, marginBottom: 14,
               background: 'rgba(var(--x-ov),0.03)', border: `1px solid ${C.border}`,
             }}>
               <Search size={16} style={{ color: C.muted, flexShrink: 0 }} />
@@ -630,9 +630,9 @@ export default function CrewPage() {
                 {crew.map((c) => <CrewCard key={c.id} c={c} onRequest={setContactFor} />)}
               </div>
             ) : (
-              <div style={{ padding: '56px 24px', textAlign: 'center', borderRadius: 14, background: C.panel, border: `1px dashed ${C.border}` }}>
+              <div style={{ padding: '56px 24px', textAlign: 'center', borderRadius: 10, background: C.panel, border: `1px dashed ${C.border}` }}>
                 <div style={{
-                  width: 46, height: 46, borderRadius: 12, margin: '0 auto 16px',
+                  width: 46, height: 46, borderRadius: 10, margin: '0 auto 16px',
                   background: 'rgba(var(--x-ov),0.04)', border: `1px solid ${C.border}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}><Users size={20} style={{ color: C.muted }} /></div>
@@ -657,7 +657,7 @@ export default function CrewPage() {
             )}
 
             <div style={{
-              marginTop: 22, padding: 15, borderRadius: 12, fontSize: 12, color: C.muted,
+              marginTop: 22, padding: 15, borderRadius: 10, fontSize: 12, color: C.muted,
               background: 'rgba(var(--x-ov),0.02)', border: `1px solid ${C.border}`, lineHeight: 1.65,
             }}>
               Everyone here has opted in to being visible and confirmed their availability within
@@ -674,7 +674,7 @@ export default function CrewPage() {
             {JOBS.map((j) => <JobRow key={j.id} j={j} />)}
           </div>
           <button onClick={() => setShowPost(true)} style={{
-            width: '100%', marginTop: 14, padding: '16px', borderRadius: 13, cursor: 'pointer',
+            width: '100%', marginTop: 14, padding: '16px', borderRadius: 10, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
             background: 'transparent', border: `1px dashed ${C.border}`, color: C.muted,
             fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit',
@@ -726,7 +726,7 @@ function ContactModal({ c, onClose }: { c: CrewProfile; onClose: () => void }) {
     <div onClick={onClose} style={shell}>
       <div onClick={(e) => e.stopPropagation()} style={{
         width: '100%', maxWidth: 480, background: C.panel,
-        border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden',
+        border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden',
       }}>
         <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
           <div>
@@ -805,7 +805,7 @@ function PostJobModal({ onClose }: { onClose: () => void }) {
     <div onClick={onClose} style={shell}>
       <div onClick={(e) => e.stopPropagation()} style={{
         width: '100%', maxWidth: 580, maxHeight: '88vh', overflowY: 'auto',
-        background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16,
+        background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10,
       }}>
         <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', gap: 12, position: 'sticky', top: 0, background: C.panel, zIndex: 1 }}>
           <div>
@@ -955,7 +955,7 @@ function PostJobModal({ onClose }: { onClose: () => void }) {
           {step === 3 && (
             <div style={{ textAlign: 'center', padding: '10px 0' }}>
               <div style={{
-                width: 48, height: 48, borderRadius: 13, margin: '0 auto 16px',
+                width: 48, height: 48, borderRadius: 10, margin: '0 auto 16px',
                 background: 'color-mix(in srgb, var(--x-green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--x-green) 25%, transparent)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}><BadgeCheck size={23} style={{ color: C.green }} /></div>

@@ -24,7 +24,7 @@ export interface Brief { title: string; lines: BriefLine[]; sources: Source[] }
 /* Why cost a metre moved: this month so far against the same days last month.
  * A metre's cost is the cost of a rig-day over the metres a rig-day makes, so
  * the change is either more cost a day, fewer metres a day, or both. */
-export function costWhy(c: AiCtx): { headline: string; why: Why[]; up: boolean } | null {
+export function costWhy(c: AiCtx): { headline: string; short: string; why: Why[]; up: boolean } | null {
   const month = monthOf(c.today)
   const day = Number(c.today.slice(8))
   const now = monthNumbers(c.costing, c.inv, month)
@@ -49,7 +49,8 @@ export function costWhy(c: AiCtx): { headline: string; why: Why[]; up: boolean }
   const lead = Math.abs(md) >= Math.abs(cd)
     ? (md < 0 ? 'mostly because the rigs drilled fewer metres a day' : 'mostly because the rigs drilled more metres a day')
     : (cd > 0 ? 'mostly because a rig-day cost more' : 'mostly because a rig-day cost less')
-  return { up, why, headline: `Cost a metre is ${perUnit(now.costPerMetre)} this month, ${up ? 'up' : 'down'} ${pct(Math.abs(ch) * 100)} on the same days of ${prevName}, ${lead}.` }
+  return { up, why, headline: `Cost a metre is ${perUnit(now.costPerMetre)} this month, ${up ? 'up' : 'down'} ${pct(Math.abs(ch) * 100)} on the same days of ${prevName}, ${lead}.`,
+    short: `**Cost a metre is ${up ? 'up' : 'down'} ${pct(Math.abs(ch) * 100)}** on the same days of ${prevName}, ${lead}.` }
 }
 
 export function dailyBrief(c: AiCtx): Brief {
@@ -59,21 +60,23 @@ export function dailyBrief(c: AiCtx): Brief {
   const ym = shifts(c, l => l.date === yday).reduce((s, l) => s + l.metresDrilled, 0)
   const lines: BriefLine[] = []
   const month = monthLabel(monthOf(c.today)).split(' ')[0]
-  lines.push({ text: `**${n0(ym)} m drilled yesterday**, ${n0(t.today.metres)} m so far today on ${t.today.rigsActive} of ${t.today.rigsOnProjects} rigs${t.today.cpm != null ? `, at ${perUnit(t.today.cpm)} on your own rigs` : ''}.`, href: '/admin/dashboard' })
-  const vs = f.lastMonth.margin
-  lines.push({ text: `**${month} is heading for ${n0(f.thisMonthTotal.metres)} m and a ${moneyL(f.thisMonthTotal.margin)} margin** (${pct(f.thisMonthTotal.marginPct)})${vs ? `, ${f.thisMonthTotal.margin >= vs ? 'up' : 'down'} ${moneyL(Math.abs(f.thisMonthTotal.margin - vs))} on last month` : ''}.`, href: '/admin/intelligence/months', tone: vs && f.thisMonthTotal.margin < vs ? 'bad' : 'good' })
+  /* The Dashboard already shows today's metres, rigs and the month's money,
+   * so the brief does not say them again: it says what they mean. */
+  const since = `${monthOf(c.today)}-01`
+  const mDays = new Set(shifts(c, l => l.date >= since && l.date < c.today).map(l => l.date)).size
+  const mAvg = mDays ? shifts(c, l => l.date >= since && l.date < c.today).reduce((s, l) => s + l.metresDrilled, 0) / mDays : 0
+  if (mAvg) {
+    const d = (ym / mAvg - 1) * 100
+    lines.push({ text: `**Yesterday ${n0(ym)} m**, ${Math.abs(d) < 3 ? `in line with ${month}'s daily average` : `${pct(Math.abs(d))} ${d > 0 ? 'above' : 'below'} ${month}'s daily average of ${n0(mAvg)} m`}.`, href: '/admin/analytics/operation', tone: d < -10 ? 'bad' : d > 3 ? 'good' : 'neutral' })
+  }
   const cw = costWhy(c)
-  if (cw) lines.push({ text: cw.headline, href: '/admin/finance', tone: cw.up ? 'bad' : 'good' })
+  if (cw) lines.push({ text: cw.short, href: '/admin/finance', tone: cw.up ? 'bad' : 'good' })
   const act = c.inbox.open.filter(u => u.severity === 'act')
   if (act.length) {
     const top = [...act].sort((a, b) => (b.money ?? 0) - (a.money ?? 0)).slice(0, 3)
-    lines.push({ text: `**${plural(act.length, 'thing needs', 'things need')} you today.** First: ${list(top.map(u => `${u.title.replace(/\.$/, '')}${u.money ? ` (${moneyL(u.money)})` : ''}`))}.`, href: '/admin/tasks?dept=all', tone: 'bad' })
+    lines.push({ text: `**First today:** ${list(top.map(u => `${u.title.replace(/\.$/, '')}${u.money ? ` (${moneyL(u.money)})` : ''}`))}.`, href: '/admin/tasks?dept=all', tone: 'bad' })
   }
-  const cash = f.cash
-  const waiting = cash.overdue + cash.readyToInvoice + cash.notApproved
-  if (waiting > 0) lines.push({ text: `**${moneyL(waiting)} of work done is not yet cash:** ${list([
-    cash.overdue ? `${moneyL(cash.overdue)} overdue` : '', cash.readyToInvoice ? `${moneyL(cash.readyToInvoice)} approved and not invoiced` : '', cash.notApproved ? `${moneyL(cash.notApproved)} waiting for the client's approval` : '',
-  ].filter(Boolean))}.`, href: '/admin/finance' })
+  // Money waiting is not repeated here: its tasks lead the line above, and Finance holds the rest.
   const plan = c.inbox.open.filter(u => u.severity === 'plan').sort((a, b) => (b.money ?? 0) - (a.money ?? 0))[0]
   if (plan) lines.push({ text: `To plan this week: ${plan.title.replace(/\.$/, '')}${plan.money ? ` (${moneyL(plan.money)})` : ''}.`, href: '/admin/tasks?dept=all' })
   return { title: `Morning brief · ${dw(c.today)}`, lines, sources: [{ label: 'Drill logs', href: '/admin/logs/drill' }, { label: 'Tasks', href: '/admin/tasks?dept=all' }, { label: 'Outlook', href: '/admin/intelligence/months' }] }

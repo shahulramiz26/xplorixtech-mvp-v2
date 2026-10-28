@@ -147,7 +147,7 @@ export function SwotGrid({ swot, empty }: {
         const c = toneOf[q.tone]
         const items = swot[q.key]
         return (
-          <section key={q.key} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', minWidth: 0 }}>
+          <section key={q.key} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden', minWidth: 0 }}>
             <header style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '12px 16px', borderBottom: `1px solid ${T.line}` }}>
               <span aria-hidden style={{
                 width: 26, height: 26, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',

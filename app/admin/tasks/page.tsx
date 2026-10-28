@@ -9,7 +9,7 @@ import { TODAY, addDays } from '../../../lib/inventory-store'
 import { DEPTS, deptLabel, type Dept } from '../../../lib/findings'
 import { placeTasks, DEPT_COLOR, type TaskItem } from '../../../lib/tasks'
 import { useInbox, UnitActions } from '../../components/inbox'
-import { Page, T, tint, display, useEscape } from '../../components/kit'
+import { Page, T, tint, display, useEscape, num, Seg, Tile } from '../../components/kit'
 import { TaskAi } from '../../components/ai'
 
 /* ==========================================================================
@@ -41,7 +41,8 @@ function Tasks() {
   /* One department, or a department screen's own set ("operations,geology"),
    * which shows in the first one's colour. */
   const group = (deptParam ?? '').split(',').filter(k => DEPTS.some(d => d.key === k)) as Dept[]
-  const dept = (deptParam === 'all' ? 'all' : group[0] ?? null) as 'all' | Dept | null
+  // No chooser: Tasks opens on every department, filtered by the chips below.
+  const dept = (!deptParam || deptParam === 'all' ? 'all' : group[0] ?? 'all') as 'all' | Dept
   const inGroup = (ds: Dept[]) => dept === 'all' || ds.some(d => (group.length ? group : [dept as Dept]).includes(d))
   const [view, setView] = useState<View>('week')
   const [anchor, setAnchor] = useState(TODAY)
@@ -54,25 +55,6 @@ function Tasks() {
     return m
   }, [all])
   const pick = (d: 'all' | Dept) => router.push(`/admin/tasks?dept=${d}`)
-
-  /* First, which department. */
-  if (!dept) {
-    const todayAll = all.filter(t => t.date <= TODAY).length
-    return (
-      <Page>
-        <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text }}>Tasks</h1>
-          <p style={{ margin: '6px 0 0', fontSize: 14, color: T.muted }}>Whose tasks do you want to see?</p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(230px, 100%), 1fr))', gap: 12 }}>
-          <DeptCard color={T.orange} title="All departments" sub="Each department in its own colour" n={all.length} today={todayAll} onClick={() => pick('all')} big />
-          {DEPTS.filter(d => counts[d.key]?.n).map(d => (
-            <DeptCard key={d.key} color={DEPT_COLOR[d.key]} title={d.label} sub={`For ${d.owner}`} n={counts[d.key].n} today={counts[d.key].today} onClick={() => pick(d.key)} />
-          ))}
-        </div>
-      </Page>
-    )
-  }
 
   const mine = all.filter(t => inGroup(t.u.depts))
   const colorOf = (t: TaskItem) => dept === 'all' ? DEPT_COLOR[t.u.dept] ?? T.orange : DEPT_COLOR[dept] ?? T.orange
@@ -89,33 +71,41 @@ function Tasks() {
     <Page>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: display, fontSize: 26, fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: 10 }}>
-            {dept !== 'all' && <span aria-hidden style={{ width: 12, height: 12, borderRadius: 4, background: DEPT_COLOR[dept] }} />}
-            Tasks · {dept === 'all' ? 'All departments' : group.map(d => deptLabel(d)).join(' and ')}
-          </h1>
-          <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>
-            {mine.filter(t => t.date <= TODAY).length} for today{late ? `, ${late} of them late` : ''} · {mine.length} in all. A dashed task has no date in the record; XPLORIX suggests the day.
-          </p>
+          <h1 style={{ margin: 0, fontFamily: display, fontSize: 22, fontWeight: 600, color: T.text }}>Tasks</h1>
+          <p style={{ margin: '5px 0 0', fontSize: 13.5, color: T.muted }}>Everything XPLORIX found that needs a person, on the day it is due. A dashed task has no date in the record; XPLORIX suggests one.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select aria-label="Department" value={dept} onChange={e => pick(e.target.value as 'all' | Dept)} style={{ minHeight: 38, padding: '0 10px', borderRadius: 9, border: `1px solid ${T.border}`, background: T.card, color: T.text, fontFamily: 'inherit', fontSize: 13 }}>
-            <option value="all">All departments · {all.length}</option>
-            {DEPTS.filter(d => counts[d.key]?.n).map(d => <option key={d.key} value={d.key}>{d.label} · {counts[d.key].n}</option>)}
-          </select>
-          <div role="tablist" aria-label="View" style={{ display: 'inline-flex', gap: 3, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: 3 }}>
-            {(['week', 'month', 'list'] as View[]).map(v => (
-              <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => setView(v)} style={{ minHeight: 32, padding: '0 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, background: view === v ? tint(T.orange, 14) : 'transparent', color: view === v ? T.text : T.muted, fontWeight: view === v ? 700 : 500, textTransform: 'capitalize' }}>{v}</button>
-            ))}
-          </div>
-          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${group.join(',')}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 13px', borderRadius: 9, background: T.orange, color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>
+          <Seg<View> value={view} onChange={setView} options={[{ value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }, { value: 'list', label: 'List' }]} />
+          <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${group.join(',')}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 14px', borderRadius: 7, background: T.orange, color: 'var(--x-on-accent)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>Go through them one by one<ArrowRight size={14} aria-hidden /></Link>
         </div>
       </div>
 
-      {dept === 'all' && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', fontSize: 12.5, color: T.muted }}>
-          {DEPTS.filter(d => counts[d.key]?.n).map(d => <span key={d.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span aria-hidden style={{ width: 10, height: 10, borderRadius: 3, background: DEPT_COLOR[d.key] }} />{d.label}</span>)}
-        </div>
-      )}
+      {/* The work at a glance, for the departments picked. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 12 }}>
+        <Tile label="For today" value={String(mine.filter(t => t.date <= TODAY).length)} tone={late ? 'bad' : undefined} note={late ? `${late} of them late` : 'None of them late'} />
+        <Tile label="Rest of this week" value={String(mine.filter(t => t.date > TODAY && t.date <= addDays(TODAY, 6)).length)} note="Due or suggested in the next 6 days" />
+        <Tile label="Act now" value={String(mine.filter(t => t.u.severity === 'act').length)} note={`${mine.filter(t => t.u.severity === 'plan').length} to plan for, ${mine.filter(t => t.u.severity === 'watch').length} to watch`} />
+        <Tile label="Money at stake" value={moneyL(mine.reduce((sum, t) => sum + (t.u.money ?? 0), 0))} note={`Across ${mine.length} ${mine.length === 1 ? 'task' : 'tasks'}`} />
+      </div>
+
+      <nav aria-label="Departments" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {[{ key: 'all' as const, label: 'All departments', color: T.orange }, ...DEPTS.filter(d => counts[d.key]?.n).map(d => ({ key: d.key, label: d.label, color: DEPT_COLOR[d.key] }))].map(d => {
+          const on = d.key === 'all' ? dept === 'all' : dept !== 'all' && (group.length ? group : [dept]).includes(d.key)
+          const n = d.key === 'all' ? all.length : counts[d.key].n
+          const today = d.key === 'all' ? all.filter(t => t.date <= TODAY).length : counts[d.key].today
+          return (
+            <button key={d.key} type="button" aria-pressed={on} onClick={() => pick(d.key)} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 34, padding: '0 11px', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 600 : 500,
+              background: on ? T.card : 'transparent', color: on ? T.text : T.muted,
+              border: `1px solid ${on ? 'var(--x-border3)' : T.border}`, boxShadow: on ? `inset 0 -2px 0 ${d.color}` : 'none',
+            }}>
+              <span aria-hidden style={{ width: 9, height: 9, borderRadius: 2, background: d.color }} />{d.label}
+              <span style={{ ...num, fontSize: 11.5, color: T.faint }}>{n}</span>
+              {today > 0 && <span style={{ ...num, fontSize: 11, fontWeight: 600, color: '#fff', background: '#DC2626', borderRadius: 4, padding: '0 5px' }}>{today}</span>}
+            </button>
+          )
+        })}
+      </nav>
 
       {view !== 'list' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -133,7 +123,7 @@ function Tasks() {
       )}
 
       {view === 'month' && (
-        <div className="xpl-month" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden' }}>
+        <div className="xpl-month" style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderBottom: `1px solid ${T.line}` }}>
             {WD.map(w => <div key={w} style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, color: T.muted }}>{w}</div>)}
           </div>
@@ -156,7 +146,7 @@ function Tasks() {
       {view === 'list' && (
         <div style={{ display: 'grid', gap: 14 }}>
           {Array.from(new Set(mine.map(t => t.date))).sort().map(d => (
-            <section key={d} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden' }}>
+            <section key={d} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
               <div style={{ padding: '9px 14px', fontSize: 13, fontWeight: 700, color: d === TODAY ? T.orange : T.text, borderBottom: `1px solid ${T.line}`, background: 'rgba(var(--x-ov),0.025)' }}>
                 {d === TODAY ? 'Today' : `${WD[weekday(d)]} ${dword(d)}`} · {on(d).length}
               </div>
@@ -173,37 +163,39 @@ function Tasks() {
 
 const navBtn: React.CSSProperties = { width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, border: `1px solid ${T.border}`, background: T.card, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }
 
-function DeptCard({ color, title, sub, n, today, onClick, big }: { color: string; title: string; sub: string; n: number; today: number; onClick: () => void; big?: boolean }) {
-  return (
-    <button type="button" onClick={onClick} className="xpl-row" style={{ textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', display: 'grid', gap: 6, padding: '16px 18px', borderRadius: 14, background: big ? tint(color, 8) : T.card, border: `1px solid ${big ? tint(color, 35) : T.border}`, borderLeft: `5px solid ${color}`, boxShadow: 'var(--x-card-shadow)' }}>
-      <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{title}</span>
-      <span style={{ fontSize: 12.5, color: T.muted }}>{sub}</span>
-      <span style={{ fontSize: 13, color: T.text, marginTop: 4 }}><b>{n}</b> tasks{today ? <> · <b style={{ color: 'var(--x-bad-text)' }}>{today} today</b></> : null}</span>
-    </button>
-  )
-}
-
 function DayCol({ d, items, colorOf, onOpen }: { d: string; items: TaskItem[]; colorOf: (t: TaskItem) => string; onOpen: (id: string) => void }) {
   const isToday = d === TODAY
+  const [more, setMore] = useState(false)
+  const money = items.reduce((s, t) => s + (t.u.money ?? 0), 0)
   return (
-    <section aria-label={`${WD[weekday(d)]} ${dword(d)}`} style={{ background: isToday ? tint(T.orange, 5) : T.card, border: `1px solid ${isToday ? tint(T.orange, 40) : T.border}`, borderRadius: 12, minHeight: 220, display: 'grid', alignContent: 'start', gap: 6, padding: 8 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 4px 4px' }}>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: isToday ? T.orange : T.muted }}>{WD[weekday(d)]}</span>
-        <span style={{ fontFamily: display, fontSize: 18, fontWeight: 700, color: isToday ? T.orange : T.text }}>{dnum(d)}</span>
+    <section aria-label={`${WD[weekday(d)]} ${dword(d)}`} style={{ background: isToday ? T.card : 'color-mix(in srgb, var(--x-card) 60%, transparent)', border: `1px solid ${T.border}`, borderTop: `3px solid ${isToday ? T.orange : 'var(--x-border3)'}`, borderRadius: 10, minHeight: 240, display: 'grid', alignContent: 'start', gap: 6, padding: 8 }}>
+      <div style={{ display: 'grid', gap: 1, padding: '2px 4px 6px', borderBottom: `1px solid ${T.line}`, marginBottom: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: isToday ? T.orange : T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isToday ? 'Today' : WD[weekday(d)]}</span>
+          <span style={{ ...num, fontSize: 17, fontWeight: 600, color: T.text }}>{dnum(d)}</span>
+        </div>
+        <span style={{ ...num, fontSize: 11, color: T.faint }}>{items.length ? `${items.length} · ${money ? moneyL(money) : 'no money'}` : '—'}</span>
       </div>
-      {items.length === 0 ? <span style={{ fontSize: 12, color: T.faint, padding: '0 4px' }}>Nothing</span> : items.map(t => <Chip key={t.u.id} t={t} color={colorOf(t)} onOpen={onOpen} />)}
+      {items.length === 0 ? <span style={{ fontSize: 12, color: T.faint, padding: '0 4px' }}>Nothing due</span> : (more ? items : items.slice(0, CAP)).map(t => <Chip key={t.u.id} t={t} color={colorOf(t)} onOpen={onOpen} />)}
+      {items.length > CAP && <button type="button" onClick={() => setMore(m => !m)} style={{ minHeight: 32, border: `1px dashed ${T.border}`, borderRadius: 7, background: 'transparent', color: T.orange, fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{more ? 'Show fewer' : `Show ${items.length - CAP} more`}</button>}
     </section>
   )
 }
 
+const CAP = 7
+const SEV_DOT: Record<string, string> = { act: 'var(--x-red)', plan: 'var(--x-amber)', watch: 'var(--x-faint)' }
+
 function Chip({ t, color, onOpen, small }: { t: TaskItem; color: string; onOpen: (id: string) => void; small?: boolean }) {
   const dashed = t.when === 'suggested'
+  const tag = t.when === 'late' ? `Late since ${dword(t.lateFrom!)}` : t.when === 'moved' ? 'Moved here' : t.when === 'due' ? 'Due' : 'Suggested'
   return (
-    <button type="button" onClick={() => onOpen(t.u.id)} title={t.u.title}
-      style={{ textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', display: 'grid', gap: 2, padding: small ? '4px 6px' : '7px 8px', borderRadius: 8, border: `1px ${dashed ? 'dashed' : 'solid'} ${tint(color, 45)}`, borderLeft: `4px solid ${color}`, background: tint(color, 8), minWidth: 0 }}>
-      <span style={{ fontSize: small ? 11.5 : 12.5, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: small ? 'nowrap' : 'normal', display: small ? 'block' : '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.u.title}</span>
-      {!small && <span style={{ fontSize: 11, color: t.when === 'late' ? 'var(--x-bad-text)' : T.faint, fontWeight: t.when === 'late' ? 700 : 400 }}>
-        {t.when === 'late' ? `Late since ${dword(t.lateFrom!)}` : t.when === 'moved' ? 'Moved here' : t.when === 'due' ? 'Due' : 'Suggested'}{t.u.money ? ` · ${moneyL(t.u.money)}` : ''}
+    <button type="button" onClick={() => onOpen(t.u.id)} title={t.u.title} className="xpl-row"
+      style={{ textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', display: 'grid', gap: 4, padding: small ? '4px 6px 4px 8px' : '7px 8px 7px 10px', borderRadius: 7,
+        border: `1px ${dashed ? 'dashed' : 'solid'} ${dashed ? 'var(--x-border3)' : T.border}`, boxShadow: `inset 3px 0 0 ${color}`, background: T.card, minWidth: 0 }}>
+      <span style={{ fontSize: small ? 11.5 : 12.5, fontWeight: 600, color: T.text, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: small ? 'nowrap' : 'normal', display: small ? 'block' : '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.u.title}</span>
+      {!small && <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: t.when === 'late' ? 'var(--x-bad-text)' : T.faint, fontWeight: t.when === 'late' ? 600 : 400 }}>
+        <span aria-label={t.u.severity} style={{ width: 6, height: 6, borderRadius: 9, background: SEV_DOT[t.u.severity], flexShrink: 0 }} />
+        {tag}{t.u.money ? <span style={{ ...num, marginLeft: 'auto', color: T.text, fontWeight: 600 }}>{moneyL(t.u.money)}</span> : null}
       </span>}
     </button>
   )

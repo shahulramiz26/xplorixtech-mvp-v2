@@ -26,7 +26,7 @@ export default function HoleLogs() {
           const main = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 2)
           return (
             <Link key={h.data.hole} href={`/admin/geology/holes/${h.data.hole}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{h.data.hole}</span>
                   {h.checked === h.trays.length ? <Status tone="good">Checked</Status> : <Status tone="warn">{h.trays.length - h.checked} trays to check</Status>}

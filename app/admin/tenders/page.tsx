@@ -9,7 +9,7 @@ import { useInventory, TODAY } from '../../../lib/inventory-store'
 import { buildRateBook } from '../../../lib/own-rates'
 import { useTenders } from '../../../lib/tender-store'
 import { priceBid, compareQuotes, tenderStats, blankTender, STATUS_LABEL, type Tender } from '../../../lib/tenders'
-import { Page, PageHead, Card, Status, Empty, Btn, T, tint, display, rowLine, type Tone } from '../../components/kit'
+import { Page, PageHead, Card, Status, Empty, Btn, T, tint, display, rowLine, type Tone, num, eyebrow } from '../../components/kit'
 import { CoverageBar, dueWord, day, n0, perM } from './shared'
 
 /* ==========================================================================
@@ -90,9 +90,9 @@ export default function TendersPage() {
 
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '14px 16px', display: 'grid', gap: 4, boxShadow: 'var(--x-card-shadow)' }}>
-      <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{label}</span>
-      <span style={{ fontFamily: display, fontSize: 24, fontWeight: 700, color: T.text }}>{value}</span>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px', display: 'grid', gap: 4, boxShadow: 'var(--x-card-shadow)' }}>
+      <span style={{ ...eyebrow }}>{label}</span>
+      <span style={{ ...num, fontSize: 24, fontWeight: 600, color: T.text }}>{value}</span>
       <span style={{ fontSize: 12, color: T.faint }}>{note}</span>
     </div>
   )

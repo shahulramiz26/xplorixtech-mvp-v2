@@ -134,7 +134,7 @@ export function Result({ title, tag, pairs, total, basis, answer }: {
   title: string; tag: string; pairs: [string, string, boolean][]; total: string; basis: string; answer: string
 }) {
   return (
-    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginTop: 20 }}>
+    <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16, marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>{title}</span>
         <Tag tone={C.purple}>{tag}</Tag>

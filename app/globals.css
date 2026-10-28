@@ -43,50 +43,64 @@
    data-theme="light" on <html>. The landing and sign-in pages do not use them
    and stay dark.
 ──────────────────────────────────────────────────────────────────────────── */
+/* FIELD SLATE (Oct 2026). Quiet slate chrome around the record: a dark slate
+   sidebar in both themes, white cards with thin slate borders, slate text, and
+   XPLORIX orange kept for the main action, the active screen and alerts.
+   The page background (warm paper in light, near-black in dark) and the logo
+   are the brand's and stay as they were. */
 :root {
-  --x-bg: #080B10;  --x-card: #0D1117;  --x-side: #0B0F16;
-  --x-raised: #111827;  --x-panel: #151A27;  --x-raised2: #1A2234;
-  --x-border: #1E293B;  --x-border2: #2A3040;  --x-border3: #374151;
-  --x-text: #F8FAFC;  --x-muted: #94A3B8;  --x-faint: #64748B;  --x-dim2: #475569;  --x-dim: #334155;
+  --x-bg: #080B10;  --x-card: #0F151D;  --x-side: #111A25;
+  --x-raised: #151D28;  --x-panel: #121A24;  --x-raised2: #1B2532;
+  --x-border: #1F2A37;  --x-border2: #263241;  --x-border3: #364152;
+  --x-text: #E8EDF3;  --x-muted: #A6B2C0;  --x-faint: #7E8A9A;  --x-dim2: #5D6878;  --x-dim: #3B4655;
 
   --x-orange: #F97316;  --x-orange-d: #EA580C;  --x-orange-b: #FB923C;  --x-orange-p: #FDBA74;
-  --x-green: #10B981;  --x-green-b: #4ADE80;  --x-green-d: #16A34A;  --x-good-text: #D1FAE5;
+  --x-green: #22A06B;  --x-green-b: #4ADE80;  --x-green-d: #16A34A;  --x-good-text: #A7F3D0;
   --x-red: #EF4444;  --x-red-b: #F87171;  --x-red-d: #DC2626;  --x-bad-text: #FECACA;
   --x-amber: #F59E0B;  --x-yellow: #FACC15;
-  --x-blue: #3B82F6;  --x-blue-b: #60A5FA;  --x-blue-d: #2563EB;
-  --x-purple: #8B5CF6;  --x-purple-b: #A78BFA;
-  --x-teal: #14B8A6;  --x-teal-d: #0D9488;  --x-cyan: #06B6D4;  --x-pink: #EC4899;  --x-violet: #B265E0;
+  --x-blue: #5B8DEF;  --x-blue-b: #7FA6F2;  --x-blue-d: #3B6FD8;
+  --x-purple: #9B87F5;  --x-purple-b: #B4A5F8;
+  --x-teal: #2DB3A6;  --x-teal-d: #14918A;  --x-cyan: #22B8CF;  --x-pink: #EC4899;  --x-violet: #B265E0;
 
   /* chart series */
-  --x-actual: #EA580C;  --x-plan: #64748B;  --x-forecast: #FDBA74;  --x-trips: #475569;
+  --x-actual: #F97316;  --x-plan: #7E8A9A;  --x-forecast: #FDBA74;  --x-trips: #4B5666;
 
+  /* the sidebar: dark slate in both themes */
+  --x-side-text: #E2E8F0;  --x-side-muted: #A3B0C2;  --x-side-faint: #6E7C90;
+  --x-side-hover: rgba(255,255,255,0.06);  --x-side-active: rgba(255,255,255,0.09);  --x-side-line: rgba(255,255,255,0.08);
+
+  --x-radius: 10px;
   --x-ov: 255,255,255;      /* the colour a surface is lifted with */
   --x-shadow: 0,0,0;
   --x-card-shadow: none;
-  --x-on-accent: #FFFFFF;
+  --x-on-accent: #1A0D04;
   color-scheme: dark;      /* native date pickers and scrollbars follow the theme */
 }
 
 html[data-theme="light"] {
-  /* Warm paper, the same background as the website and the film; cards stay white. */
-  --x-bg: #F6EDE5;  --x-card: #FFFFFF;  --x-side: #FFFFFF;
-  --x-raised: #FBF6F1;  --x-panel: #FFFFFF;  --x-raised2: #F3E8DD;
-  --x-border: #E7DACD;  --x-border2: #E7DACD;  --x-border3: #D2C2B2;
-  --x-text: #0B0F17;  --x-muted: #475569;  --x-faint: #5B6675;  --x-dim2: #857F7A;  --x-dim: #A39B93;
+  /* Warm paper background, as on the website and the film; slate everything else. */
+  --x-bg: #F6EDE5;  --x-card: #FFFFFF;  --x-side: #1E293B;
+  --x-raised: #F8FAFC;  --x-panel: #FFFFFF;  --x-raised2: #F1F5F9;
+  --x-border: #E2E8F0;  --x-border2: #E2E8F0;  --x-border3: #CBD5E1;
+  --x-text: #0F172A;  --x-muted: #475569;  --x-faint: #5F6B7C;  --x-dim2: #94A3B8;  --x-dim: #CBD5E1;
 
-  --x-orange: #EA580C;  --x-orange-d: #C2410C;  --x-orange-b: #EA580C;  --x-orange-p: #C2410C;
-  --x-green: #059669;  --x-green-b: #059669;  --x-green-d: #047857;  --x-good-text: #065F46;
+  --x-orange: #C2410C;  --x-orange-d: #9A3412;  --x-orange-b: #EA580C;  --x-orange-p: #C2410C;
+  --x-green: #047857;  --x-green-b: #059669;  --x-green-d: #065F46;  --x-good-text: #065F46;
   --x-red: #DC2626;  --x-red-b: #DC2626;  --x-red-d: #B91C1C;  --x-bad-text: #991B1B;
   --x-amber: #B45309;  --x-yellow: #A16207;
-  --x-blue: #2563EB;  --x-blue-b: #2563EB;  --x-blue-d: #1D4ED8;
-  --x-purple: #7C3AED;  --x-purple-b: #7C3AED;
+  --x-blue: #2F64C4;  --x-blue-b: #2F64C4;  --x-blue-d: #1E4FA8;
+  --x-purple: #6D4FD1;  --x-purple-b: #6D4FD1;
   --x-teal: #0D9488;  --x-teal-d: #0F766E;  --x-cyan: #0891B2;  --x-pink: #DB2777;  --x-violet: #9333EA;
 
-  --x-actual: #C2410C;  --x-plan: #64748B;  --x-forecast: #EA580C;  --x-trips: #8492A6;
+  --x-actual: #EA580C;  --x-plan: #64748B;  --x-forecast: #F59E0B;  --x-trips: #94A3B8;
+
+  --x-side-text: #F1F5F9;  --x-side-muted: #B6C2D2;  --x-side-faint: #8291A6;
+  --x-side-hover: rgba(255,255,255,0.07);  --x-side-active: rgba(255,255,255,0.10);  --x-side-line: rgba(255,255,255,0.09);
 
   --x-ov: 15,23,42;
-  --x-shadow: 92,62,36;
-  --x-card-shadow: 0 1px 2px rgba(122,60,8,0.07), 0 6px 18px rgba(122,60,8,0.05);
+  --x-shadow: 15,23,42;
+  --x-card-shadow: 0 1px 2px rgba(15,23,42,0.05);
+  --x-on-accent: #FFFFFF;
   color-scheme: light;
 }
 html[data-theme="light"] body { background: var(--x-bg); color: var(--x-text); }
@@ -101,6 +115,10 @@ html[data-theme="light"] .xpl-app {
 html[data-theme="light"] ::-webkit-scrollbar-track { background: var(--x-bg); }
 html[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--x-dim); }
 html[data-theme="light"] ::selection { background: rgba(234,88,12,0.18); color: var(--x-text); }
+/* Field Slate type and figures (admin and geology shells). */
+.xpl-app { font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.xpl-app h1, .xpl-app h2, .xpl-app h3, .xpl-app h4 { font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif; letter-spacing: -0.01em; }
+.xpl-num { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 html[data-theme="light"] h1, html[data-theme="light"] h2, html[data-theme="light"] h3,
 html[data-theme="light"] h4, html[data-theme="light"] h5, html[data-theme="light"] h6 { color: var(--x-text); }
 
@@ -290,3 +308,8 @@ html[data-theme="light"] .text-amber-400 { color: #B45309; }
 html[data-theme="light"] .text-red-400 { color: #DC2626; }
 html[data-theme="light"] .text-blue-400, html[data-theme="light"] .group:hover .group-hover\:text-blue-400 { color: #2563EB; }
 html[data-theme="light"] .text-purple-400 { color: #7C3AED; }
+
+/* Field Slate: motion only where it helps, and none when the reader asks for none. */
+@media (prefers-reduced-motion: reduce) {
+  .xpl-app *, .xpl-app *::before, .xpl-app *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

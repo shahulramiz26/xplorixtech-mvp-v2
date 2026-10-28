@@ -15,8 +15,7 @@ import {
 } from '../../../../lib/tenders'
 import {
   Page, PageHead, Card, Status, Note, Btn, Field, Switch, Table, Empty, T, tint, display,
-  th, thR, td, tdR, tdStrong, rowLine, inputStyle, type Tone,
-} from '../../../components/kit'
+  th, thR, td, tdR, tdStrong, rowLine, inputStyle, type Tone, num as figure, eyebrow } from '../../../components/kit'
 import { CoverageBar, SourceTag, dueWord, day, n0, perM } from '../shared'
 
 /* ==========================================================================
@@ -191,8 +190,8 @@ function RigList({ rigs, start }: { rigs: RigFree[]; start: string }) {
 function Big({ label, value, note, tone }: { label: string; value: string; note?: React.ReactNode; tone?: 'good' | 'bad' }) {
   return (
     <div style={{ display: 'grid', gap: 3 }}>
-      <span style={{ fontSize: 12.5, color: T.muted, fontWeight: 600 }}>{label}</span>
-      <span style={{ fontFamily: display, fontSize: 24, fontWeight: 700, color: tone === 'bad' ? 'var(--x-bad-text)' : tone === 'good' ? 'var(--x-good-text)' : T.text, lineHeight: 1.15 }}>{value}</span>
+      <span style={{ ...eyebrow }}>{label}</span>
+      <span style={{ ...figure, fontSize: 24, fontWeight: 600, color: tone === 'bad' ? 'var(--x-bad-text)' : tone === 'good' ? 'var(--x-good-text)' : T.text, lineHeight: 1.15 }}>{value}</span>
       {note && <span style={{ fontSize: 12, color: T.faint, lineHeight: 1.45 }}>{note}</span>}
     </div>
   )

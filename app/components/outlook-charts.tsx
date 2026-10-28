@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { moneyL } from '../../lib/costing-store'
 import type { MonthPoint, Bridge, Lever, Warning } from '../../lib/outlook-analytics'
-import { T, tint, display } from './kit'
+import { T, tint, display, num, mono } from './kit'
 
 /* ==========================================================================
  * OUTLOOK CHARTS — drawn by hand in SVG so each says one thing plainly
@@ -22,62 +22,87 @@ const short = (n: number) => { const a = Math.abs(n); const s = a >= 1e7 ? `${(a
 
 export type Metric = 'metres' | 'revenue' | 'margin'
 
+/* Charts are drawn at the size they are shown, so their text stays at the
+ * same size as the rest of the page however wide the card is. */
+function useWidth(fallback = 760) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [w, setW] = useState(fallback)
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    const ro = new ResizeObserver(e => setW(Math.max(280, Math.round(e[0].contentRect.width))))
+    ro.observe(el); return () => ro.disconnect()
+  }, [])
+  return [ref, w] as const
+}
+
+const AXIS = { fontSize: 11, fill: 'var(--x-faint)', fontFamily: mono }
+
 export function ForecastBars({ points, metric }: { points: MonthPoint[]; metric: Metric }) {
+  const [ref, W] = useWidth()
   const [hover, setHover] = useState<number | null>(null)
   const val = (p: MonthPoint) => p[metric]
   const lo = (p: MonthPoint) => p.low?.[metric] ?? val(p)
   const hi = (p: MonthPoint) => p.high?.[metric] ?? val(p)
   const fmt = (n: number) => metric === 'metres' ? `${n0(n)} m` : short(n)
-  const W = 760, H = 300, PL = 64, PR = 20, PT = 30, PB = 40
-  const max = Math.max(...points.map(hi)) * 1.12 || 1
+  const H = 260, PL = 60, PR = 12, PT = 26, PB = 44
+  const max = niceMax(Math.max(...points.map(hi)) * 1.08)
   const slot = (W - PL - PR) / points.length
-  const bw = Math.min(70, slot * 0.5)
+  const bw = Math.min(46, slot * 0.42)
   const x = (i: number) => PL + slot * (i + 0.5)
   const y = (v: number) => PT + (1 - v / max) * (H - PT - PB)
   const base = H - PB
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img"
-      aria-label={points.map(p => `${mon(p.month)} ${fmt(val(p))}${p.kind !== 'actual' ? `, range ${fmt(lo(p))} to ${fmt(hi(p))}` : ''}`).join('; ')} onMouseLeave={() => setHover(null)}>
-      <defs>
-        <pattern id="fc-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="7" height="7" fill={tint(T.orange, 18)} /><line x1="0" y1="0" x2="0" y2="7" stroke={tint(T.orange, 55)} strokeWidth="3" />
-        </pattern>
-      </defs>
-      {[0, 0.25, 0.5, 0.75, 1].map(fr => (
-        <g key={fr}>
-          <line x1={PL} x2={W - PR} y1={y(max * fr)} y2={y(max * fr)} stroke="var(--x-border)" opacity={0.5} />
-          <text x={PL - 8} y={y(max * fr) + 4} textAnchor="end" fontSize={11} fill="var(--x-faint)">{fr ? fmt(max * fr) : '0'}</text>
-        </g>
-      ))}
-      {points.map((p, i) => {
-        const on = hover === i
-        const v = val(p)
-        const isCur = p.kind === 'current', isFc = p.kind === 'forecast'
-        const loggedShare = isCur && metric === 'metres' && p.logged != null ? Math.min(v, p.logged) : isCur ? v * ((p.logged ?? 0) / Math.max(1, p.metres)) : 0
-        return (
-          <g key={p.month} onMouseEnter={() => setHover(i)} opacity={hover == null || on ? 1 : 0.6}>
-            {isFc ? <rect x={x(i) - bw / 2} y={y(v)} width={bw} height={base - y(v)} rx={4} fill="url(#fc-hatch)" stroke={T.orange} strokeDasharray="4 3" />
-              : isCur ? <>
-                <rect x={x(i) - bw / 2} y={y(v)} width={bw} height={base - y(v)} rx={4} fill="url(#fc-hatch)" stroke={T.orange} strokeDasharray="4 3" />
-                <rect x={x(i) - bw / 2} y={y(loggedShare)} width={bw} height={base - y(loggedShare)} rx={4} fill={T.orange} />
-              </> : <rect x={x(i) - bw / 2} y={y(v)} width={bw} height={base - y(v)} rx={4} fill="var(--x-muted)" opacity={0.55} />}
-            {(isCur || isFc) && hi(p) - lo(p) > 0.5 && <>
-              <line x1={x(i)} x2={x(i)} y1={y(hi(p))} y2={y(lo(p))} stroke={T.text} strokeWidth={1.6} />
-              <line x1={x(i) - 9} x2={x(i) + 9} y1={y(hi(p))} y2={y(hi(p))} stroke={T.text} strokeWidth={1.6} />
-              <line x1={x(i) - 9} x2={x(i) + 9} y1={y(lo(p))} y2={y(lo(p))} stroke={T.text} strokeWidth={1.6} />
-            </>}
-            <text x={x(i)} y={y(Math.max(v, hi(p))) - 8} textAnchor="middle" fontSize={12.5} fontWeight={700} fill={T.text} fontFamily={display}>{fmt(v)}</text>
-            <text x={x(i)} y={H - 20} textAnchor="middle" fontSize={12} fontWeight={isCur ? 700 : 500} fill={isCur ? T.orange : 'var(--x-muted)'}>{mon(p.month)}</text>
-            <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={10.5} fill="var(--x-faint)">{p.kind === 'actual' ? 'closed' : isCur ? 'so far + forecast' : 'forecast'}</text>
-            {on && (isCur || isFc) && hi(p) - lo(p) > 0.5 && <text x={x(i) + bw / 2 + 6} y={y(lo(p)) + 4} fontSize={11} fill="var(--x-muted)">slow {fmt(lo(p))} · best {fmt(hi(p))}</text>}
+    <div ref={ref} style={{ width: '100%' }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }} role="img"
+        aria-label={points.map(p => `${mon(p.month)} ${fmt(val(p))}${p.kind !== 'actual' ? `, range ${fmt(lo(p))} to ${fmt(hi(p))}` : ''}`).join('; ')} onMouseLeave={() => setHover(null)}>
+        {[0, 0.25, 0.5, 0.75, 1].map(fr => (
+          <g key={fr}>
+            <line x1={PL} x2={W - PR} y1={y(max * fr)} y2={y(max * fr)} stroke="var(--x-border)" strokeDasharray={fr ? '2 4' : undefined} />
+            <text x={PL - 8} y={y(max * fr) + 4} textAnchor="end" {...AXIS}>{fr ? fmt(max * fr) : '0'}</text>
           </g>
-        )
-      })}
-    </svg>
+        ))}
+        {points.map((p, i) => {
+          const on = hover === i
+          const v = val(p)
+          const isCur = p.kind === 'current', isFc = p.kind === 'forecast'
+          const logged = isCur && metric === 'metres' && p.logged != null ? Math.min(v, p.logged) : isCur ? v * ((p.logged ?? 0) / Math.max(1, p.metres)) : 0
+          return (
+            <g key={p.month} onMouseEnter={() => setHover(i)} style={{ cursor: 'default' }}>
+              <rect x={x(i) - slot / 2 + 4} y={PT - 6} width={slot - 8} height={base - PT + 6} rx={6} fill={on ? 'rgba(var(--x-ov),0.035)' : 'transparent'} />
+              {isFc || isCur ? <>
+                <rect x={x(i) - bw / 2} y={y(v)} width={bw} height={base - y(v)} rx={3} fill={tint(T.orange, 14)} stroke={T.orange} strokeWidth={1.2} strokeDasharray="4 3" />
+                {isCur && <rect x={x(i) - bw / 2} y={y(logged)} width={bw} height={base - y(logged)} rx={3} fill={T.orange} />}
+              </> : <rect x={x(i) - bw / 2} y={y(v)} width={bw} height={base - y(v)} rx={3} fill="var(--x-plan)" opacity={0.75} />}
+              {(isCur || isFc) && hi(p) - lo(p) > 0.5 && <g stroke={T.text} strokeWidth={1.4} opacity={0.75}>
+                <line x1={x(i)} x2={x(i)} y1={y(hi(p))} y2={y(lo(p))} />
+                <line x1={x(i) - 6} x2={x(i) + 6} y1={y(hi(p))} y2={y(hi(p))} />
+                <line x1={x(i) - 6} x2={x(i) + 6} y1={y(lo(p))} y2={y(lo(p))} />
+              </g>}
+              <text x={x(i)} y={y(Math.max(v, hi(p))) - 8} textAnchor="middle" fontSize={12} fontWeight={600} fill={T.text} fontFamily={mono}>{fmt(v)}</text>
+              <text x={x(i)} y={H - 24} textAnchor="middle" fontSize={12} fontWeight={600} fill={isCur ? T.orange : T.text}>{mon(p.month)}</text>
+              <text x={x(i)} y={H - 9} textAnchor="middle" fontSize={10.5} fill="var(--x-faint)">{p.kind === 'actual' ? 'closed' : isCur ? 'so far + to come' : 'forecast'}</text>
+              {on && (isCur || isFc) && hi(p) - lo(p) > 0.5 && <g>
+                <rect x={Math.min(W - PR - 168, x(i) + bw / 2 + 6)} y={y(lo(p)) - 14} width={160} height={24} rx={5} fill="var(--x-panel)" stroke="var(--x-border)" />
+                <text x={Math.min(W - PR - 168, x(i) + bw / 2 + 6) + 8} y={y(lo(p)) + 2} fontSize={11} fill={T.muted} fontFamily={mono}>slow {fmt(lo(p))} · best {fmt(hi(p))}</text>
+              </g>}
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 
+/* A round top for an axis: 1, 2, 2.5 or 5 times a power of ten. */
+function niceMax(v: number) {
+  if (v <= 0) return 1
+  const p = Math.pow(10, Math.floor(Math.log10(v)))
+  const f = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(k => k * p >= v) ?? 10
+  return f * p
+}
+
 export function Waterfall({ b }: { b: Bridge }) {
+  const [ref, W] = useWidth()
   const steps = [
     { label: `${mon(b.from.month)} margin`, kind: 'total' as const, v: b.from.margin },
     { label: 'More or fewer metres', kind: 'step' as const, v: b.volume },
@@ -90,33 +115,35 @@ export function Waterfall({ b }: { b: Bridge }) {
     if (s.kind === 'total') { run = s.v; return { ...s, a: 0, b: s.v } }
     const a = run; run += s.v; return { ...s, a, b: run }
   })
-  const W = 760, H = 290, PL = 64, PR = 16, PT = 30, PB = 52
-  const max = Math.max(...bars.map(x => Math.max(x.a, x.b))) * 1.12 || 1
+  const H = 250, PL = 60, PR = 12, PT = 26, PB = 48
+  const max = niceMax(Math.max(...bars.map(x => Math.max(x.a, x.b))) * 1.08)
   const min = Math.min(0, ...bars.map(x => Math.min(x.a, x.b)))
   const slot = (W - PL - PR) / bars.length
-  const bw = Math.min(80, slot * 0.56)
+  const bw = Math.min(54, slot * 0.46)
   const x = (i: number) => PL + slot * (i + 0.5)
   const y = (v: number) => PT + (1 - (v - min) / (max - min)) * (H - PT - PB)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label={steps.map(s => `${s.label} ${short(s.v)}`).join('; ')}>
-      {[0, 0.5, 1].map(fr => { const v = min + (max - min) * fr; return (
-        <g key={fr}><line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} stroke="var(--x-border)" opacity={0.5} /><text x={PL - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="var(--x-faint)">{short(v)}</text></g>
-      ) })}
-      {bars.map((s, i) => {
-        const top = Math.max(s.a, s.b), bot = Math.min(s.a, s.b)
-        const fill = s.kind === 'total' ? 'var(--x-muted)' : s.v >= 0 ? T.green : T.red
-        return (
-          <g key={s.label}>
-            <rect x={x(i) - bw / 2} y={y(top)} width={bw} height={Math.max(2, y(bot) - y(top))} rx={4} fill={fill} opacity={s.kind === 'total' ? 0.6 : 0.9} />
-            {i < bars.length - 1 && <line x1={x(i) + bw / 2} x2={x(i + 1) - bw / 2} y1={y(s.b)} y2={y(s.b)} stroke="var(--x-faint)" strokeDasharray="3 3" />}
-            <text x={x(i)} y={y(top) - 8} textAnchor="middle" fontSize={12.5} fontWeight={700} fill={s.kind === 'total' ? T.text : s.v >= 0 ? 'var(--x-good-text)' : 'var(--x-bad-text)'} fontFamily={display}>{s.kind === 'step' && s.v >= 0 ? '+' : ''}{short(s.v)}</text>
-            {s.label.split(' ').reduce<string[]>((lines, w) => { const l = lines[lines.length - 1]; if (l && (l + ' ' + w).length <= 14) lines[lines.length - 1] = l + ' ' + w; else lines.push(w); return lines }, []).map((line, k) => (
-              <text key={k} x={x(i)} y={H - 32 + k * 14} textAnchor="middle" fontSize={11.5} fill="var(--x-muted)">{line}</text>
-            ))}
-          </g>
-        )
-      })}
-    </svg>
+    <div ref={ref} style={{ width: '100%' }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }} role="img" aria-label={steps.map(s => `${s.label} ${short(s.v)}`).join('; ')}>
+        {[0, 0.5, 1].map(fr => { const v = min + (max - min) * fr; return (
+          <g key={fr}><line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} stroke="var(--x-border)" strokeDasharray={fr ? '2 4' : undefined} /><text x={PL - 8} y={y(v) + 4} textAnchor="end" {...AXIS}>{short(v)}</text></g>
+        ) })}
+        {bars.map((s, i) => {
+          const top = Math.max(s.a, s.b), bot = Math.min(s.a, s.b)
+          const fill = s.kind === 'total' ? 'var(--x-plan)' : s.v >= 0 ? T.green : T.red
+          return (
+            <g key={s.label}>
+              <rect x={x(i) - bw / 2} y={y(top)} width={bw} height={Math.max(2, y(bot) - y(top))} rx={3} fill={fill} opacity={s.kind === 'total' ? 0.75 : 0.95} />
+              {i < bars.length - 1 && <line x1={x(i) + bw / 2} x2={x(i + 1) - bw / 2} y1={y(s.b)} y2={y(s.b)} stroke="var(--x-faint)" strokeDasharray="3 3" />}
+              <text x={x(i)} y={y(top) - 8} textAnchor="middle" fontSize={12} fontWeight={600} fontFamily={mono} fill={s.kind === 'total' ? T.text : s.v >= 0 ? 'var(--x-good-text)' : 'var(--x-bad-text)'}>{s.kind === 'step' && s.v >= 0 ? '+' : ''}{short(s.v)}</text>
+              {s.label.split(' ').reduce<string[]>((lines, w) => { const l = lines[lines.length - 1]; if (l && (l + ' ' + w).length <= 14) lines[lines.length - 1] = l + ' ' + w; else lines.push(w); return lines }, []).map((line, k) => (
+                <text key={k} x={x(i)} y={H - 28 + k * 14} textAnchor="middle" fontSize={11.5} fill="var(--x-muted)">{line}</text>
+              ))}
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 
@@ -154,18 +181,18 @@ export function WarningCard({ w }: { w: Warning }) {
   const fmt = (v: number | null) => v == null ? '—' : w.unit === '₹' ? short(v) : `${v.toFixed(w.unit === 'h' ? 0 : 1)}${w.unit === '%' ? '%' : ` ${w.unit}`}`
   const word = { worse: 'Turning the wrong way', better: 'Improving', steady: 'Steady', thin: 'Not enough weeks yet' }[w.state]
   return (
-    <div style={{ background: w.state === 'worse' ? tint(T.red, 6) : T.card, border: `1px solid ${w.state === 'worse' ? tint(T.red, 35) : T.border}`, borderRadius: 12, padding: '12px 14px', display: 'grid', gap: 6 }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, boxShadow: w.state === 'worse' ? 'inset 3px 0 0 var(--x-red)' : w.state === 'better' ? 'inset 3px 0 0 var(--x-green)' : 'none', borderRadius: 10, padding: '12px 14px', display: 'grid', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{w.label}</span>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color }}>{word}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{w.label}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{word}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 56 }} aria-hidden>
-        <polyline points={pts.map(p => p.join(',')).join(' ')} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={pts.map(p => p.join(',')).join(' ')} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i >= pts.length - 2 ? 3.5 : 2.5} fill={i >= pts.length - 2 ? color : 'var(--x-faint)'} />)}
       </svg>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.muted }}>
-        <span>4 weeks before: <b style={{ color: T.text }}>{fmt(w.before)}</b></span>
-        <span>Last 2 weeks: <b style={{ color: T.text }}>{fmt(w.recent)}</b></span>
+        <span>4 weeks before <b style={{ ...num, color: T.text }}>{fmt(w.before)}</b></span>
+        <span>Last 2 weeks <b style={{ ...num, color: T.text }}>{fmt(w.recent)}</b></span>
       </div>
       <span style={{ fontSize: 11.5, color: T.faint }}>{w.note}</span>
     </div>

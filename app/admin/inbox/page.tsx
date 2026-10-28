@@ -8,7 +8,7 @@ import { moneyL } from '../../../lib/costing-store'
 import { TODAY, addDays } from '../../../lib/inventory-store'
 import { deptLabel, type Dept } from '../../../lib/findings'
 import { useInbox, useMark, SevTag, dayWord } from '../../components/inbox'
-import { Page, T, tint, display, inputStyle } from '../../components/kit'
+import { Page, T, tint, display, inputStyle, num } from '../../components/kit'
 import { TaskAi } from '../../components/ai'
 
 /* ==========================================================================
@@ -88,14 +88,14 @@ function Review() {
       </div>
 
       {!current ? (
-        <section style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: '30px 28px', display: 'grid', gap: 10, maxWidth: 760 }}>
+        <section style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '30px 28px', display: 'grid', gap: 10, maxWidth: 760 }}>
           <h1 style={{ margin: 0, fontFamily: display, fontSize: 24, color: T.text }}>{total ? 'Every story in this round is answered' : `Nothing open for ${scope}`}</h1>
           <p style={{ margin: 0, color: T.muted, lineHeight: 1.6 }}>{total ? `${done} answered. Reminders come back on their date; anything new appears in the list the moment the record shows it.` : 'New findings appear in the list the moment the record shows them.'}</p>
-          <Link href="/admin/tasks?dept=all" style={{ ...btn, justifySelf: 'start', background: T.orange, color: '#fff', border: 'none' }}>Back to Tasks</Link>
+          <Link href="/admin/tasks?dept=all" style={{ ...btn, justifySelf: 'start', background: T.orange, color: 'var(--x-on-accent)', border: 'none' }}>Back to Tasks</Link>
         </section>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, alignItems: 'flex-start' }}>
-          <nav aria-label="This round" style={{ flex: '1 1 260px', maxWidth: 340, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden' }}>
+          <nav aria-label="This round" style={{ flex: '1 1 260px', maxWidth: 340, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
             <div style={{ padding: '11px 16px', borderBottom: `1px solid ${T.line}`, fontSize: 13, fontWeight: 700, color: T.text }}>Still in this round</div>
             {live.slice(0, 12).map((id, i) => {
               const u = pool.find(x => x.id === id)!
@@ -110,7 +110,7 @@ function Review() {
           </nav>
 
           <section aria-label="Current story" style={{ flex: '999 1 560px', minWidth: 0, display: 'grid', gap: 14 }}>
-            <article style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: '24px 26px', display: 'grid', gap: 14 }}>
+            <article style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: '24px 26px', display: 'grid', gap: 14 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <SevTag s={current.severity} />
                 <span style={{ fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, borderRadius: 6, padding: '3px 8px', color: T.text }}>{deptLabel(current.dept)}</span>
@@ -123,8 +123,8 @@ function Review() {
                 </ol>
                 : <p style={{ margin: 0, fontSize: 15, color: T.text, lineHeight: 1.6 }}>{current.detail}</p>}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(170px, 100%), 1fr))', gap: 10 }}>
-                <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 12, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>At stake</div><div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: T.text }}>{current.money ? moneyL(current.money) : '—'}</div><div style={{ fontSize: 12, color: T.muted }}>{current.moneyNote ?? 'not put in money'}</div></div>
-                <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 12, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>Who</div><div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: T.text }}>{current.owner}</div><div style={{ fontSize: 12, color: T.muted }}>{current.due ? (current.due <= TODAY ? 'by today' : `by ${dayWord(current.due)}`) : 'as soon as it can be done'}</div></div>
+                <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 10, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>At stake</div><div style={{ ...num, fontSize: 20, fontWeight: 600, color: T.text }}>{current.money ? moneyL(current.money) : '—'}</div><div style={{ fontSize: 12, color: T.muted }}>{current.moneyNote ?? 'not put in money'}</div></div>
+                <div style={{ background: 'rgba(var(--x-ov),0.035)', borderRadius: 10, padding: '12px 14px' }}><div style={{ fontSize: 12, color: T.muted }}>Who</div><div style={{ ...num, fontSize: 20, fontWeight: 600, color: T.text }}>{current.owner}</div><div style={{ fontSize: 12, color: T.muted }}>{current.due ? (current.due <= TODAY ? 'by today' : `by ${dayWord(current.due)}`) : 'as soon as it can be done'}</div></div>
               </div>
               <TaskAi u={current} />
               {current.items.some(f => f.evidence?.length) && (
@@ -139,7 +139,7 @@ function Review() {
 
             {mode === 'none' && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {current.href && <Link href={current.href} style={{ ...btn, background: T.orange, color: '#fff', border: 'none' }}>Open it<ArrowRight size={15} aria-hidden /></Link>}
+                {current.href && <Link href={current.href} style={{ ...btn, background: T.orange, color: 'var(--x-on-accent)', border: 'none' }}>Open it<ArrowRight size={15} aria-hidden /></Link>}
                 <button type="button" style={btn} onClick={() => answer({ status: 'done' })}><Check size={16} aria-hidden style={{ color: T.green }} />Done <span style={key}>D</span></button>
                 <button type="button" style={btn} onClick={() => setMode('remind')}><Clock size={15} aria-hidden />Remind me… <span style={key}>R</span></button>
                 <button type="button" style={btn} onClick={() => setMode('dismiss')}><X size={15} aria-hidden />Not relevant <span style={key}>N</span></button>

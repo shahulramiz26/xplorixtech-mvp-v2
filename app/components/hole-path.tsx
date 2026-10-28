@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { alongBearing, plannedPoint } from '../../lib/geo'
 import type { HoleSurvey } from '../../lib/survey'
-import { T, display } from './kit'
+import { T, display, num } from './kit'
 
 /* ==========================================================================
  * THE HOLE, DRAWN
@@ -221,9 +221,9 @@ export function Path3D({ s, height = 420 }: { s: HoleSurvey; height?: number }) 
 export function DeviationFigures({ s }: { s: HoleSurvey }) {
   const d = s.deviation
   const cell = (label: string, value: ReactNode, note?: string, tone?: string) => (
-    <div style={{ padding: '12px 14px', border: `1px solid ${T.border}`, borderRadius: 12, background: T.card, minWidth: 0 }}>
+    <div style={{ padding: '12px 14px', border: `1px solid ${T.border}`, borderRadius: 10, background: T.card, minWidth: 0 }}>
       <div style={{ fontSize: 11.5, fontWeight: 600, color: T.faint, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: tone ?? T.text, fontFamily: display, lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, color: tone ?? T.text, ...num, lineHeight: 1.1 }}>{value}</div>
       {note && <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>{note}</div>}
     </div>
   )

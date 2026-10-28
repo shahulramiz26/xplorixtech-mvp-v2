@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, Fragment, ReactNode, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Page, useEscape } from '../../components/kit'
+import { Page, useEscape, num } from '../../components/kit'
 import { StoresOverview } from './overview'
 import { RigCountCard, ValuationSetting } from './rig-count'
 import {
@@ -47,7 +47,7 @@ const C = {
 
 const iStyle: React.CSSProperties = {
   padding: '6px 10px', background: C.bg, border: `1px solid ${C.border}`,
-  borderRadius: 7, color: C.text, fontSize: 12.5, outline: 'none', fontFamily: 'inherit', width: '100%',
+  borderRadius: 7, color: C.text, fontSize: 12.5, fontFamily: 'inherit', width: '100%',
 }
 const numStyle: React.CSSProperties = { ...iStyle, textAlign: 'right', fontFamily: 'ui-monospace, monospace', fontWeight: 700 }
 const th: React.CSSProperties = {
@@ -68,7 +68,7 @@ function Card({ title, subtitle, right, children, pad = true, accent }: {
   title?: string; subtitle?: string; right?: ReactNode; children: ReactNode; pad?: boolean; accent?: string
 }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', borderLeft: accent ? `3px solid ${accent}` : undefined }}>
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', borderLeft: accent ? `3px solid ${accent}` : undefined }}>
       {title && (
         <div style={{ padding: '11px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
@@ -85,7 +85,7 @@ function Card({ title, subtitle, right, children, pad = true, accent }: {
 
 function Stat({ label, value, note, color = C.text, big }: { label: string; value: string; note?: string; color?: string; big?: boolean }) {
   return (
-    <div style={{ padding: '12px 14px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+    <div style={{ padding: '12px 14px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10 }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>{label}</div>
       <div style={{ fontSize: big ? 21 : 17, fontWeight: 900, color, fontFamily: 'ui-monospace, monospace', lineHeight: 1.15 }}>{value}</div>
       {note && <div style={{ fontSize: 10, color: C.faint, marginTop: 5 }}>{note}</div>}
@@ -140,7 +140,7 @@ function Modal({ title, subtitle, width = 760, onClose, children, footer }: { ti
   useEscape(onClose)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(var(--x-shadow),0.82)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+      <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, width, maxWidth: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px 13px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{title}</div>
@@ -287,7 +287,7 @@ function CatalogueTab({ onEdit, onImport }: { onEdit: (p: Part) => void; onImpor
         so a surface casing is not charged to a metre of granite.
       </Note>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
         <div style={{ width: 220 }}><Field label="Search"><input value={q} onChange={e => setQ(e.target.value)} placeholder="Part number or name" style={iStyle} /></Field></div>
         <div style={{ width: 155 }}>
           <Field label="Category">
@@ -526,7 +526,7 @@ function OrdersTab({ onReceive, onCreate, onEdit, onRaiseReorder, onReceiveReord
         <Stat label="Owed on reorders" value={moneyL(t.owed)} note="sent back, replacement pending" color={t.owed > 0 ? C.red : C.dim} />
       </Grid>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
         <div style={{ width: 210 }}><Field label="Search"><input value={q} onChange={e => setQ(e.target.value)} placeholder="Order number or supplier" style={iStyle} /></Field></div>
         <div style={{ width: 150 }}><Field label="Status"><select value={status} onChange={e => setStatus(e.target.value as typeof status)} style={{ ...iStyle, cursor: 'pointer' }}>{(['all', 'draft', 'ordered', 'partial', 'received'] as const).map(k => <option key={k} value={k}>{k}</option>)}</select></Field></div>
         <div style={{ width: 185 }}><Field label="Supplier"><select value={sup} onChange={e => setSup(e.target.value)} style={{ ...iStyle, cursor: 'pointer' }}><option value="All">All suppliers</option>{state.suppliers.map(x => <option key={x.id} value={x.name}>{x.name}</option>)}</select></Field></div>
@@ -771,7 +771,7 @@ function StoreTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '10px 14px' }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px' }}>
         <Chain label="Project">
           {PROJECTS.map(p => <Chip key={p} on={project === p} label={projectCode(p)} onClick={() => setProject(p)} />)}
         </Chain>
@@ -1216,7 +1216,7 @@ function InsightsTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '10px 14px' }}>
+      <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px' }}>
         <Chain label="Project">
           {PROJECTS.map(p => <Chip key={p} on={project === p} label={projectCode(p)} onClick={() => { setProject(p); setRig('All') }} />)}
         </Chain>
@@ -1758,7 +1758,7 @@ function POModal({ po, onSave, onPlace, onClose }: { po: PurchaseOrder; onSave: 
           </div>
         </Card>
         {(check.length > 0 || moved.length > 0) && (
-          <section aria-label="Before you buy" style={{ border: `1px solid ${hexA(C.amber, 0x55)}`, background: hexA(C.amber, 0x10), borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <section aria-label="Before you buy" style={{ border: `1px solid ${hexA(C.amber, 0x55)}`, background: hexA(C.amber, 0x10), borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: C.amber }}>
               {check.length ? `Before you buy: ${money(check.reduce((s, c) => s + c.saves, 0))} of this order is already in another store` : 'Moved instead of bought'}
             </div>

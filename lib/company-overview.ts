@@ -24,6 +24,7 @@ export interface RigToday {
   cpm: number | null            // cost per metre on the latest costed day
   cpmDate?: string              // that day, when it is not today
   rate: number | null           // earned per metre that day
+  dayCost: number | null        // what that whole rig-day cost
   monthCpm: number | null
   monthMetres: number
   reported: boolean             // today's shifts are in (or reported, for a contractor)
@@ -54,8 +55,15 @@ export function companyToday(costing: OverviewCosting, inv: OverviewInv, today: 
   const pairs = new Map<string, { project: string; rig: string }>()
   logs.filter(l => monthOf(l.date) === month).forEach(l => pairs.set(`${l.project}|${l.rig}`, { project: l.project, rig: l.rig }))
   reportsToday.forEach(r => pairs.set(`${r.project}|${r.rig}`, { project: r.project, rig: r.rig }))
+  /* Money by day this month, all rigs: what the contract earns and what it
+   * cost, from the same costed days Finance uses. */
+  const dayMoney = new Map<string, { revenue: number; cost: number }>()
   const rigs: RigToday[] = Array.from(pairs.values()).map(({ project, rig }) => {
     const v = computeRigMonth(costing, inv, project, rig, month)
+    v.days.filter(d => d.submitted && d.date <= today).forEach(d => {
+      const e = dayMoney.get(d.date) ?? { revenue: 0, cost: 0 }
+      e.revenue += d.revenue; e.cost += d.total; dayMoney.set(d.date, e)
+    })
     const costed = v.days.filter(d => d.submitted && d.units > 0 && d.date <= today).sort((a, b) => a.date.localeCompare(b.date))
     const last = costed[costed.length - 1]
     const mine = todays.filter(l => l.rig === rig && l.project === project)
@@ -71,6 +79,7 @@ export function companyToday(costing: OverviewCosting, inv: OverviewInv, today: 
       ownDowntimeToday: mine.filter(l => l.downtimeSide !== 'client').reduce((s, l) => s + l.downtimeHours, 0) + reps.reduce((s, r) => s + r.breakdownHours, 0),
       cpm: last ? last.total / last.units : null, cpmDate: last && last.date !== today ? last.date : undefined,
       rate: last && last.units ? last.revenue / last.units : null,
+      dayCost: last ? last.total : null,
       monthCpm: monthUnits ? monthCost / monthUnits : null, monthMetres: monthUnits,
       reported: mine.length > 0 || reps.length > 0, unchecked: reps.length,
     }
@@ -143,8 +152,11 @@ export function companyToday(costing: OverviewCosting, inv: OverviewInv, today: 
     }
   }).filter(c => c.rigs.length)
 
+  const moneyDays = Array.from(dayMoney, ([date, v]) => ({ date, ...v, margin: v.revenue - v.cost })).sort((a, b) => a.date.localeCompare(b.date))
+  const t = dayMoney.get(today)
   return {
-    month, rigs, lithology, projects, maintenance, logsIn, contractors,
+    month, rigs, lithology, projects, maintenance, logsIn, contractors, moneyDays,
+    moneyToday: t ? { revenue: t.revenue, cost: t.cost, margin: t.revenue - t.cost } : null,
     today: {
       metres: metresToday, rigsActive: rigs.filter(r => r.metresToday > 0).length, rigsOnProjects: rigs.length,
       ownActive: own.filter(r => r.metresToday > 0).length, ownRigs: own.length,

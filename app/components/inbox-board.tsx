@@ -20,7 +20,7 @@ const TAB_NOTE: Record<Tab, string> = {
   later: 'Put off to a date. Each comes back on its own.',
   done: 'Done, or set aside with a reason. Each keeps who answered it and when.',
 }
-const card: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--x-card-shadow)' }
+const card: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--x-card-shadow)' }
 
 function groupBy<K extends string>(list: InboxUnit[], key: (u: InboxUnit) => K): [K, InboxUnit[]][] {
   const m = new Map<K, InboxUnit[]>()
@@ -80,7 +80,7 @@ export function InboxBoard() {
               {deptsWith.map(d => <option key={d.key} value={d.key}>{d.label} · {inbox.byDept[d.key].open}{inbox.byDept[d.key].act ? ` (${inbox.byDept[d.key].act} today)` : ''}</option>)}
             </select>
           </label>
-          {open.length > 0 && <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${dept}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 13px', borderRadius: 9, background: T.orange, color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>}
+          {open.length > 0 && <Link href={`/admin/inbox${dept === 'all' ? '' : `?dept=${dept}`}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, padding: '0 13px', borderRadius: 9, background: T.orange, color: 'var(--x-on-accent)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>One by one<ArrowRight size={14} aria-hidden /></Link>}
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export function InboxSummary() {
   const top = Math.max(1, ...money.map(m => m.v))
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <section style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 14, padding: '16px 18px', display: 'grid', gap: 10 }}>
+      <section style={{ background: 'var(--x-text)', color: 'var(--x-bg)', borderRadius: 10, padding: '16px 18px', display: 'grid', gap: 10 }}>
         <h2 style={{ margin: 0, fontSize: 11.5, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--x-bg)', opacity: 0.75 }}>YOUR MORNING IN THREE LINES</h2>
         {lines.length === 0
           ? <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55 }}>Nothing needs action now. Plan and watch items are below.</p>

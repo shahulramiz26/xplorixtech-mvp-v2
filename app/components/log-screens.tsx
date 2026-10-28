@@ -74,9 +74,9 @@ function Filters({ children, from, to, onFrom, onTo, onReset, dirty }: { childre
       {children}
       <div style={{ ...inputStyle, flex: '2 1 300px', width: 'auto', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px' }}>
         <span style={{ fontSize: 12.5, color: T.faint, whiteSpace: 'nowrap' }}>From</span>
-        <input type="date" value={from} aria-label="From date" onChange={e => onFrom(e.target.value)} style={{ background: 'none', border: 'none', color: T.text, fontFamily: 'inherit', fontSize: 13, outline: 'none', minWidth: 0, flex: 1 }} />
+        <input type="date" value={from} aria-label="From date" onChange={e => onFrom(e.target.value)} style={{ background: 'none', border: 'none', color: T.text, fontFamily: 'inherit', fontSize: 13, minWidth: 0, flex: 1 }} />
         <span style={{ fontSize: 12.5, color: T.faint }}>to</span>
-        <input type="date" value={to} aria-label="To date" onChange={e => onTo(e.target.value)} style={{ background: 'none', border: 'none', color: T.text, fontFamily: 'inherit', fontSize: 13, outline: 'none', minWidth: 0, flex: 1 }} />
+        <input type="date" value={to} aria-label="To date" onChange={e => onTo(e.target.value)} style={{ background: 'none', border: 'none', color: T.text, fontFamily: 'inherit', fontSize: 13, minWidth: 0, flex: 1 }} />
       </div>
       {dirty && <button type="button" onClick={onReset} style={{ ...iconBtn, color: T.faint, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontFamily: 'inherit' }}><RotateCcw size={13} /> Clear</button>}
     </div>
