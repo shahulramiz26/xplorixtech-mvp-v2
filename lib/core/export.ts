@@ -10,7 +10,11 @@ import { rqdClass, WEATHERING } from './geotech'
  * and a STATUS column says whether every tray in the interval was checked.
  * ========================================================================== */
 
-export interface ExportRow extends IntervalResult { hole: string; className: string; checked: boolean }
+export interface ExportRow extends IntervalResult {
+  hole: string; className: string; checked: boolean
+  // from the other data, where it has been joined (Geology → Export)
+  lith?: string; domain?: string; au?: number; ucs?: number; mineral?: string; veins?: number
+}
 
 export const EXPORT_COLUMNS: { key: string; label: string; get: (r: ExportRow) => string | number }[] = [
   { key: 'HOLE_ID', label: 'Hole', get: r => r.hole },
@@ -32,6 +36,12 @@ export const EXPORT_COLUMNS: { key: string; label: string; get: (r: ExportRow) =
   { key: 'VEIN_PCT', label: 'Veins % of core surface', get: r => (r.vein * 100).toFixed(1) },
   { key: 'ROCK_CLASS', label: 'Rock class', get: r => r.className },
   { key: 'COLOUR_HEX', label: 'Colour', get: r => r.hex },
+  { key: 'VEIN_COUNT', label: 'Veins found on the photos', get: r => r.veins ?? '' },
+  { key: 'LITH_LOGGED', label: "Geologist's logged rock", get: r => r.lith ?? '' },
+  { key: 'DOMAIN', label: 'Domain (photo + chemistry + geophysics)', get: r => r.domain ?? '' },
+  { key: 'AU_GPT', label: 'Au g/t (assay)', get: r => r.au != null ? r.au.toFixed(3) : '' },
+  { key: 'UCS_PRED_MPA', label: 'Rock strength, predicted (MPa)', get: r => r.ucs != null ? Math.round(r.ucs) : '' },
+  { key: 'MINERAL', label: 'Main mineral (scanned or predicted)', get: r => r.mineral ?? '' },
   { key: 'STATUS', label: 'Checked by a geologist', get: r => r.checked ? 'CHECKED' : 'SUGGESTED' },
 ]
 

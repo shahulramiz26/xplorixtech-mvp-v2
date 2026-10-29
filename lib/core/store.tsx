@@ -152,9 +152,9 @@ export function useHole(hole: string | undefined) {
 }
 
 /* Every hole with photos, loaded together (screens that look across holes). */
-export function useAllHoles() {
+export function useAllHoles(enabled = true) {
   const { index, holes, load, review } = useCore()
-  useEffect(() => { index?.holes.forEach(h => void load(h.hole)) }, [index, load])
+  useEffect(() => { if (enabled) index?.holes.forEach(h => void load(h.hole)) }, [index, load, enabled])
   return useMemo(() => {
     if (!index) return { ready: false, list: [] as ReturnType<typeof oneHole>[] }
     const list = index.holes.map(h => holes[h.hole]).filter(Boolean).map(d => oneHole(d, review))

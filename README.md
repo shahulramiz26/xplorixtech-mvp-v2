@@ -26,6 +26,17 @@ The rules are enforced on the server (`lib/server/policy.ts`), not only on the s
 - **XPLORIX Intelligence**: Today (one list of findings across every department, with owner, deadline and money), Drill log check, Money checks (standby that reached no invoice, holes blocked by their logs, fuel against the engine), Price a tender (rates per metre by ground, size and depth from the company's own costed metres), Contractor comparison, Hole finish prediction, This month and next, Risk analysis (`lib/findings.ts`, `lib/money-checks.ts`, `lib/own-rates.ts`, `lib/intelligence.ts`, `lib/forecast.ts`)
 - **Supervisor Today**: his rigs, shifts not logged, and his logs the checks want put right
 - **Contractor and client**: sub-contractor reports run through the same checks before they are accepted; the client sees "Checked by XPLORIX" on holes and invoices whose every shift passed
+- **XPLORIX Core (Geology)**: the geologist's half, joined to the drilling record. Real tray photos (NVCL) measured in the browser: recovery, RQD, RQD from joint density, incoherence, fractures, joint sets, GSI, weathering, discing, rock classes. Then:
+  - **Vein classes**: every vein found on the photos, sorted into four classes the geologist names; vein volume down every hole
+  - **Chips (RC)**: chip-tray compartments read chip by chip (area, perimeter, eccentricity, shape, colour), grouped across RC holes; measures an uploaded chip photo too
+  - **Check logs**: the geologist's lithology and RQD log checked against the photos, metre by metre; CSV import
+  - **Downhole data**: assays, geophysics, core scanner (XRF, hyperspectral), televiewer and lab UCS on one depth scale; any interval CSV imports
+  - **Domains**: every metre grouped by photo + chemistry + geophysics (k-means, PCA map), side by side with the log
+  - **Predictions**: rock strength, main mineral and probe RQD where nobody measured, scored on holes left out
+  - **Structures**: true dip and dip direction from alpha, beta and the hole survey; stereonets and joint sets
+  - **Photo archive**: a whole folder of old tray photos read in one go
+  - **XPLORIX AI**: Ask XPLORIX answers from the core record on every Geology screen (Ctrl J), with a full page and a morning brief (`lib/ai/core-ask.ts`)
+  - Sample data: the company has no assays, scans, televiewer, lab tests, hand logs or RC holes, so these are generated from what each real photographed metre shows (`lib/core/downhole.ts`, `lib/core/chips.ts`) and marked "Sample" on screen. Imports replace them.
 - **Parts and inventory**: what runs out before an order can arrive, late orders, idle stock; a new order is checked against every other store first, and part life is measured by ground (`lib/stock-checks.ts`)
 
 Every insight and forecast is a rule or a projection applied to the company's own record. It is not a trained model. An AI layer that explains causes and drafts actions is planned, and will read the same findings.

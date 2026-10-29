@@ -6,6 +6,8 @@ import { intervals } from '../../../../lib/core/geotech'
 import { EXPORT_COLUMNS, toCsv, download, type ExportRow } from '../../../../lib/core/export'
 import { Page, PageHead, Card, Btn, Seg, Empty, Note, Table, th, td, rowLine, T } from '../../../components/kit'
 import { DemoPhotos } from '../../../components/core-ui'
+import { useGeo } from '../../../../lib/core/geo-data'
+import { MINERALS, mean } from '../../../../lib/core/downhole'
 
 /* EXPORT — interval tables for geology software (Leapfrog, Micromine,
  * Datamine, acQuire): HOLE_ID, FROM, TO, then the measures. */
@@ -19,15 +21,36 @@ export default function ExportCore() {
   const [step, setStep] = useState<Step>('1')
   const [cols, setCols] = useState<string[]>(EXPORT_COLUMNS.map(c => c.key))
   const [onlyChecked, setOnlyChecked] = useState(false)
+  const { data: geo } = useGeo()
+  const joined = useMemo(() => {
+    if (!geo.ready) return null
+    const d = geo.domains('all')
+    const idx: Record<string, { i: number; from: number; to: number }[]> = {}
+    geo.metres.forEach((m, i) => { (idx[m.hole] = idx[m.hole] ?? []).push({ i, from: m.from, to: m.to }) })
+    return (hole: string, a: number, b: number) => {
+      const xs = (idx[hole] ?? []).filter(x => x.to > a + 1e-6 && x.from < b - 1e-6)
+      if (!xs.length) return {}
+      const modeOf = (v: string[]) => { const c: Record<string, number> = {}; v.forEach(x => { c[x] = (c[x] ?? 0) + 1 }); return Object.entries(c).sort((p, q) => q[1] - p[1])[0]?.[0] }
+      const mid = (a + b) / 2
+      return {
+        lith: geo.logs[hole]?.find(x => mid >= x.from && mid < x.to)?.lith,
+        domain: modeOf(xs.map(x => `${d.labels[x.i] + 1}. ${d.names[d.labels[x.i]]}`)),
+        au: mean(xs.map(x => geo.metres[x.i].assay.Au)),
+        ucs: geo.pred ? mean(xs.map(x => geo.pred!.ucs[x.i])) : undefined,
+        mineral: geo.pred ? modeOf(xs.map(x => MINERALS[geo.pred!.mineral[x.i]])) : undefined,
+        veins: geo.veins.filter(v => v.hole === hole && v.from >= a && v.from < b).length,
+      }
+    }
+  }, [geo])
 
   const chosen = all.list.filter(h => pick[h.data.hole] ?? true)
   const rows: ExportRow[] = useMemo(() => chosen.flatMap(h => {
     const rs = step === '1' ? h.rows : intervals(h.flat, +step)
     return rs.map(r => ({
-      ...r, hole: h.data.hole, className: className(review, r.cls),
+      ...r, hole: h.data.hole, className: className(review, r.cls), ...(joined?.(h.data.hole, r.from, r.to) ?? {}),
       checked: h.trays.filter(t => t.from < r.to && t.usedTo > r.from).every(t => !!review.checked[t.id]),
     }))
-  }).filter(r => !onlyChecked || r.checked), [chosen, step, review, onlyChecked])
+  }).filter(r => !onlyChecked || r.checked), [chosen, step, review, onlyChecked, joined])
 
   if (!all.ready) return <Page><Card><Empty>Loading the core photos…</Empty></Card></Page>
   const checkedRows = rows.filter(r => r.checked).length
@@ -73,7 +96,7 @@ export default function ExportCore() {
           </tbody>
         </Table>
       </Card>
-      <Note>GSI and JRC are proxies from the photo: aperture and infill cannot be seen, so they are taken as typical. STATUS says SUGGESTED until every tray in the interval is checked.</Note>
+      <Note>GSI and JRC are proxies from the photo: aperture and infill cannot be seen, so they are taken as typical. STATUS says SUGGESTED until every tray in the interval is checked. LITH_LOGGED, DOMAIN, AU_GPT, UCS_PRED_MPA and MINERAL come from the downhole data (sample data in the demo).</Note>
     </Page>
   )
 }
