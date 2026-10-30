@@ -262,7 +262,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
   lifeGaps(logs, inv.catalogue).slice(0, 5).forEach(g => push({
     id: `stock:life:${g.itemId}:${g.formation}:${g.scrapped}`, dept: 'stock', severity: 'plan',
     title: `${g.name} lasts ${Math.round(g.observedLife)} m in ${g.formation.toLowerCase()} ground, not ${g.catalogueLife} m`,
-    detail: `${g.scrapped} used up over ${Math.round(g.metres).toLocaleString('en-IN')} m of ${g.formation.toLowerCase()} ground: ${Math.abs(Math.round(g.deltaPct))}% less than the catalogue. Finance and bids still price it at the catalogue life.`,
+    detail: `${g.scrapped} used up over ${Math.round(g.metres).toLocaleString('en-US')} m of ${g.formation.toLowerCase()} ground: ${Math.abs(Math.round(g.deltaPct))}% less than the catalogue. Finance and bids still price it at the catalogue life.`,
     action: `Set its life to what the ground gives in the parts catalogue, or take it up with the supplier. Price ${g.formation.toLowerCase()} ground in the next bid at the real figure.`,
     owner: 'Stores', money: Math.round(g.understated), moneyNote: 'cost not in the figures so far', href: '/admin/inventory',
   }))
@@ -287,7 +287,7 @@ export function buildFindings(state: CostingState, inv: InvState, today: string 
       push({
         id: `finance:fuel-engine:${x.rig}`, dept: 'finance', severity: x.rate > fleet * 1.4 ? 'act' : 'plan',
         title: `${x.rig} burns ${x.rate.toFixed(1)} L an engine hour; the fleet burns ${fleet.toFixed(1)}`,
-        detail: `About ${extra.toLocaleString('en-IN')} L more than the fleet rate over ${Math.round(x.hours)} engine hours in 30 days.`,
+        detail: `About ${extra.toLocaleString('en-US')} L more than the fleet rate over ${Math.round(x.hours)} engine hours in 30 days.`,
         action: 'Check the fuel issue register against the logs, then idling and the injectors.',
         owner: 'Finance', rig: x.rig, href: '/admin/analytics/consumables',
       })

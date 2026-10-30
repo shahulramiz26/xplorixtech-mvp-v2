@@ -54,7 +54,7 @@ export default function GeologyToday() {
     <Page>
       <PageHead question="How is the core coming out of the ground?"
         tone={t.recovery < 90 ? 'warn' : 'good'}
-        answer={<>{Math.round(t.metres).toLocaleString('en-IN')} m of core photographed on {all.list.length} holes: recovery {pct(t.recovery)}, RQD {pct(t.rqd)} ({rqdClass(t.rqd).toLowerCase()}). {waiting > 0 ? <><b>{waiting} trays</b> wait for a geologist's check.</> : 'Every tray is checked.'} {low.length ? <>{low.length} shifts brought up under 85% of their core.</> : null}</>}
+        answer={<>{Math.round(t.metres).toLocaleString('en-US')} m of core photographed on {all.list.length} holes: recovery {pct(t.recovery)}, RQD {pct(t.rqd)} ({rqdClass(t.rqd).toLowerCase()}). {waiting > 0 ? <><b>{waiting} trays</b> wait for a geologist's check.</> : 'Every tray is checked.'} {low.length ? <>{low.length} shifts brought up under 85% of their core.</> : null}</>}
         right={<><DemoPhotos /><Btn kind="primary" href="/admin/geology/photos">Add tray photos</Btn></>} />
 
       <Card title="This morning, from XPLORIX AI" right={<Btn size="sm" kind="primary" onClick={() => open()}><Sparkles size={13} />Ask XPLORIX</Btn>}>
@@ -69,7 +69,7 @@ export default function GeologyToday() {
       </Card>
 
       <Grid>
-        <Tile label="Core photographed" value={`${Math.round(t.metres).toLocaleString('en-IN')} m`} note={`${trays} trays on ${all.list.length} holes`} />
+        <Tile label="Core photographed" value={`${Math.round(t.metres).toLocaleString('en-US')} m`} note={`${trays} trays on ${all.list.length} holes`} />
         <Tile label="Core recovery, photo" value={pct(t.recovery)} note={`Driller's own measure: ${pct(drillerRec)}`} tone={t.recovery >= 95 ? 'good' : t.recovery >= 85 ? 'warn' : 'bad'} />
         <Tile label="RQD" value={pct(t.rqd)} note={rqdClass(t.rqd)} tone={t.rqd >= 75 ? 'good' : t.rqd >= 50 ? 'warn' : 'bad'} />
         <Tile label="Natural fractures" value={`${t.ff.toFixed(1)} /m`} note="Breaks made in handling left out" />
@@ -135,13 +135,13 @@ function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data
     { icon: Camera, title: 'Core photos', what: 'Rows, core, gaps and every break found on each tray photo', value: `${trays} trays · ${waiting} to check`, href: '/admin/geology/review' },
     { icon: Mountain, title: 'Geotech logging', what: 'Recovery, RQD, fractures, joint density, GSI, weathering, discing', value: geo.ready ? `${geo.holes.length} holes logged` : '…', href: '/admin/geology/rock-mass' },
     { icon: Palette, title: 'Geology logging', what: 'Rock classes from colour, grain, veins and staining', value: 'Named by the geologist', href: '/admin/geology/classes' },
-    { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-IN')} veins` : '…', href: '/admin/geology/veins' },
+    { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-US')} veins` : '…', href: '/admin/geology/veins' },
     { icon: Grip, title: 'RC chips', what: 'Chip colour, size, shape and groups from chip-tray photos', value: `${RC_HOLES.length} RC holes`, href: '/admin/geology/chips' },
     { icon: FileCheck2, title: 'Check logs', what: "The geologist's log checked against the core, metre by metre", value: geo.ready ? `${Math.round(agree * 100)}% agree` : '…', href: '/admin/geology/check-logs' },
-    { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-IN')} metres joined` : '…', href: '/admin/geology/data' },
+    { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-US')} metres joined` : '…', href: '/admin/geology/data' },
     { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },
     { icon: BrainCircuit, title: 'Predictions', what: 'Rock strength, minerals and recovery where nobody measured', value: geo.pred ? `Strength R² ${Math.round(geo.pred.ucsFit.r2 * 100)}%` : '…', href: '/admin/geology/predict' },
-    { icon: Compass, title: 'Structures', what: 'True dip and dip direction from the televiewer; joint sets', value: geo.ready ? `${geo.structures.length.toLocaleString('en-IN')} planes` : '…', href: '/admin/geology/structures' },
+    { icon: Compass, title: 'Structures', what: 'True dip and dip direction from the televiewer; joint sets', value: geo.ready ? `${geo.structures.length.toLocaleString('en-US')} planes` : '…', href: '/admin/geology/structures' },
     { icon: Box, title: '3D view', what: 'Every hole along its surveyed path, coloured by the core', value: 'By project', href: '/admin/geology/3d' },
     { icon: Sparkles, title: 'XPLORIX AI', what: 'Ask anything about the core; it drafts the note that follows', value: 'Ctrl J on any screen', href: '/admin/geology/ask' },
   ]

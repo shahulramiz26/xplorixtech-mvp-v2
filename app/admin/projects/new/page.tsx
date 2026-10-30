@@ -213,10 +213,10 @@ export default function NewProjectPage() {
             <Field label="Planned end of drilling" hint="Draws the planned line on the project's plan-against-actual chart. Optional.">
               <input type="date" value={f.plannedEnd} min={f.startDate} onChange={e => setF({ ...f, plannedEnd: e.target.value })} style={inputStyle} />
             </Field>
-            <Field label="Total budget, ₹" hint="Your own figure. The client never sees it. Optional.">
+            <Field label="Total budget, SAR" hint="Your own figure. The client never sees it. Optional.">
               <input type="number" min={0} value={f.budgetTotal} onChange={e => setF({ ...f, budgetTotal: e.target.value })} placeholder="e.g. 12000000" style={{ ...inputStyle, textAlign: 'right' }} />
             </Field>
-            <Field label="Budget per metre, ₹" hint="What a metre should cost. Optional.">
+            <Field label="Budget per metre, SAR" hint="What a metre should cost. Optional.">
               <input type="number" min={0} value={f.budgetPerMetre} onChange={e => setF({ ...f, budgetPerMetre: e.target.value })} placeholder="e.g. 5000" style={{ ...inputStyle, textAlign: 'right' }} />
             </Field>
           </div>
@@ -271,14 +271,14 @@ export default function NewProjectPage() {
         <>
           <Card title={f.name.trim() || 'New project'} subtitle={`${f.code} · ${f.client || 'client not entered'} · ${f.location || 'location not entered'}`}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18 }}>
-              <Fact label="Starts">{day(f.startDate)}{f.plannedMetres ? <> · {Number(f.plannedMetres).toLocaleString('en-IN')} m in the contract</> : null}</Fact>
+              <Fact label="Starts">{day(f.startDate)}{f.plannedMetres ? <> · {Number(f.plannedMetres).toLocaleString('en-US')} m in the contract</> : null}</Fact>
               <Fact label="Contract rates">
                 {useRates && ratesUsable(rate)
                   ? <>{structureWords(rate)}<div style={{ fontSize: 12.5, color: T.muted, marginTop: 3 }}>{rateLines(rate).filter(l => l.rate > 0).slice(0, 4).map(l => `${l.label} ${money(l.rate)}`).join(' · ')}</div></>
                   : <span style={{ color: T.muted }}>Not set</span>}
               </Fact>
               <Fact label="Rigs and crew">{rigs.length ? rigs.join(', ') : <span style={{ color: T.muted }}>No rig</span>}<div style={{ fontSize: 12.5, color: T.muted, marginTop: 3 }}>{crewLine({ supervisors, drillers })}</div></Fact>
-              <Fact label="Holes">{holes.length ? `${holes.length} planned, ${holes.reduce((s, h) => s + (parseFloat(h.depth) || 0), 0).toLocaleString('en-IN')} m` : <span style={{ color: T.muted }}>None planned</span>}</Fact>
+              <Fact label="Holes">{holes.length ? `${holes.length} planned, ${holes.reduce((s, h) => s + (parseFloat(h.depth) || 0), 0).toLocaleString('en-US')} m` : <span style={{ color: T.muted }}>None planned</span>}</Fact>
             </div>
             {missing.length > 0 && (
               <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>

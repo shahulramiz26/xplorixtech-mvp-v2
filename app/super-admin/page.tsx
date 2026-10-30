@@ -36,44 +36,44 @@ interface Commission {
 
 // ── MOCK DATA ─────────────────────────────────────────────────────────────
 const COMPANIES: Company[] = [
-  {id:'C001',name:'Apex Drilling Pty Ltd',adminName:'James Wilson',email:'james@apexdrilling.com.au',phone:'+61 400 123 456',country:'Australia',industry:'Diamond Core',plan:'Growth',status:'Active',rigs:12,users:28,registered:'2026-01-15',trialExpiry:'2026-01-30',lastLogin:'2026-05-19',revenue:48000,repId:'R001'},
-  {id:'C002',name:'Pioneer Exploration Ltd',adminName:'Priya Nair',email:'priya@pioneerexp.in',phone:'+91 98765 43210',country:'India',industry:'RC Drilling',plan:'Standard',status:'Active',rigs:6,users:14,registered:'2026-02-03',trialExpiry:'2026-02-18',lastLogin:'2026-05-18',revenue:18000,repId:'R002'},
-  {id:'C003',name:'Gulf Mining Corp',adminName:'Ahmed Al Rashid',email:'ahmed@gulfmining.sa',phone:'+966 50 234 5678',country:'Saudi Arabia',industry:'Blast Hole',plan:'Enterprise',status:'Active',rigs:28,users:65,registered:'2026-01-22',trialExpiry:'2026-02-06',lastLogin:'2026-05-19',revenue:120000,repId:null},
-  {id:'C004',name:'RedRock Geotech',adminName:'Marcus Adeyemi',email:'marcus@redrockgeo.co.za',phone:'+27 82 345 6789',country:'South Africa',industry:'Geotechnical',plan:'Standard',status:'Trial',rigs:3,users:8,registered:'2026-05-10',trialExpiry:'2026-05-25',lastLogin:'2026-05-17',revenue:0,repId:'R001'},
-  {id:'C005',name:'Northern Star Drilling',adminName:'Rob Mackenzie',email:'rob@northernstar.ca',phone:'+1 604 987 6543',country:'Canada',industry:'Diamond Core',plan:'Growth',status:'Active',rigs:9,users:22,registered:'2026-03-01',trialExpiry:'2026-03-16',lastLogin:'2026-05-16',revenue:36000,repId:'R003'},
-  {id:'C006',name:'Desert Drill Solutions',adminName:'Tariq Hassan',email:'tariq@desertdrill.ae',phone:'+971 50 111 2222',country:'UAE',industry:'RC Drilling',plan:'Standard',status:'Suspended',rigs:4,users:9,registered:'2026-02-20',trialExpiry:'2026-03-07',lastLogin:'2026-04-30',revenue:6000,repId:'R002'},
-  {id:'C007',name:'Kalgoorlie Core Samples',adminName:'Steve Hartley',email:'steve@kalgoorliecore.com.au',phone:'+61 418 555 777',country:'Australia',industry:'Diamond Core',plan:'Trial',status:'Trial',rigs:2,users:5,registered:'2026-05-14',trialExpiry:'2026-05-29',lastLogin:'2026-05-19',revenue:0,repId:null},
-  {id:'C008',name:'Andean Minerals SA',adminName:'Carlos Vega',email:'carlos@andeanminerals.cl',phone:'+56 9 8765 4321',country:'Chile',industry:'Exploration',plan:'Enterprise',status:'Active',rigs:18,users:44,registered:'2026-02-14',trialExpiry:'2026-03-01',lastLogin:'2026-05-15',revenue:96000,repId:'R003'},
+  {id:'C001',name:'Apex Drilling Pty Ltd',adminName:'James Wilson',email:'james@apexdrilling.com.au',phone:'+61 400 123 456',country:'Australia',industry:'Diamond Core',plan:'Growth',status:'Active',rigs:12,users:28,registered:'2026-03-04',trialExpiry:'2026-03-19',lastLogin:'2026-07-06',revenue:48000,repId:'R001'},
+  {id:'C002',name:'Pioneer Exploration Ltd',adminName:'Priya Nair',email:'priya@pioneerexp.in',phone:'+91 98765 43210',country:'India',industry:'RC Drilling',plan:'Standard',status:'Active',rigs:6,users:14,registered:'2026-03-23',trialExpiry:'2026-04-07',lastLogin:'2026-07-05',revenue:18000,repId:'R002'},
+  {id:'C003',name:'Gulf Mining Corp',adminName:'Ahmed Al Rashid',email:'ahmed@gulfmining.sa',phone:'+966 50 234 5678',country:'Saudi Arabia',industry:'Blast Hole',plan:'Enterprise',status:'Active',rigs:28,users:65,registered:'2026-03-11',trialExpiry:'2026-03-26',lastLogin:'2026-07-06',revenue:120000,repId:null},
+  {id:'C004',name:'RedRock Geotech',adminName:'Marcus Adeyemi',email:'marcus@redrockgeo.co.za',phone:'+27 82 345 6789',country:'South Africa',industry:'Geotechnical',plan:'Standard',status:'Trial',rigs:3,users:8,registered:'2026-06-27',trialExpiry:'2026-07-12',lastLogin:'2026-07-04',revenue:0,repId:'R001'},
+  {id:'C005',name:'Northern Star Drilling',adminName:'Rob Mackenzie',email:'rob@northernstar.ca',phone:'+1 604 987 6543',country:'Canada',industry:'Diamond Core',plan:'Growth',status:'Active',rigs:9,users:22,registered:'2026-04-18',trialExpiry:'2026-05-03',lastLogin:'2026-07-03',revenue:36000,repId:'R003'},
+  {id:'C006',name:'Desert Drill Solutions',adminName:'Tariq Hassan',email:'tariq@desertdrill.ae',phone:'+971 50 111 2222',country:'UAE',industry:'RC Drilling',plan:'Standard',status:'Suspended',rigs:4,users:9,registered:'2026-04-09',trialExpiry:'2026-04-24',lastLogin:'2026-06-17',revenue:6000,repId:'R002'},
+  {id:'C007',name:'Kalgoorlie Core Samples',adminName:'Steve Hartley',email:'steve@kalgoorliecore.com.au',phone:'+61 418 555 777',country:'Australia',industry:'Diamond Core',plan:'Trial',status:'Trial',rigs:2,users:5,registered:'2026-07-01',trialExpiry:'2026-07-16',lastLogin:'2026-07-06',revenue:0,repId:null},
+  {id:'C008',name:'Andean Minerals SA',adminName:'Carlos Vega',email:'carlos@andeanminerals.cl',phone:'+56 9 8765 4321',country:'Chile',industry:'Exploration',plan:'Enterprise',status:'Active',rigs:18,users:44,registered:'2026-04-03',trialExpiry:'2026-04-18',lastLogin:'2026-07-02',revenue:96000,repId:'R003'},
 ]
 
 const PAYMENTS: Payment[] = [
-  {id:'P001',companyId:'C001',amount:48000,currency:'AUD',method:'NEFT',reference:'NEFT2026011501',date:'2026-02-01',status:'Received',recordedBy:'Shahul',notes:'Annual payment - Growth plan 12 rigs'},
-  {id:'P002',companyId:'C002',amount:18000,currency:'INR',method:'UPI',reference:'UPI20260203XPL',date:'2026-02-20',status:'Received',recordedBy:'Shahul',notes:'Standard plan 6 rigs'},
-  {id:'P003',companyId:'C003',amount:120000,currency:'USD',method:'Wire',reference:'WIRE20260125GM',date:'2026-02-10',status:'Received',recordedBy:'Shahul',notes:'Enterprise plan 28 rigs annual'},
-  {id:'P004',companyId:'C005',amount:36000,currency:'CAD',method:'NEFT',reference:'NEFT20260315NS',date:'2026-03-18',status:'Received',recordedBy:'Rahul',notes:'Growth plan 9 rigs'},
-  {id:'P005',companyId:'C006',amount:6000,currency:'USD',method:'Wire',reference:'WIRE20260225DD',date:'2026-03-01',status:'Received',recordedBy:'Shahul',notes:'Standard plan 4 rigs - now suspended for non-renewal'},
-  {id:'P006',companyId:'C008',amount:96000,currency:'USD',method:'Wire',reference:'WIRE20260218AM',date:'2026-03-05',status:'Received',recordedBy:'Rahul',notes:'Enterprise plan 18 rigs annual'},
+  {id:'P001',companyId:'C001',amount:48000,currency:'AUD',method:'NEFT',reference:'NEFT2026011501',date:'2026-03-21',status:'Received',recordedBy:'Shahul',notes:'Annual payment - Growth plan 12 rigs'},
+  {id:'P002',companyId:'C002',amount:18000,currency:'INR',method:'UPI',reference:'UPI20260203XPL',date:'2026-04-09',status:'Received',recordedBy:'Shahul',notes:'Standard plan 6 rigs'},
+  {id:'P003',companyId:'C003',amount:120000,currency:'USD',method:'Wire',reference:'WIRE20260125GM',date:'2026-03-30',status:'Received',recordedBy:'Shahul',notes:'Enterprise plan 28 rigs annual'},
+  {id:'P004',companyId:'C005',amount:36000,currency:'CAD',method:'NEFT',reference:'NEFT20260315NS',date:'2026-05-05',status:'Received',recordedBy:'Rahul',notes:'Growth plan 9 rigs'},
+  {id:'P005',companyId:'C006',amount:6000,currency:'USD',method:'Wire',reference:'WIRE20260225DD',date:'2026-04-18',status:'Received',recordedBy:'Shahul',notes:'Standard plan 4 rigs - now suspended for non-renewal'},
+  {id:'P006',companyId:'C008',amount:96000,currency:'USD',method:'Wire',reference:'WIRE20260218AM',date:'2026-04-22',status:'Received',recordedBy:'Rahul',notes:'Enterprise plan 18 rigs annual'},
 ]
 
 const QUOTES: Quote[] = [
-  {id:'Q001',companyId:'C004',plan:'Standard',rigs:3,amount:9000,currency:'USD',validUntil:'2026-06-01',status:'Sent',createdDate:'2026-05-15',notes:'3 rigs standard plan annual'},
-  {id:'Q002',companyId:'C007',plan:'Growth',rigs:2,amount:8000,currency:'AUD',validUntil:'2026-06-10',status:'Draft',createdDate:'2026-05-18',notes:'Trial converting to growth'},
-  {id:'Q003',companyId:'C006',plan:'Growth',rigs:4,amount:16000,currency:'USD',validUntil:'2026-05-30',status:'Sent',createdDate:'2026-05-10',notes:'Reactivation quote - upgrade to growth'},
+  {id:'Q001',companyId:'C004',plan:'Standard',rigs:3,amount:9000,currency:'USD',validUntil:'2026-07-19',status:'Sent',createdDate:'2026-07-02',notes:'3 rigs standard plan annual'},
+  {id:'Q002',companyId:'C007',plan:'Growth',rigs:2,amount:8000,currency:'AUD',validUntil:'2026-07-28',status:'Draft',createdDate:'2026-07-05',notes:'Trial converting to growth'},
+  {id:'Q003',companyId:'C006',plan:'Growth',rigs:4,amount:16000,currency:'USD',validUntil:'2026-07-17',status:'Sent',createdDate:'2026-06-27',notes:'Reactivation quote - upgrade to growth'},
 ]
 
 const REPS: Rep[] = [
-  {id:'R001',name:'Arjun Mehta',type:'External Rep',email:'arjun.mehta@gmail.com',phone:'+91 99887 76655',status:'Active',commissionRate:10,commissionType:'Percentage',totalDeals:2,totalEarned:5700,totalPaid:4800,joinedDate:'2025-11-01'},
-  {id:'R002',name:'Fatima Al Zaabi',type:'Partner',email:'fatima@zaabiconsult.ae',phone:'+971 55 333 4444',status:'Active',commissionRate:8,commissionType:'Percentage',totalDeals:2,totalEarned:4320,totalPaid:3000,joinedDate:'2025-12-15'},
-  {id:'R003',name:'Ryan Thompson',type:'Internal Sales',email:'ryan@xplorixtech.com',phone:'+1 778 456 7890',status:'Active',commissionRate:5,commissionType:'Percentage',totalDeals:2,totalEarned:6600,totalPaid:6600,joinedDate:'2026-01-01'},
+  {id:'R001',name:'Arjun Mehta',type:'External Rep',email:'arjun.mehta@gmail.com',phone:'+91 99887 76655',status:'Active',commissionRate:10,commissionType:'Percentage',totalDeals:2,totalEarned:5700,totalPaid:4800,joinedDate:'2025-12-19'},
+  {id:'R002',name:'Fatima Al Zaabi',type:'Partner',email:'fatima@zaabiconsult.ae',phone:'+971 55 333 4444',status:'Active',commissionRate:8,commissionType:'Percentage',totalDeals:2,totalEarned:4320,totalPaid:3000,joinedDate:'2026-02-01'},
+  {id:'R003',name:'Ryan Thompson',type:'Internal Sales',email:'ryan@xplorixtech.com',phone:'+1 778 456 7890',status:'Active',commissionRate:5,commissionType:'Percentage',totalDeals:2,totalEarned:6600,totalPaid:6600,joinedDate:'2026-02-18'},
 ]
 
 const COMMISSIONS: Commission[] = [
-  {id:'CM001',repId:'R001',companyId:'C001',dealValue:48000,rate:10,type:'Percentage',amount:4800,status:'Paid',approvedDate:'2026-02-05',paidDate:'2026-02-10',reference:'PAY-CM001',notes:'Annual growth plan deal',createdDate:'2026-02-02'},
-  {id:'CM002',repId:'R001',companyId:'C004',dealValue:9000,rate:10,type:'Percentage',amount:900,status:'Pending',approvedDate:'',paidDate:'',reference:'',notes:'Pending payment from company',createdDate:'2026-05-15'},
-  {id:'CM003',repId:'R002',companyId:'C002',dealValue:18000,rate:8,type:'Percentage',amount:1440,status:'Paid',approvedDate:'2026-02-22',paidDate:'2026-03-01',reference:'PAY-CM003',notes:'Standard plan deal India',createdDate:'2026-02-21'},
-  {id:'CM004',repId:'R002',companyId:'C006',dealValue:6000,rate:8,type:'Percentage',amount:480,status:'Approved',approvedDate:'2026-03-05',paidDate:'',reference:'',notes:'Pending payout',createdDate:'2026-03-02'},
-  {id:'CM005',repId:'R003',companyId:'C005',dealValue:36000,rate:5,type:'Percentage',amount:1800,status:'Paid',approvedDate:'2026-03-20',paidDate:'2026-03-25',reference:'PAY-CM005',notes:'',createdDate:'2026-03-19'},
-  {id:'CM006',repId:'R003',companyId:'C008',dealValue:96000,rate:5,type:'Percentage',amount:4800,status:'Paid',approvedDate:'2026-03-08',paidDate:'2026-03-15',reference:'PAY-CM006',notes:'Enterprise deal',createdDate:'2026-03-06'},
+  {id:'CM001',repId:'R001',companyId:'C001',dealValue:48000,rate:10,type:'Percentage',amount:4800,status:'Paid',approvedDate:'2026-03-25',paidDate:'2026-03-30',reference:'PAY-CM001',notes:'Annual growth plan deal',createdDate:'2026-03-22'},
+  {id:'CM002',repId:'R001',companyId:'C004',dealValue:9000,rate:10,type:'Percentage',amount:900,status:'Pending',approvedDate:'',paidDate:'',reference:'',notes:'Pending payment from company',createdDate:'2026-07-02'},
+  {id:'CM003',repId:'R002',companyId:'C002',dealValue:18000,rate:8,type:'Percentage',amount:1440,status:'Paid',approvedDate:'2026-04-11',paidDate:'2026-04-18',reference:'PAY-CM003',notes:'Standard plan deal India',createdDate:'2026-04-10'},
+  {id:'CM004',repId:'R002',companyId:'C006',dealValue:6000,rate:8,type:'Percentage',amount:480,status:'Approved',approvedDate:'2026-04-22',paidDate:'',reference:'',notes:'Pending payout',createdDate:'2026-04-19'},
+  {id:'CM005',repId:'R003',companyId:'C005',dealValue:36000,rate:5,type:'Percentage',amount:1800,status:'Paid',approvedDate:'2026-05-07',paidDate:'2026-05-12',reference:'PAY-CM005',notes:'',createdDate:'2026-05-06'},
+  {id:'CM006',repId:'R003',companyId:'C008',dealValue:96000,rate:5,type:'Percentage',amount:4800,status:'Paid',approvedDate:'2026-04-25',paidDate:'2026-05-02',reference:'PAY-CM006',notes:'Enterprise deal',createdDate:'2026-04-23'},
 ]
 
 // ── CREDENTIALS ───────────────────────────────────────────────────────────

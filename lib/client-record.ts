@@ -260,9 +260,9 @@ export function liveInvoices(state: CostingStateLike, holes: LiveHole[]): Portal
 
 interface SeedSpec { number: string; holes: string[]; date: string; due: string; state: 'paid' | 'approved' | 'awaiting'; paidDate?: string; mobilisation?: boolean }
 const SEED_SPECS: SeedSpec[] = [
-  { number: 'INV-0001', holes: ['DH-901', 'DH-911', 'DH-902'], date: '2026-07-06', due: '2026-08-05', state: 'paid', paidDate: '2026-08-12', mobilisation: true },
-  { number: 'INV-0002', holes: ['DH-951', 'DH-961', 'DH-952'], date: '2026-08-06', due: '2026-09-05', state: 'approved' },
-  { number: 'INV-0003', holes: ['DH-001', 'DH-011'], date: '2026-09-10', due: '2026-10-10', state: 'awaiting' },
+  { number: 'INV-0001', holes: ['DH-901', 'DH-911', 'DH-902'], date: '2026-08-23', due: '2026-09-22', state: 'paid', paidDate: '2026-09-29', mobilisation: true },
+  { number: 'INV-0002', holes: ['DH-951', 'DH-961', 'DH-952'], date: '2026-09-23', due: '2026-10-23', state: 'approved' },
+  { number: 'INV-0003', holes: ['DH-001', 'DH-011'], date: '2026-10-28', due: '2026-11-27', state: 'awaiting' },
 ]
 
 export function seedInvoices(state: CostingStateLike, project: string, client: string) {
@@ -280,11 +280,11 @@ export function seedInvoices(state: CostingStateLike, project: string, client: s
     const cr = versionOn(state.clientRates.filter(c => c.project === project), spec.date)
     if (spec.mobilisation && cr?.mobilisation) lines.push({ label: 'Mobilisation', qty: '1', rate: money(cr.mobilisation), amount: cr.mobilisation })
     const subtotal = lines.reduce((s, l) => s + l.amount, 0)
-    const total = subtotal * 1.18
+    const total = subtotal * 1.15
     const id = `inv_seed_${n + 1}`
     invoices.push({
       id, number: spec.number, project, client, date: spec.date, holeNumbers: mine.map(h => h.id),
-      lines, subtotal, taxPercent: 18, total,
+      lines, subtotal, taxPercent: 15, total,
       status: spec.state === 'paid' ? 'paid' : 'pending', dueDate: spec.due,
       paidDate: spec.paidDate, paidAmount: spec.state === 'paid' ? total : undefined,
       ownerStatus: spec.state === 'awaiting' ? 'awaiting' : 'approved',
@@ -305,7 +305,7 @@ export function shortDate(date?: string) {
   return `${d} ${MON[m - 1]}`
 }
 export function num(n: number, digits = 0) {
-  return n.toLocaleString('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 export function daysBetween(a: string, b: string) {
   return Math.round((new Date(`${b}T00:00:00Z`).getTime() - new Date(`${a}T00:00:00Z`).getTime()) / 86400000)

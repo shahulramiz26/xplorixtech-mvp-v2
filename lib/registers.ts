@@ -42,7 +42,7 @@ export interface CrewMember {
 }
 
 const R = (rig: string, make: string, model: string, year: number, capacity: number, state: RigState, sizes = ['NQ', 'HQ']): RigRecord =>
-  ({ id: `rr_${rig}`, rig, type: 'Diamond core', make, model, year, sizes, depthCapacity: capacity, owned: true, state, added: '2026-05-20' })
+  ({ id: `rr_${rig}`, rig, type: 'Diamond core', make, model, year, sizes, depthCapacity: capacity, owned: true, state, added: '2026-07-07' })
 
 /* The demo company's fleet. Makes are left generic: it is demo data. */
 export const SEED_RIGS: RigRecord[] = [
@@ -54,7 +54,7 @@ export const SEED_RIGS: RigRecord[] = [
 ]
 
 const P = (name: string, role: CrewRole, rig?: string, shift?: 'Day' | 'Night', phone?: string): CrewMember =>
-  ({ id: `cm_${name.replace(/\W+/g, '_').toLowerCase()}`, name, role, rig, shift, phone, joined: '2026-05-20', active: true })
+  ({ id: `cm_${name.replace(/\W+/g, '_').toLowerCase()}`, name, role, rig, shift, phone, joined: '2026-07-07', active: true })
 
 export const SEED_CREW: CrewMember[] = [
   P('Mahesh Yadav', 'Driller', 'RIG-001', 'Day'), P('Ravi Kumar', 'Driller', 'RIG-001', 'Night'),

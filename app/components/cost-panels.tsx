@@ -49,9 +49,9 @@ export function RigCostPanel({ rig, month, versions, firstDay, onSave }: {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 26, marginTop: 18, alignItems: 'start' }}>
         <Section title="Landed cost" note="What the rig cost to put on site.">
           <Grid cols={2}>
-            <NumField label="Basic price" value={f.basicPrice} onChange={n => u({ basicPrice: n })} suffix="₹" />
-            <NumField label="GST" value={f.gstPercent} onChange={n => u({ gstPercent: n })} suffix="%" />
-            <NumField label="Transportation" value={f.transportation} onChange={n => u({ transportation: n })} suffix="₹" />
+            <NumField label="Basic price" value={f.basicPrice} onChange={n => u({ basicPrice: n })} suffix="SAR" />
+            <NumField label="VAT" value={f.gstPercent} onChange={n => u({ gstPercent: n })} suffix="%" />
+            <NumField label="Transportation" value={f.transportation} onChange={n => u({ transportation: n })} suffix="SAR" />
             <Derived label="Landed price" value={money(b.landedPrice)} color={C.orange}
               overridden={f.landedPriceOverride} onOverride={n => u({ landedPriceOverride: n })}
               onClear={() => u({ landedPriceOverride: undefined })} />
@@ -72,13 +72,13 @@ export function RigCostPanel({ rig, month, versions, firstDay, onSave }: {
       <div style={{ marginTop: 22 }}>
         <Section title="Finance" note="Enter the EMI you actually pay each month.">
           <Grid cols={4}>
-            <NumField label="EMI per month" value={f.emiPerMonth} onChange={n => u({ emiPerMonth: n })} suffix="₹" color={C.blue} />
+            <NumField label="EMI per month" value={f.emiPerMonth} onChange={n => u({ emiPerMonth: n })} suffix="SAR" color={C.blue} />
             <Field label="EMI ends" hint="Optional. Without it a closed loan keeps charging forever.">
               <input type="month" value={f.emiEndsMonth ?? ''} onChange={e => u({ emiEndsMonth: e.target.value || undefined })}
                 style={{ ...iStyle }} />
             </Field>
-            <NumField label="Insurance per year" value={f.insurancePerYear} onChange={n => u({ insurancePerYear: n })} suffix="₹" />
-            <NumField label="Other fixed / month" value={f.otherFixedPerMonth} onChange={n => u({ otherFixedPerMonth: n })} suffix="₹" />
+            <NumField label="Insurance per year" value={f.insurancePerYear} onChange={n => u({ insurancePerYear: n })} suffix="SAR" />
+            <NumField label="Other fixed / month" value={f.otherFixedPerMonth} onChange={n => u({ otherFixedPerMonth: n })} suffix="SAR" />
           </Grid>
           {f.emiPerMonth > 0 && b.emiMonthsLeft >= 0 && (
             <Note tone={b.emiActive ? C.blue : C.green}>
@@ -199,11 +199,11 @@ export function OperatingPanel({ rig, project, versions, firstDay, seed, onSave 
     : blankOperating(rig, project, minDate || firstDay))
   const [confirm, setConfirm] = useState(false)
   const u = (p: Partial<OperatingRate>) => setF(x => ({ ...x, ...p }))
-  const per = f.chargePerMetre ? '₹/m' : ''
+  const per = f.chargePerMetre ? 'SAR/m' : ''
 
   return (
     <div>
-      <InForce text={latest ? `fuel ₹${latest.fuelPricePerLitre}/L, labour ${money(latest.labourRate)} since ${fullDate(latest.effectiveFrom)}` : 'nothing set yet'} />
+      <InForce text={latest ? `fuel SAR ${latest.fuelPricePerLitre}/L, labour ${money(latest.labourRate)} since ${fullDate(latest.effectiveFrom)}` : 'nothing set yet'} />
       {!latest && seed && (
         <div style={{ marginTop: 12 }}>
           <Note tone={C.amber}>
@@ -221,11 +221,11 @@ export function OperatingPanel({ rig, project, versions, firstDay, seed, onSave 
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <Section title="Unit prices" note="Consumption comes from the log; these turn it into rupees.">
+        <Section title="Unit prices" note="Consumption comes from the log; these turn it into riyals.">
           <Grid cols={3}>
-            <NumField label="Fuel" value={f.fuelPricePerLitre} onChange={n => u({ fuelPricePerLitre: n })} suffix="₹/L" color={C.amber} />
-            <NumField label="Water" value={f.waterPricePerLitre} onChange={n => u({ waterPricePerLitre: n })} suffix="₹/L" />
-            <NumField label="Additives" value={f.additivePricePerKg} onChange={n => u({ additivePricePerKg: n })} suffix="₹/kg" />
+            <NumField label="Fuel" value={f.fuelPricePerLitre} onChange={n => u({ fuelPricePerLitre: n })} suffix="SAR/L" color={C.amber} />
+            <NumField label="Water" value={f.waterPricePerLitre} onChange={n => u({ waterPricePerLitre: n })} suffix="SAR/L" />
+            <NumField label="Additives" value={f.additivePricePerKg} onChange={n => u({ additivePricePerKg: n })} suffix="SAR/kg" />
           </Grid>
         </Section>
       </div>
@@ -234,11 +234,11 @@ export function OperatingPanel({ rig, project, versions, firstDay, seed, onSave 
         <Section title="Labour">
           <Grid cols={3}>
             <NumField label="Labour cost" value={f.labourRate} onChange={n => u({ labourRate: n })}
-              suffix={per || '₹'} color={C.blue} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per shift'} />
+              suffix={per || 'SAR'} color={C.blue} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per shift'} />
             <NumField label="Lodging cost" value={f.lodgingRate} onChange={n => u({ lodgingRate: n })}
-              suffix={per || '₹'} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per night'} />
+              suffix={per || 'SAR'} hint={f.chargePerMetre ? 'per metre drilled' : 'per head, per night'} />
             <NumField label="Transportation cost" value={f.transportRate} onChange={n => u({ transportRate: n })}
-              suffix={per || '₹/day'} hint={f.chargePerMetre ? 'per metre drilled' : 'per day on site'} />
+              suffix={per || 'SAR/day'} hint={f.chargePerMetre ? 'per metre drilled' : 'per day on site'} />
           </Grid>
         </Section>
       </div>
@@ -254,7 +254,7 @@ export function OperatingPanel({ rig, project, versions, firstDay, seed, onSave 
       </div>
 
       <SaveRow label="Save operating cost" onSave={() => setConfirm(true)} />
-      {confirm && <SaveDialog minDate={minDate} defaultFrom={firstDay} replacing={latest ? `fuel ₹${latest.fuelPricePerLitre}/L` : 'nothing'}
+      {confirm && <SaveDialog minDate={minDate} defaultFrom={firstDay} replacing={latest ? `fuel SAR ${latest.fuelPricePerLitre}/L` : 'nothing'}
         onCancel={() => setConfirm(false)} onSave={(from, why) => { onSave(f, from, why); setConfirm(false) }} />}
     </div>
   )
@@ -283,7 +283,7 @@ export function rigCostLine(state: CostState, rig: string): string | null {
 
 export function operatingLine(state: CostState, rig: string, project: string): string | null {
   const v = newestFirst(state.operating.filter(o => o.rig === rig && o.project === project))[0]
-  return v ? `fuel ₹${v.fuelPricePerLitre}/L · labour ${money(v.labourRate)}${v.chargePerMetre ? '/m' : ' a head a shift'}` : null
+  return v ? `fuel SAR ${v.fuelPricePerLitre}/L · labour ${money(v.labourRate)}${v.chargePerMetre ? '/m' : ' a head a shift'}` : null
 }
 
 /* The operating cost a new rig-on-project starts from: this rig's last project,

@@ -336,7 +336,7 @@ export default function CrewPage() {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v])
 
   const daysOut = (iso: string) =>
-    (new Date(iso).getTime() - new Date('2026-08-30').getTime()) / 86_400_000
+    (new Date(iso).getTime() - new Date('2026-10-17').getTime()) / 86_400_000
 
   const crew = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -754,7 +754,7 @@ function ContactModal({ c, onClose }: { c: CrewProfile; onClose: () => void }) {
                   They will see
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
-                  {[['Company', 'Apex Drilling Solutions'], ['Active rigs', '14'], ['Country', 'India'], ['Contact', 'Admin User']].map(([k, v]) => (
+                  {[['Company', 'Apex Drilling Solutions'], ['Active rigs', '14'], ['Country', 'Saudi Arabia'], ['Contact', 'Admin User']].map(([k, v]) => (
                     <div key={k}>
                       <div style={{ fontSize: 10, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{k}</div>
                       <div style={{ fontSize: 13, color: C.text, fontWeight: 600, marginTop: 2 }}>{v}</div>
@@ -843,7 +843,7 @@ function PostJobModal({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div>
                   <label style={flabel}>Site location</label>
-                  <input style={field} placeholder="Hospet, Karnataka" />
+                  <input style={field} placeholder="Mahd adh Dhahab, Al Madinah" />
                 </div>
                 <div>
                   <label style={flabel}>Rotation</label>
@@ -913,7 +913,7 @@ function PostJobModal({ onClose }: { onClose: () => void }) {
 
               <div style={{ marginBottom: 14 }}>
                 <label style={flabel}>Salary range</label>
-                <input style={field} placeholder="₹85,000 – ₹1,10,000 / month" />
+                <input style={field} placeholder="SAR 9,000 – 12,000 / month" />
               </div>
 
               <div style={{ marginBottom: 18 }}>

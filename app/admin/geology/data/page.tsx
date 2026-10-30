@@ -79,7 +79,7 @@ export default function DownholeData() {
   return (
     <Page>
       <PageHead question="What do we know down each hole?"
-        answer={<>{metresTotal.toLocaleString('en-IN')} metres on {data.holes.length} holes, each tied to its tray photos: assays and geophysics on every hole, the core scanner on {coverage.find(c => c.k === 'scanner')!.holes}, the televiewer on {coverage.find(c => c.k === 'televiewer')!.holes}, lab strength tests on {coverage.find(c => c.k === 'lab')!.holes}. Gold goes most with <b>{corr[0]?.label.toLowerCase()}</b> {corr[0]?.photo ? '(measured on the photos)' : ''}.</>}
+        answer={<>{metresTotal.toLocaleString('en-US')} metres on {data.holes.length} holes, each tied to its tray photos: assays and geophysics on every hole, the core scanner on {coverage.find(c => c.k === 'scanner')!.holes}, the televiewer on {coverage.find(c => c.k === 'televiewer')!.holes}, lab strength tests on {coverage.find(c => c.k === 'lab')!.holes}. Gold goes most with <b>{corr[0]?.label.toLowerCase()}</b> {corr[0]?.photo ? '(measured on the photos)' : ''}.</>}
         right={<><DemoPhotos /><SampleBadge /><Btn onClick={exportAll}>Download all (CSV)</Btn></>} />
 
       <Grid min={160}>

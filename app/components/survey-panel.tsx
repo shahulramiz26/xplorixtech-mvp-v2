@@ -355,8 +355,8 @@ export function DepthPanel({ bands, step, cost = true, right }: {
             <CartesianGrid stroke={gridStroke} vertical={false} />
             <XAxis dataKey="depth" tick={axisTick} tickLine={false} axisLine={{ stroke: T.border }} tickFormatter={(v: string) => `${v} m`} interval="preserveStartEnd" minTickGap={18} />
             <YAxis yAxisId="r" tick={axisTick} tickLine={false} axisLine={false} width={40} />
-            {cost && <YAxis yAxisId="c" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={58} tickFormatter={(v: number) => `₹${Math.round(v / 100) / 10}k`} />}
-            <Tooltip content={<Tip names={{ rop: 'Metres an hour', cpm: 'Cost per metre ₹' }} />} />
+            {cost && <YAxis yAxisId="c" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={58} tickFormatter={(v: number) => `SAR ${Math.round(v / 100) / 10}k`} />}
+            <Tooltip content={<Tip names={{ rop: 'Metres an hour', cpm: 'Cost per metre SAR' }} />} />
             <Bar yAxisId="r" dataKey="rop" fill={T.bar} maxBarSize={22} radius={[3, 3, 0, 0]} isAnimationActive={false} />
             {cost && <Line yAxisId="c" dataKey="cpm" stroke={T.orangeD} strokeWidth={2} dot={{ r: 2.5 }} connectNulls isAnimationActive={false} />}
           </ComposedChart>

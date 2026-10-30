@@ -321,7 +321,7 @@ export interface OperatingRate {
 // ── CLIENT RATE (Set rates → Client cost) ─────────────────────────────────
 
 /* A rate line, straight off the tender: a size, a formation, and a rate.
- * "Drilling in soft rock, HQ size — ₹5,500 per m" is one row.
+ * "Drilling in soft rock, HQ size — SAR 5,500 per m" is one row.
  *
  * Adjustments hang off their own row, not the project, because the tender's
  * conditions are written per line: "in case NQ size drilling is done before
@@ -351,7 +351,7 @@ export interface RateRow {
   formation: string       // a rock category, or ANY_FORMATION
   fromDepth?: number      // blank = from surface
   toDepth?: number        // blank = no limit
-  rate: number            // ₹ per metre
+  rate: number            // SAR per metre
   adjustments: RateAdjustment[]
 }
 
@@ -1143,23 +1143,23 @@ export function peoplePool(state: { projects: ProjectRecord[]; users: AppUser[];
 export const SEED_PROJECTS: ProjectRecord[] = [
   {
     id: 'PRJ-001', code: 'PRJ-001', name: 'Site A - North Field', location: 'North Field block', client: DEMO_CLIENT,
-    status: 'active', startDate: '2026-06-01', plannedMetres: 2400, holeSize: 'HQ', shared: true,
-    plannedEnd: '2027-01-31', budgetTotal: 13000000, budgetPerMetre: 4200,
+    status: 'active', startDate: '2026-07-19', plannedMetres: 2400, holeSize: 'HQ', shared: true,
+    plannedEnd: '2027-03-20', budgetTotal: 1250000, budgetPerMetre: 520,
     coords: DEMO_SITES['Site A - North Field'].coords,
     rigs: ['RIG-001', 'RIG-002'], supervisors: ['Arun Verma', 'Imran Shaikh'],
-    drillers: ['Mahesh Yadav', 'Ravi Kumar', 'Santosh Patil', 'Dinesh Sahu'], createdAt: '2026-05-25',
+    drillers: ['Mahesh Yadav', 'Ravi Kumar', 'Santosh Patil', 'Dinesh Sahu'], createdAt: '2026-07-12',
   },
   {
     id: 'PRJ-002', code: 'PRJ-002', name: 'Site B - South Ridge', location: 'South Ridge block', client: 'South Ridge Minerals',
-    status: 'active', startDate: '2026-01-01', plannedMetres: 3000, holeSize: 'HQ', shared: false,
-    plannedEnd: '2026-12-31', budgetTotal: 16500000, budgetPerMetre: 5500,
+    status: 'active', startDate: '2026-02-18', plannedMetres: 3000, holeSize: 'HQ', shared: false,
+    plannedEnd: '2027-02-17', budgetTotal: 1650000, budgetPerMetre: 550,
     coords: DEMO_SITES['Site B - South Ridge'].coords, utmZone: DEMO_SITES['Site B - South Ridge'].utmZone,
-    rigs: ['RIG-003'], supervisors: ['Pradeep Rao'], drillers: ['Farid Khan', 'Gopal Das'], createdAt: '2025-12-15',
+    rigs: ['RIG-003'], supervisors: ['Pradeep Rao'], drillers: ['Farid Khan', 'Gopal Das'], createdAt: '2026-02-01',
   },
   {
     id: 'PRJ-003', code: 'PRJ-003', name: 'Site C - East Basin', location: 'East Basin block', client: 'East Basin Resources',
-    status: 'completed', startDate: '2026-02-01', plannedMetres: 900, holeSize: 'HQ', shared: false,
-    rigs: [], supervisors: [], drillers: [], createdAt: '2026-01-20',
+    status: 'completed', startDate: '2026-03-21', plannedMetres: 900, holeSize: 'HQ', shared: false,
+    rigs: [], supervisors: [], drillers: [], createdAt: '2026-03-09',
   },
 ]
 
@@ -1188,31 +1188,31 @@ export const HOLE_SIZES = ['NQ', 'HQ', 'PQ', 'BQ', 'AQ']
 
 export const SEED_OWNERSHIP: RigOwnership[] = [
   {
-    id: 'own_r1', rig: 'RIG-001', effectiveFrom: '2026-01-01',
-    basicPrice: 6000000, gstPercent: 0, transportation: 200000,
+    id: 'own_r1', rig: 'RIG-001', effectiveFrom: '2026-02-18',
+    basicPrice: 2100000, gstPercent: 0, transportation: 45000,
     depreciationRatePct: 20,
-    emiPerMonth: 160045, emiEndsMonth: '2028-03',
-    insurancePerYear: 120000, otherFixedPerMonth: 0,
+    emiPerMonth: 40600, emiEndsMonth: '2028-03',
+    insurancePerYear: 31500, otherFixedPerMonth: 0,
     costBasis: 'cash', allocationBasis: 'operatingDay',
     expectedOperatingDays: 25, expectedUnitsPerMonth: 300,
     note: 'Opening entry',
   },
   {
-    id: 'own_r2', rig: 'RIG-002', effectiveFrom: '2026-01-01',
-    basicPrice: 5400000, gstPercent: 0, transportation: 180000,
+    id: 'own_r2', rig: 'RIG-002', effectiveFrom: '2026-02-18',
+    basicPrice: 1950000, gstPercent: 0, transportation: 40000,
     depreciationRatePct: 20,
-    emiPerMonth: 136500, emiEndsMonth: '2027-10',
-    insurancePerYear: 108000, otherFixedPerMonth: 0,
+    emiPerMonth: 37700, emiEndsMonth: '2027-10',
+    insurancePerYear: 29300, otherFixedPerMonth: 0,
     costBasis: 'cash', allocationBasis: 'operatingDay',
     expectedOperatingDays: 25, expectedUnitsPerMonth: 300,
     note: 'Opening entry',
   },
   {
-    id: 'own_r3', rig: 'RIG-003', effectiveFrom: '2026-01-01',
-    basicPrice: 4800000, gstPercent: 0, transportation: 160000,
+    id: 'own_r3', rig: 'RIG-003', effectiveFrom: '2026-02-18',
+    basicPrice: 1800000, gstPercent: 0, transportation: 35000,
     depreciationRatePct: 20,
-    emiPerMonth: 118000, emiEndsMonth: '2029-02',
-    insurancePerYear: 96000, otherFixedPerMonth: 0,
+    emiPerMonth: 34800, emiEndsMonth: '2029-02',
+    insurancePerYear: 27000, otherFixedPerMonth: 0,
     costBasis: 'cash', allocationBasis: 'operatingDay',
     expectedOperatingDays: 25, expectedUnitsPerMonth: 300,
     note: 'Opening entry',
@@ -1221,42 +1221,42 @@ export const SEED_OWNERSHIP: RigOwnership[] = [
 
 const opRate = (id: string, rig: string, project: string, from: string, fuel: number, note: string): OperatingRate => ({
   id, rig, project, effectiveFrom: from, note,
-  fuelPricePerLitre: fuel, waterPricePerLitre: 4, additivePricePerKg: 190,
-  labourRate: 900, lodgingRate: 180, transportRate: 1250, chargePerMetre: false,
+  fuelPricePerLitre: fuel, waterPricePerLitre: 0.05, additivePricePerKg: 14,
+  labourRate: 230, lodgingRate: 75, transportRate: 350, chargePerMetre: false,
 })
 
 export const SEED_OPERATING: OperatingRate[] = [
-  opRate('op_a1_1', 'RIG-001', 'Site A - North Field', '2026-01-01', 92, 'Opening entry'),
-  opRate('op_a1_2', 'RIG-001', 'Site A - North Field', '2026-07-01', 96, 'Diesel price revision'),
-  opRate('op_a1_3', 'RIG-001', 'Site A - North Field', '2026-08-01', 100, 'Diesel price revision'),
-  opRate('op_a1_4', 'RIG-001', 'Site A - North Field', '2026-09-01', 104, 'Diesel price revision'),
-  opRate('op_a2_1', 'RIG-002', 'Site A - North Field', '2026-01-01', 96, 'Opening entry'),
-  opRate('op_a2_2', 'RIG-002', 'Site A - North Field', '2026-08-01', 100, 'Diesel price revision'),
-  opRate('op_a2_3', 'RIG-002', 'Site A - North Field', '2026-09-01', 104, 'Diesel price revision'),
-  opRate('op_b1_1', 'RIG-003', 'Site B - South Ridge', '2026-01-01', 100, 'Opening entry'),
+  opRate('op_a1_1', 'RIG-001', 'Site A - North Field', '2026-02-18', 1.58, 'Opening entry'),
+  opRate('op_a1_2', 'RIG-001', 'Site A - North Field', '2026-08-18', 1.62, 'Diesel price revision'),
+  opRate('op_a1_3', 'RIG-001', 'Site A - North Field', '2026-09-18', 1.66, 'Diesel price revision'),
+  opRate('op_a1_4', 'RIG-001', 'Site A - North Field', '2026-10-19', 1.70, 'Diesel price revision'),
+  opRate('op_a2_1', 'RIG-002', 'Site A - North Field', '2026-02-18', 1.62, 'Opening entry'),
+  opRate('op_a2_2', 'RIG-002', 'Site A - North Field', '2026-09-18', 1.66, 'Diesel price revision'),
+  opRate('op_a2_3', 'RIG-002', 'Site A - North Field', '2026-10-19', 1.70, 'Diesel price revision'),
+  opRate('op_b1_1', 'RIG-003', 'Site B - South Ridge', '2026-02-18', 1.66, 'Opening entry'),
 ]
 
 export const SEED_CLIENT_RATES: ClientRate[] = [
   {
-    id: 'cr_a_1', project: 'Site A - North Field', effectiveFrom: '2026-06-01',
+    id: 'cr_a_1', project: 'Site A - North Field', effectiveFrom: '2026-07-19',
     structure: 'flat',
     rateRows: [
-      { id: 'r1', holeSize: 'HQ', formation: 'Soft rock', rate: 6200, adjustments: [] },
-      { id: 'r2', holeSize: 'HQ', formation: 'Hard rock', rate: 11200, adjustments: [] },
-      { id: 'r3', holeSize: 'HQ', formation: 'Very hard rock', rate: 14100, adjustments: [] },
+      { id: 'r1', holeSize: 'HQ', formation: 'Soft rock', rate: 600, adjustments: [] },
+      { id: 'r2', holeSize: 'HQ', formation: 'Hard rock', rate: 800, adjustments: [] },
+      { id: 'r3', holeSize: 'HQ', formation: 'Very hard rock', rate: 950, adjustments: [] },
     ],
-    standbyPerDay: 18000, mobilisation: 175000, demobilisation: 140000,
+    standbyPerDay: 8500, mobilisation: 85000, demobilisation: 65000,
     note: 'Tender schedule 2.2.1.1c\u2013e',
   },
   {
-    id: 'cr_b_1', project: 'Site B - South Ridge', effectiveFrom: '2026-01-01',
+    id: 'cr_b_1', project: 'Site B - South Ridge', effectiveFrom: '2026-02-18',
     structure: 'slab',
     rateRows: [
-      { id: 'b1', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 0, toDepth: 75, rate: 7800, adjustments: [] },
-      { id: 'b2', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 75, toDepth: 150, rate: 8900, adjustments: [] },
-      { id: 'b3', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 150, rate: 10400, adjustments: [] },
+      { id: 'b1', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 0, toDepth: 75, rate: 700, adjustments: [] },
+      { id: 'b2', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 75, toDepth: 150, rate: 780, adjustments: [] },
+      { id: 'b3', holeSize: 'HQ', formation: ANY_FORMATION, fromDepth: 150, rate: 880, adjustments: [] },
     ],
-    standbyPerDay: 14000, mobilisation: 150000, demobilisation: 120000,
+    standbyPerDay: 7500, mobilisation: 75000, demobilisation: 60000,
     note: 'Contract rate card, depth bands',
   },
 ]
@@ -1268,7 +1268,7 @@ export const SEED_HOLE_STATUS: Record<string, HoleState> = {
   // Drilled by a contractor, checked by our site, approved: ready to bill the client.
   'DH-131': { status: 'approved' },
   // Waiting with the client, so his login has a live approval on first load.
-  'DH-002': { status: 'submitted', submittedAt: '2026-09-12' },
+  'DH-002': { status: 'submitted', submittedAt: '2026-10-30' },
 }
 
 function markClosures(logs: ShiftLog[], holeNumbers: string[]): ShiftLog[] {
@@ -1358,12 +1358,22 @@ function partsFor(
   return out
 }
 
+/* The month-and-day specs below were written for a demo that sat on 13 Sep 2026.
+ * The demo now sits on 31 Oct 2026, so every seeded shift moves forward by the
+ * same 48 days and all the gaps between events stay exactly as designed. */
+const SEED_SHIFT_DAYS = 48
+function seedDate(ymd: string) {
+  const d = new Date(`${ymd}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + SEED_SHIFT_DAYS)
+  return d.toISOString().slice(0, 10)
+}
+
 function expand(rig: string, project: string, ym: string, size: string, specs: DaySpec[], bands = DEPTH_BANDS): ShiftLog[] {
   const out: ShiftLog[] = []
   const depth: Record<string, number> = {}
   const wear: Record<string, number> = {}
   specs.forEach(([day, hole, dm, nm, dd = 0, nd = 0, reason = '']) => {
-    const date = `${ym}-${String(day).padStart(2, '0')}`
+    const date = seedDate(`${ym}-${String(day).padStart(2, '0')}`)
     const mk = (shift: ShiftName, metres: number, down: number, crew: number): ShiftLog => {
       const drillingHours = Math.max(0, 12 - down)
       const startDepth = hole ? (depth[hole] ?? 0) : 0
@@ -1576,7 +1586,7 @@ export const SEED_SHIFT_LOGS_CONTRACTORS: ShiftLog[] = [
       [9, 'DH-152', 5, 4], [10, 'DH-152', 5, 5], [11, 'DH-152', 5, 4], [12, 'DH-152', 5, 5],
     ], HARD_GROUND),
     // The night of the 11th was sent back to the contractor, so it is not in the record.
-  ].filter(l => !(l.date === '2026-09-11' && l.shift === 'Night')), 'ctr_q', 'wo_b2', 'login', { 'DH-151': 0.86 }),
+  ].filter(l => !(l.date === '2026-10-29' && l.shift === 'Night')), 'ctr_q', 'wo_b2', 'login', { 'DH-151': 0.86 }),
 ]
 
 /* Who was on each rig, and what the form records beyond the figures: crew
@@ -1656,18 +1666,18 @@ export const SEED_HOLE_PLANS: Record<string, HolePlan> = (() => {
 })()
 
 const RAW_MAINTENANCE: MaintenanceLog[] = [
-  { id: 'm1', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-03', maintenanceType: 'Preventive', hours: 3, component: 'Engine', action: 'Inspection', cost: 4500 },
-  { id: 'm2', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-13', maintenanceType: 'Breakdown', hours: 22, component: 'Hydraulic System', action: 'Part replaced', cost: 68000 },
-  { id: 'm3', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-14', maintenanceType: 'Breakdown', hours: 4, component: 'Hydraulic System', action: 'Repair performed', cost: 12000 },
-  { id: 'm4', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-23', maintenanceType: 'Scheduled', hours: 3, component: 'Compressor', action: 'Inspection', cost: 9500 },
-  { id: 'm5', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-08-18', maintenanceType: 'Breakdown', hours: 8, component: 'Electrical', action: 'Repair performed', cost: 41000 },
-  { id: 'm6', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-06-04', maintenanceType: 'Breakdown', hours: 24, component: 'Engine', action: 'Part replaced', cost: 118000 },
-  { id: 'm7', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-06-05', maintenanceType: 'Breakdown', hours: 20, component: 'Engine', action: 'Repair performed', cost: 34000 },
-  { id: 'm8', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-06-15', maintenanceType: 'Breakdown', hours: 6, component: 'Electrical', action: 'Repair performed', cost: 22000 },
-  { id: 'm9', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-07-05', maintenanceType: 'Preventive', hours: 3, component: 'Engine', action: 'Inspection', cost: 4500 },
-  { id: 'm10', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-07-12', maintenanceType: 'Preventive', hours: 2, component: 'Compressor', action: 'Inspection', cost: 3800 },
-  { id: 'm11', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-09-04', maintenanceType: 'Scheduled', hours: 3, component: 'Mud Pump', action: 'Inspection', cost: 7200 },
-  { id: 'm12', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-09-05', maintenanceType: 'Breakdown', hours: 9, component: 'Hydraulic System', action: 'Repair performed', cost: 28500 },
+  { id: 'm1', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-09-20', maintenanceType: 'Preventive', hours: 3, component: 'Engine', action: 'Inspection', cost: 400 },
+  { id: 'm2', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-09-30', maintenanceType: 'Breakdown', hours: 22, component: 'Hydraulic System', action: 'Part replaced', cost: 6200 },
+  { id: 'm3', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-10-01', maintenanceType: 'Breakdown', hours: 4, component: 'Hydraulic System', action: 'Repair performed', cost: 1100 },
+  { id: 'm4', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-10-10', maintenanceType: 'Scheduled', hours: 3, component: 'Compressor', action: 'Inspection', cost: 850 },
+  { id: 'm5', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-10-05', maintenanceType: 'Breakdown', hours: 8, component: 'Electrical', action: 'Repair performed', cost: 3750 },
+  { id: 'm6', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-07-22', maintenanceType: 'Breakdown', hours: 24, component: 'Engine', action: 'Part replaced', cost: 10750 },
+  { id: 'm7', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-07-23', maintenanceType: 'Breakdown', hours: 20, component: 'Engine', action: 'Repair performed', cost: 3100 },
+  { id: 'm8', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-02', maintenanceType: 'Breakdown', hours: 6, component: 'Electrical', action: 'Repair performed', cost: 2000 },
+  { id: 'm9', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-08-22', maintenanceType: 'Preventive', hours: 3, component: 'Engine', action: 'Inspection', cost: 400 },
+  { id: 'm10', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-08-29', maintenanceType: 'Preventive', hours: 2, component: 'Compressor', action: 'Inspection', cost: 350 },
+  { id: 'm11', rig: 'RIG-001', project: 'Site A - North Field', date: '2026-10-22', maintenanceType: 'Scheduled', hours: 3, component: 'Mud Pump', action: 'Inspection', cost: 650 },
+  { id: 'm12', rig: 'RIG-002', project: 'Site A - North Field', date: '2026-10-23', maintenanceType: 'Breakdown', hours: 9, component: 'Hydraulic System', action: 'Repair performed', cost: 2600 },
 ]
 /* The same extra detail for the seeded maintenance logs: who logged it, on
  * which shift, and the oils a service takes. */
@@ -1689,28 +1699,28 @@ export const SEED_MAINTENANCE: MaintenanceLog[] = RAW_MAINTENANCE.map(m => {
  * by the client, and one rate proposal is waiting for him, so the Client
  * Portal opens with something to read and something to decide. */
 export const SEED_PROJECT_EVENTS: ProjectEvent[] = [
-  { id: 'pe_1', project: 'Site A - North Field', at: '2026-05-25T10:20', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site A - North Field · North Field block', seenByOwner: true, seenByContractor: true },
-  { id: 'pe_2', project: 'Site A - North Field', at: '2026-05-25T10:24', kind: 'shared', by: 'contractor', title: `Shared with ${DEMO_CLIENT}`, detail: 'Contract rates, planned holes, rigs and crew are now visible in the client login.', seenByOwner: true, seenByContractor: true },
-  { id: 'pe_3', project: 'Site A - North Field', at: '2026-05-25T10:31', kind: 'rates', by: 'contractor', title: 'Contract rates set, from 1 Jun 2026', detail: 'Tender schedule 2.2.1.1c\u2013e', seenByOwner: true, seenByContractor: true },
-  { id: 'pe_4', project: 'Site A - North Field', at: '2026-05-28T09:05', kind: 'rig', by: 'contractor', title: 'RIG-001 and RIG-002 assigned', seenByOwner: true, seenByContractor: true },
-  { id: 'pe_5', project: 'Site A - North Field', at: '2026-05-28T09:12', kind: 'crew', by: 'contractor', title: 'Crew assigned', detail: '2 supervisors, 4 drillers', seenByOwner: true, seenByContractor: true },
-  { id: 'pe_6', project: 'Site A - North Field', at: '2026-09-11T16:40', kind: 'hole', by: 'contractor', title: '4 holes added to the plan', detail: 'DH-005 (200 m), DH-006 (180 m), DH-014 (220 m), DH-015 (240 m)', seenByOwner: false, seenByContractor: true },
-  { id: 'pe_7', project: 'Site A - North Field', at: '2026-09-12T11:15', kind: 'rates', by: 'contractor', title: 'New rates proposed, from 1 Oct 2026', detail: 'Diesel price escalation, contract clause 14.2', seenByOwner: false, seenByContractor: true },
-  { id: 'pe_8', project: 'Site B - South Ridge', at: '2025-12-15T12:00', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site B - South Ridge · South Ridge block', seenByContractor: true },
-  { id: 'pe_9', project: 'Site C - East Basin', at: '2026-01-20T12:00', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site C - East Basin · East Basin block', seenByContractor: true },
-  { id: 'pe_10', project: 'Site C - East Basin', at: '2026-08-30T17:30', kind: 'status', by: 'contractor', title: 'Project completed', seenByContractor: true },
+  { id: 'pe_1', project: 'Site A - North Field', at: '2026-07-12T10:20', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site A - North Field · North Field block', seenByOwner: true, seenByContractor: true },
+  { id: 'pe_2', project: 'Site A - North Field', at: '2026-07-12T10:24', kind: 'shared', by: 'contractor', title: `Shared with ${DEMO_CLIENT}`, detail: 'Contract rates, planned holes, rigs and crew are now visible in the client login.', seenByOwner: true, seenByContractor: true },
+  { id: 'pe_3', project: 'Site A - North Field', at: '2026-07-12T10:31', kind: 'rates', by: 'contractor', title: 'Contract rates set, from 19 Jul 2026', detail: 'Tender schedule 2.2.1.1c\u2013e', seenByOwner: true, seenByContractor: true },
+  { id: 'pe_4', project: 'Site A - North Field', at: '2026-07-15T09:05', kind: 'rig', by: 'contractor', title: 'RIG-001 and RIG-002 assigned', seenByOwner: true, seenByContractor: true },
+  { id: 'pe_5', project: 'Site A - North Field', at: '2026-07-15T09:12', kind: 'crew', by: 'contractor', title: 'Crew assigned', detail: '2 supervisors, 4 drillers', seenByOwner: true, seenByContractor: true },
+  { id: 'pe_6', project: 'Site A - North Field', at: '2026-10-29T16:40', kind: 'hole', by: 'contractor', title: '4 holes added to the plan', detail: 'DH-005 (200 m), DH-006 (180 m), DH-014 (220 m), DH-015 (240 m)', seenByOwner: false, seenByContractor: true },
+  { id: 'pe_7', project: 'Site A - North Field', at: '2026-10-30T11:15', kind: 'rates', by: 'contractor', title: 'New rates proposed, from 18 Nov 2026', detail: 'Diesel price escalation, contract clause 14.2', seenByOwner: false, seenByContractor: true },
+  { id: 'pe_8', project: 'Site B - South Ridge', at: '2026-02-01T12:00', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site B - South Ridge · South Ridge block', seenByContractor: true },
+  { id: 'pe_9', project: 'Site C - East Basin', at: '2026-03-09T12:00', kind: 'created', by: 'contractor', title: 'Project created', detail: 'Site C - East Basin · East Basin block', seenByContractor: true },
+  { id: 'pe_10', project: 'Site C - East Basin', at: '2026-10-17T17:30', kind: 'status', by: 'contractor', title: 'Project completed', seenByContractor: true },
 ]
 export const SEED_RATE_PROPOSALS: RateProposal[] = [
   {
-    id: 'rp_1', project: 'Site A - North Field', proposedAt: '2026-09-12T11:15', status: 'waiting',
+    id: 'rp_1', project: 'Site A - North Field', proposedAt: '2026-10-30T11:15', status: 'waiting',
     rate: {
-      id: 'cr_a_2', project: 'Site A - North Field', effectiveFrom: '2026-10-01', structure: 'flat',
+      id: 'cr_a_2', project: 'Site A - North Field', effectiveFrom: '2026-11-18', structure: 'flat',
       rateRows: [
-        { id: 'r1', holeSize: 'HQ', formation: 'Soft rock', rate: 6200, adjustments: [] },
-        { id: 'r2', holeSize: 'HQ', formation: 'Hard rock', rate: 11650, adjustments: [] },
-        { id: 'r3', holeSize: 'HQ', formation: 'Very hard rock', rate: 14650, adjustments: [] },
+        { id: 'r1', holeSize: 'HQ', formation: 'Soft rock', rate: 600, adjustments: [] },
+        { id: 'r2', holeSize: 'HQ', formation: 'Hard rock', rate: 832, adjustments: [] },
+        { id: 'r3', holeSize: 'HQ', formation: 'Very hard rock', rate: 987, adjustments: [] },
       ],
-      standbyPerDay: 19000, mobilisation: 175000, demobilisation: 140000,
+      standbyPerDay: 8950, mobilisation: 85000, demobilisation: 65000,
       note: 'Diesel price escalation, contract clause 14.2',
     },
   },
@@ -1739,23 +1749,23 @@ const payCard = (id: string, from: string, rates: [number, number, number], stan
 export const SEED_WORK_ORDERS: WorkOrder[] = [
   {
     id: 'wo_b1', number: 'WO-B-01', project: SITE_B, contractorId: 'ctr_p', rigs: ['CP-01', 'CP-02'],
-    startDate: '2026-08-01', endDate: '2026-10-31', plannedMetres: 1100, paymentDays: 30, status: 'active',
-    rates: [payCard('wr_p1', '2026-08-01', [5900, 6800, 8000], 9000, 90000, 70000, 'Work order schedule of rates')],
+    startDate: '2026-09-18', endDate: '2026-12-18', plannedMetres: 1100, paymentDays: 30, status: 'active',
+    rates: [payCard('wr_p1', '2026-09-18', [530, 595, 670], 5800, 45000, 35000, 'Work order schedule of rates')],
     rules: [
       { id: 'd1', kind: 'coreRecovery', on: true, clause: 'Example clause 9.1', slabs: [{ belowPct: 90, deductPct: 10 }, { belowPct: 80, deductPct: 25 }] },
       { id: 'd2', kind: 'lateCompletion', on: true, clause: 'Example clause 12', pctPerWeek: 0.5, capPct: 10 },
-      { id: 'd3', kind: 'shortfall', on: false, clause: '', minMetres: 250, perMetre: 200 },
+      { id: 'd3', kind: 'shortfall', on: false, clause: '', minMetres: 250, perMetre: 60 },
       { id: 'd4', kind: 'retention', on: true, clause: 'Example clause 15', holdPct: 5 },
     ],
   },
   {
     id: 'wo_b2', number: 'WO-B-02', project: SITE_B, contractorId: 'ctr_q', rigs: ['CQ-01'],
-    startDate: '2026-08-10', endDate: '2026-08-31', plannedMetres: 400, paymentDays: 45, status: 'active',
-    rates: [payCard('wr_q1', '2026-08-10', [5700, 6600, 7900], 8500, 80000, 60000, 'Work order schedule of rates')],
+    startDate: '2026-09-27', endDate: '2026-10-18', plannedMetres: 400, paymentDays: 45, status: 'active',
+    rates: [payCard('wr_q1', '2026-09-27', [515, 585, 660], 5600, 40000, 30000, 'Work order schedule of rates')],
     rules: [
       { id: 'd1', kind: 'coreRecovery', on: true, clause: 'Example clause 9.1', slabs: [{ belowPct: 90, deductPct: 10 }, { belowPct: 80, deductPct: 25 }] },
       { id: 'd2', kind: 'lateCompletion', on: true, clause: 'Example clause 12', pctPerWeek: 0.5, capPct: 10 },
-      { id: 'd3', kind: 'shortfall', on: true, clause: 'Example clause 10.3', minMetres: 300, perMetre: 200 },
+      { id: 'd3', kind: 'shortfall', on: true, clause: 'Example clause 10.3', minMetres: 300, perMetre: 60 },
       { id: 'd4', kind: 'retention', on: true, clause: 'Example clause 15', holdPct: 5 },
     ],
   },
@@ -1763,7 +1773,7 @@ export const SEED_WORK_ORDERS: WorkOrder[] = [
 
 const waiting = (id: string, workOrderId: string, rig: string, shift: ShiftName, hole: string | null, from: number | undefined, metres: number, core: number,
   hours: [number, number, number], reason: string, source: ContractorReport['source'], at: string, extra: Partial<ContractorReport> = {}): ContractorReport => ({
-  id, workOrderId, rig, project: SITE_B, date: '2026-09-13', shift, holeNumber: hole, holeSize: 'HQ',
+  id, workOrderId, rig, project: SITE_B, date: '2026-10-31', shift, holeNumber: hole, holeSize: 'HQ',
   formationType: metres > 0 ? 'Hard Formation' : '', fromDepth: from, toDepth: from != null ? from + metres : undefined,
   metres, coreRecovery: core, drillingHours: hours[0], standbyHours: hours[1], breakdownHours: hours[2], reason,
   source, receivedAt: at, status: 'waiting', ...extra,
@@ -1782,16 +1792,16 @@ function seededDepth(hole: string) {
 export const SEED_CONTRACTOR_REPORTS: ContractorReport[] = (() => {
   const a = seededDepth('DH-132'), b = seededDepth('DH-142'), c = seededDepth('DH-152')
   return [
-    waiting('rp_1', 'wo_b1', 'CP-01', 'Day', 'DH-132', a, 7, 6.8, [12, 0, 0], '', 'login', '2026-09-13T18:12'),
-    waiting('rp_2', 'wo_b1', 'CP-01', 'Night', 'DH-132', a + 7, 6, 5.8, [12, 0, 0], '', 'login', '2026-09-13T18:12'),
-    waiting('rp_3', 'wo_b1', 'CP-02', 'Day', 'DH-142', b, 6, 5.7, [12, 0, 0], '', 'login', '2026-09-13T18:20'),
-    waiting('rp_4', 'wo_b1', 'CP-02', 'Night', null, undefined, 0, 0, [0, 12, 0], 'Waiting for Instruction', 'login', '2026-09-13T18:20',
+    waiting('rp_1', 'wo_b1', 'CP-01', 'Day', 'DH-132', a, 7, 6.8, [12, 0, 0], '', 'login', '2026-10-31T18:12'),
+    waiting('rp_2', 'wo_b1', 'CP-01', 'Night', 'DH-132', a + 7, 6, 5.8, [12, 0, 0], '', 'login', '2026-10-31T18:12'),
+    waiting('rp_3', 'wo_b1', 'CP-02', 'Day', 'DH-142', b, 6, 5.7, [12, 0, 0], '', 'login', '2026-10-31T18:20'),
+    waiting('rp_4', 'wo_b1', 'CP-02', 'Night', null, undefined, 0, 0, [0, 12, 0], 'Waiting for Instruction', 'login', '2026-10-31T18:20',
       { remarks: 'Told to hold at 20:00 until the next hole location is cleared.' }),
-    waiting('rp_5', 'wo_b2', 'CQ-01', 'Day', 'DH-152', c + 4, 5, 4.7, [12, 0, 0], '', 'login', '2026-09-13T18:40'),
-    waiting('rp_6', 'wo_b2', 'CQ-01', 'Night', 'DH-152', c + 9, 9, 7.6, [12, 0, 0], '', 'login', '2026-09-13T18:40'),
+    waiting('rp_5', 'wo_b2', 'CQ-01', 'Day', 'DH-152', c + 4, 5, 4.7, [12, 0, 0], '', 'login', '2026-10-31T18:40'),
+    waiting('rp_6', 'wo_b2', 'CQ-01', 'Night', 'DH-152', c + 9, 9, 7.6, [12, 0, 0], '', 'login', '2026-10-31T18:40'),
     {
-      ...waiting('rp_7', 'wo_b2', 'CQ-01', 'Night', 'DH-152', c - 10, 14, 11.9, [12, 0, 0], '', 'login', '2026-09-12T08:30'),
-      date: '2026-09-11', status: 'returned', returnedBy: 'Pradeep Rao', returnedAt: '2026-09-12T10:05',
+      ...waiting('rp_7', 'wo_b2', 'CQ-01', 'Night', 'DH-152', c - 10, 14, 11.9, [12, 0, 0], '', 'login', '2026-10-30T08:30'),
+      date: '2026-10-29', status: 'returned', returnedBy: 'Pradeep Rao', returnedAt: '2026-10-30T10:05',
       returnReason: 'The log shows 14 m for one night shift. The rods on the rack give 4 m. Please correct and send again.',
     },
   ]
@@ -1830,12 +1840,12 @@ export function setAdminName(name: string) { if (name) ADMIN_NAME = name }
 export { COMPANY_NAME } from './company'
 
 export const SEED_USERS: AppUser[] = [
-  { id: 'u_s1', name: 'Arun Verma', username: 'APX_SUP01', role: 'supervisor', active: true, created: '2026-06-01', opened: true },
-  { id: 'u_s2', name: 'Imran Shaikh', username: 'APX_SUP02', role: 'supervisor', active: true, created: '2026-06-01', opened: true },
-  { id: 'u_s3', name: 'Pradeep Rao', username: 'APX_SUP03', role: 'supervisor', active: true, created: '2026-08-01', opened: true },
-  { id: 'u_c1', name: 'Contractor P', username: 'APX_CON01', role: 'contractor', active: true, created: '2026-07-28', opened: true, contractorId: 'ctr_p', email: 'site@contractor-p.example' },
-  { id: 'u_c2', name: 'Contractor Q', username: 'APX_CON02', role: 'contractor', active: true, created: '2026-08-08', opened: true, contractorId: 'ctr_q', email: 'site@contractor-q.example' },
-  { id: 'u_k1', name: 'Demo Mining Co.', username: 'APX_CLI01', role: 'client', active: true, created: '2026-05-25', opened: true, client: 'Demo Mining Co.', email: 'exploration@demo-mining.example' },
+  { id: 'u_s1', name: 'Arun Verma', username: 'APX_SUP01', role: 'supervisor', active: true, created: '2026-07-19', opened: true },
+  { id: 'u_s2', name: 'Imran Shaikh', username: 'APX_SUP02', role: 'supervisor', active: true, created: '2026-07-19', opened: true },
+  { id: 'u_s3', name: 'Pradeep Rao', username: 'APX_SUP03', role: 'supervisor', active: true, created: '2026-09-18', opened: true },
+  { id: 'u_c1', name: 'Contractor P', username: 'APX_CON01', role: 'contractor', active: true, created: '2026-09-14', opened: true, contractorId: 'ctr_p', email: 'site@contractor-p.example' },
+  { id: 'u_c2', name: 'Contractor Q', username: 'APX_CON02', role: 'contractor', active: true, created: '2026-09-25', opened: true, contractorId: 'ctr_q', email: 'site@contractor-q.example' },
+  { id: 'u_k1', name: 'Demo Mining Co.', username: 'APX_CLI01', role: 'client', active: true, created: '2026-07-12', opened: true, client: 'Demo Mining Co.', email: 'exploration@demo-mining.example' },
 ]
 export function loginOfContractor(users: AppUser[] | undefined, contractorId: string | undefined) {
   return (users ?? []).find(u => u.role === 'contractor' && u.contractorId === contractorId)
@@ -1909,16 +1919,16 @@ export interface FoundSnapshot {
  * keeps the finding as it stood when it was answered. */
 const SEED_FINDING_STATUS: Record<string, FindingStatus> = {
   'past:inv-0001-overdue': {
-    status: 'done', by: 'Admin User', at: '2026-08-06T10:15', ids: [],
-    found: { title: 'Invoice INV-0001 is overdue', dept: 'billing', on: '2026-08-06', items: [{ id: 'live:od_inv_seed_1', title: 'Invoice INV-0001 is overdue', kind: 'invoice-overdue', ref: { invoiceId: 'inv_seed_1' } }] },
+    status: 'done', by: 'Admin User', at: '2026-09-23T10:15', ids: [],
+    found: { title: 'Invoice INV-0001 is overdue', dept: 'billing', on: '2026-09-23', items: [{ id: 'live:od_inv_seed_1', title: 'Invoice INV-0001 is overdue', kind: 'invoice-overdue', ref: { invoiceId: 'inv_seed_1' } }] },
   },
   'past:t08-runout': {
-    status: 'assigned', to: 'Stores', by: 'Admin User', at: '2026-08-29T09:40', ids: [],
-    found: { title: 'HQ Impregnated Bit runs out in 7 days', dept: 'stock', money: 22000, on: '2026-08-29', items: [{ id: 'stock:running_t08', title: 'HQ Impregnated Bit runs out in 7 days', kind: 'stock-runout', ref: { itemId: 't08', gapDays: 11, runsOutOn: '2026-09-05' }, money: 22000 }] },
+    status: 'assigned', to: 'Stores', by: 'Admin User', at: '2026-10-16T09:40', ids: [],
+    found: { title: 'HQ Impregnated Bit runs out in 7 days', dept: 'stock', money: 1830, on: '2026-10-16', items: [{ id: 'stock:running_t08', title: 'HQ Impregnated Bit runs out in 7 days', kind: 'stock-runout', ref: { itemId: 't08', gapDays: 11, runsOutOn: '2026-10-23' }, money: 1830 }] },
   },
   'past:rig002-fuel': {
-    status: 'dismissed', note: 'New pump fitted on 2 Sep, settling in', by: 'Admin User', at: '2026-09-04T17:20', ids: [],
-    found: { title: 'RIG-002 fuel 30% above its own normal', dept: 'finance', money: 8600, on: '2026-09-04', items: [{ id: 'finance:fuel-own:RIG-002', title: 'RIG-002 fuel 30% above its own normal', money: 8600 }] },
+    status: 'dismissed', note: 'New pump fitted on 20 Oct, settling in', by: 'Admin User', at: '2026-10-22T17:20', ids: [],
+    found: { title: 'RIG-002 fuel 30% above its own normal', dept: 'finance', money: 410, on: '2026-10-22', items: [{ id: 'finance:fuel-own:RIG-002', title: 'RIG-002 fuel 30% above its own normal', money: 410 }] },
   },
 }
 
@@ -1927,31 +1937,31 @@ const SEED_FINDING_STATUS: Record<string, FindingStatus> = {
  * aside as not relevant and why. Demo data. */
 const PAST: [string, string, string, string, 'done' | 'dismissed', string?][] = [
   // found on, answered on, dept, title, answer, reason when set aside
-  ['2026-07-03', '2026-07-05', 'data', 'RIG-001 night shift not logged', 'done'],
-  ['2026-07-06', '2026-07-10', 'billing', 'Invoice INV-0001 to send for approval', 'done'],
-  ['2026-07-09', '2026-07-16', 'stock', 'HQ Core Lifter below minimum stock', 'done'],
-  ['2026-07-11', '2026-07-14', 'maintenance', 'RIG-002 service due at 250 engine hours', 'done'],
-  ['2026-07-14', '2026-07-17', 'finance', 'RIG-001 fuel 22% above its own normal', 'dismissed', 'Long rod string at depth; expected'],
-  ['2026-07-18', '2026-07-24', 'operations', 'Site A: next holes not released by the client', 'done'],
-  ['2026-07-21', '2026-07-24', 'data', '3 shifts with no core recovery entered', 'done'],
-  ['2026-07-25', '2026-08-04', 'stock', 'Water Swivel Spares sitting in the store 40 days', 'dismissed', 'Kept as a spare on purpose'],
-  ['2026-07-28', '2026-07-29', 'billing', '2 closed holes not yet sent for approval', 'done'],
-  ['2026-08-02', '2026-08-02', 'contractors', '4 contractor shifts waiting to be checked', 'done'],
-  ['2026-08-05', '2026-08-08', 'maintenance', 'RIG-003: hydraulic hose replaced twice in a week', 'done'],
-  ['2026-08-08', '2026-08-12', 'billing', 'Invoice INV-0001 is overdue', 'done'],
-  ['2026-08-10', '2026-08-11', 'data', 'Day and night shift identical on RIG-002', 'done'],
-  ['2026-08-13', '2026-08-16', 'crew', 'Driller on 21 days without a rest day', 'done'],
-  ['2026-08-16', '2026-08-23', 'stock', 'PW Casing order 10 days late', 'done'],
-  ['2026-08-18', '2026-08-18', 'contractors', 'Bill CP/26-27/041 claims more than the record', 'done'],
-  ['2026-08-20', '2026-08-21', 'operations', 'CQ-01 drills 30% slower than RIG-003', 'dismissed', 'New crew settling in; reviewed with the contractor'],
-  ['2026-08-24', '2026-08-25', 'billing', 'Client standby on Site B on no invoice', 'done'],
-  ['2026-08-27', '2026-08-28', 'data', '1 shift with metres above the rig\'s best day', 'done'],
-  ['2026-08-30', '2026-09-01', 'maintenance', 'RIG-001 service due at 250 engine hours', 'done'],
-  ['2026-09-02', '2026-09-02', 'contractors', '6 contractor shifts waiting to be checked', 'done'],
-  ['2026-09-03', '2026-09-04', 'stock', 'Water Swivel Spares being ordered while 1 sits at Site C', 'done'],
-  ['2026-09-06', '2026-09-07', 'data', 'RIG-003 night shift not logged', 'done'],
-  ['2026-09-08', '2026-09-09', 'finance', 'Tooling cost on RIG-002 up 18% this week', 'dismissed', 'Very hard ground this week; expected'],
-  ['2026-09-10', '2026-09-11', 'billing', 'Ready-to-invoice holes waiting 5 days', 'done'],
+  ['2026-08-20', '2026-08-22', 'data', 'RIG-001 night shift not logged', 'done'],
+  ['2026-08-23', '2026-08-27', 'billing', 'Invoice INV-0001 to send for approval', 'done'],
+  ['2026-08-26', '2026-09-02', 'stock', 'HQ Core Lifter below minimum stock', 'done'],
+  ['2026-08-28', '2026-08-31', 'maintenance', 'RIG-002 service due at 250 engine hours', 'done'],
+  ['2026-08-31', '2026-09-03', 'finance', 'RIG-001 fuel 22% above its own normal', 'dismissed', 'Long rod string at depth; expected'],
+  ['2026-09-04', '2026-09-10', 'operations', 'Site A: next holes not released by the client', 'done'],
+  ['2026-09-07', '2026-09-10', 'data', '3 shifts with no core recovery entered', 'done'],
+  ['2026-09-11', '2026-09-21', 'stock', 'Water Swivel Spares sitting in the store 40 days', 'dismissed', 'Kept as a spare on purpose'],
+  ['2026-09-14', '2026-09-15', 'billing', '2 closed holes not yet sent for approval', 'done'],
+  ['2026-09-19', '2026-09-19', 'contractors', '4 contractor shifts waiting to be checked', 'done'],
+  ['2026-09-22', '2026-09-25', 'maintenance', 'RIG-003: hydraulic hose replaced twice in a week', 'done'],
+  ['2026-09-25', '2026-09-29', 'billing', 'Invoice INV-0001 is overdue', 'done'],
+  ['2026-09-27', '2026-09-28', 'data', 'Day and night shift identical on RIG-002', 'done'],
+  ['2026-09-30', '2026-10-03', 'crew', 'Driller on 21 days without a rest day', 'done'],
+  ['2026-10-03', '2026-10-10', 'stock', 'PW Casing order 10 days late', 'done'],
+  ['2026-10-05', '2026-10-05', 'contractors', 'Bill CP/26-27/041 claims more than the record', 'done'],
+  ['2026-10-07', '2026-10-08', 'operations', 'CQ-01 drills 30% slower than RIG-003', 'dismissed', 'New crew settling in; reviewed with the contractor'],
+  ['2026-10-11', '2026-10-12', 'billing', 'Client standby on Site B on no invoice', 'done'],
+  ['2026-10-14', '2026-10-15', 'data', '1 shift with metres above the rig\'s best day', 'done'],
+  ['2026-10-17', '2026-10-19', 'maintenance', 'RIG-001 service due at 250 engine hours', 'done'],
+  ['2026-10-20', '2026-10-20', 'contractors', '6 contractor shifts waiting to be checked', 'done'],
+  ['2026-10-21', '2026-10-22', 'stock', 'Water Swivel Spares being ordered while 1 sits at Site C', 'done'],
+  ['2026-10-24', '2026-10-25', 'data', 'RIG-003 night shift not logged', 'done'],
+  ['2026-10-26', '2026-10-27', 'finance', 'Tooling cost on RIG-002 up 18% this week', 'dismissed', 'Very hard ground this week; expected'],
+  ['2026-10-28', '2026-10-29', 'billing', 'Ready-to-invoice holes waiting 5 days', 'done'],
 ]
 const PAST_STATUS: Record<string, FindingStatus> = Object.fromEntries(PAST.map(([found, at, dept, title, status, note], i) => [
   `past:h${i + 1}`,
@@ -1976,14 +1986,14 @@ function initial(): State {
   /* Two days of client standby on Site B that were on no hole, billed on
    * their own invoice and paid: what the standby check finds. */
   const siteB = SEED_PROJECTS.find(p => p.name === SITE_B)
-  const sbRate = versionOn(SEED_CLIENT_RATES.filter(c => c.project === SITE_B), '2026-08-20')?.standbyPerDay ?? 0
-  const standbyDays = ['CQ-01|2026-08-20', 'CP-01|2026-08-23']
+  const sbRate = versionOn(SEED_CLIENT_RATES.filter(c => c.project === SITE_B), '2026-10-07')?.standbyPerDay ?? 0
+  const standbyDays = ['CQ-01|2026-10-07', 'CP-01|2026-10-10']
   const sbLines: InvoiceLine[] = standbyDays.map(k => ({ label: `${k.split('|')[0]} · client standby, no hole · ${k.slice(-2)}/${k.slice(-5, -3)}`, qty: '1 day', rate: money(sbRate), amount: sbRate }))
   const sbSub = sbLines.reduce((s, l) => s + l.amount, 0)
   const standbyInvoice: Invoice = {
-    id: 'inv_seed_sb', number: 'INV-0004', project: SITE_B, client: siteB?.client ?? '', date: '2026-08-28', holeNumbers: [],
-    lines: sbLines, subtotal: sbSub, taxPercent: 18, total: sbSub * 1.18, status: 'paid', dueDate: '2026-09-27',
-    paidDate: '2026-09-09', paidAmount: sbSub * 1.18, standbyDays,
+    id: 'inv_seed_sb', number: 'INV-0004', project: SITE_B, client: siteB?.client ?? '', date: '2026-10-15', holeNumbers: [],
+    lines: sbLines, subtotal: sbSub, taxPercent: 15, total: sbSub * 1.15, status: 'paid', dueDate: '2026-11-14',
+    paidDate: '2026-10-27', paidAmount: sbSub * 1.15, standbyDays,
   }
   const withInvoices = { ...base, invoices: sbRate ? [...demo.invoices, standbyInvoice] : demo.invoices, holeStatus: { ...base.holeStatus, ...demo.holeStatus } }
   return { ...withInvoices, contractorBills: seedBills(withInvoices) }
@@ -2119,7 +2129,7 @@ const CostingContext = createContext<CtxValue | null>(null)
 /* v4: logins, and the fuller drill and maintenance logs, joined the record. An older
  * saved copy has none of them, so it is left behind rather than merged. */
 /* v6: the MVP v2 demo (an inbox history, standby billed, a bill cut to the record). */
-const KEY = 'xplorix_costing_v6'
+const KEY = 'xplorix_costing_v7_sar'
 
 /* One store per browser tab. A layout mounts the provider once; a screen that
  * also wraps itself in <CostingProvider> (Finance, Inventory, Projects do, so
@@ -2479,7 +2489,7 @@ export function fullDate(date: string) {
 export function blankOwnership(rig: string, from: string): RigOwnership {
   return {
     id: uid('own'), rig, effectiveFrom: from,
-    basicPrice: 0, gstPercent: 18, transportation: 0, depreciationRatePct: 20,
+    basicPrice: 0, gstPercent: 15, transportation: 0, depreciationRatePct: 20,
     emiPerMonth: 0, insurancePerYear: 0, otherFixedPerMonth: 0,
     costBasis: 'cash', allocationBasis: 'operatingDay',
     expectedOperatingDays: 25, expectedUnitsPerMonth: 300,
@@ -2524,16 +2534,16 @@ export const derivedStyle: React.CSSProperties = {
 }
 
 export function money(n: number) {
-  return `${n < 0 ? '−' : ''}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
+  return `${n < 0 ? '−' : ''}SAR ${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 }
 export function moneyL(n: number) {
   const a = Math.abs(n)
-  if (a >= 10000000) return `${n < 0 ? '−' : ''}₹${(a / 10000000).toFixed(2)}Cr`
-  if (a >= 100000) return `${n < 0 ? '−' : ''}₹${(a / 100000).toFixed(1)}L`
+  if (a >= 1000000) return `${n < 0 ? '−' : ''}SAR ${(a / 1000000).toFixed(2)}M`
+  if (a >= 100000) return `${n < 0 ? '−' : ''}SAR ${Math.round(a / 1000)}K`
   return money(n)
 }
 export function perUnit(n: number | null) {
-  return n == null ? '—' : `${n < -0.5 ? '−' : ''}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}/m`
+  return n == null ? '—' : `${n < -0.5 ? '−' : ''}SAR ${Math.abs(Math.round(n)).toLocaleString('en-US')}/m`
 }
 export function pct(n: number) { return `${n.toFixed(1)}%` }
 

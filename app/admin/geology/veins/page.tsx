@@ -76,7 +76,7 @@ export default function VeinClasses() {
   return (
     <Page>
       <PageHead question="What veins are in the core, and what kind are they?"
-        answer={<>{data.veins.length.toLocaleString('en-IN')} veins found on the photos of {data.holes.length} holes: {view.veinMetres.toFixed(0)} m of vein in {Math.round(view.metresTotal).toLocaleString('en-IN')} m of core. {top && top.au > view.barrenAu * 2 ? <>Metres with <b>Class {top.c.letter}</b> veins average <b>{top.au.toFixed(2)} g/t Au</b>, against {view.barrenAu.toFixed(2)} g/t in metres with no vein.</> : null}</>}
+        answer={<>{data.veins.length.toLocaleString('en-US')} veins found on the photos of {data.holes.length} holes: {view.veinMetres.toFixed(0)} m of vein in {Math.round(view.metresTotal).toLocaleString('en-US')} m of core. {top && top.au > view.barrenAu * 2 ? <>Metres with <b>Class {top.c.letter}</b> veins average <b>{top.au.toFixed(2)} g/t Au</b>, against {view.barrenAu.toFixed(2)} g/t in metres with no vein.</> : null}</>}
         right={<DemoPhotos />} />
 
       <Grid min={180}>

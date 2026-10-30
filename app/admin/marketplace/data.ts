@@ -220,7 +220,7 @@ export const LISTINGS: Listing[] = [
     title: 'Sandvik DE740 surface core drill', brand: 'Sandvik', model: 'DE740',
     categoryId: 'rigs', subCategoryId: 'surface-core', categoryLabel: 'Surface core drill',
     condition: 'Used', year: 2019, location: 'Hospet, Karnataka', country: 'India',
-    priceType: 'on_request', price: null, priceUSD: 210000, currency: 'INR',
+    priceType: 'on_request', price: null, priceUSD: 210000, currency: 'SAR',
     availability: 'Available now', featured: true,
     headlineSpecs: [{ label: 'Max depth', value: '1,200 m' }, { label: 'Hole size', value: 'NQ / HQ' }, { label: 'Hours', value: '6,400' }],
     specs: [
@@ -244,7 +244,7 @@ export const LISTINGS: Listing[] = [
     title: 'Boart Longyear LF90D track-mounted rig', brand: 'Boart Longyear', model: 'LF90D',
     categoryId: 'rigs', subCategoryId: 'surface-core', categoryLabel: 'Surface core drill',
     condition: 'Refurbished', year: 2016, location: 'Lubumbashi', country: 'DRC',
-    priceType: 'fixed', price: 18500000, priceUSD: 222000, currency: 'INR',
+    priceType: 'fixed', price: 832500, priceUSD: 222000, currency: 'SAR',
     availability: 'Available now', featured: true,
     headlineSpecs: [{ label: 'Max depth', value: '1,500 m' }, { label: 'Hole size', value: 'BQ – PQ' }, { label: 'Hours', value: '11,200' }],
     specs: [
@@ -266,7 +266,7 @@ export const LISTINGS: Listing[] = [
     title: 'Epiroc CM760D DTH blast hole rig', brand: 'Epiroc', model: 'CM760D',
     categoryId: 'rigs', subCategoryId: 'dth', categoryLabel: 'DTH rig',
     condition: 'Used', year: 2021, location: 'Bellary, Karnataka', country: 'India',
-    priceType: 'on_request', price: null, priceUSD: 265000, currency: 'INR',
+    priceType: 'on_request', price: null, priceUSD: 265000, currency: 'SAR',
     availability: 'Available from Oct 2026', featured: false,
     headlineSpecs: [{ label: 'Hole range', value: '105–165 mm' }, { label: 'Max depth', value: '54 m' }, { label: 'Hours', value: '3,900' }],
     specs: [
@@ -279,7 +279,7 @@ export const LISTINGS: Listing[] = [
       { label: 'Operating hours', value: '3,900' },
     ],
     filterValues: { maxDepth: 54, holeSize: '105–165 mm', mounting: 'Tracked', hours: 3900 },
-    description: 'Currently on contract until end of September. Well maintained, service records logged in XPLORIX. Dust collector and rod handling system in good condition.',
+    description: 'Currently on contract until end of November. Well maintained, service records logged in XPLORIX. Dust collector and rod handling system in good condition.',
     partner: P.kalyan, postedDaysAgo: 2, views: 176,
   }),
   L({
@@ -346,7 +346,7 @@ export const LISTINGS: Listing[] = [
     title: '6" DTH hammer bits — QL60 shank, 152 mm', brand: 'Rockmore', model: 'QL60',
     categoryId: 'bits', subCategoryId: 'dth-bit', categoryLabel: 'DTH bit',
     condition: 'New', year: null, location: 'Bengaluru, Karnataka', country: 'India',
-    priceType: 'fixed', price: 34500, priceUSD: 414, currency: 'INR',
+    priceType: 'fixed', price: 1550, priceUSD: 414, currency: 'SAR',
     availability: '40 in stock', featured: false,
     headlineSpecs: [{ label: 'Diameter', value: '152 mm' }, { label: 'Shank', value: 'QL60' }, { label: 'Face', value: 'Concave' }],
     specs: [
@@ -407,7 +407,7 @@ export const LISTINGS: Listing[] = [
     title: 'NQ wireline drill rods — 3 m, heat treated', brand: 'Meridian', model: 'NQ-3000',
     categoryId: 'rods', subCategoryId: 'core-rod', categoryLabel: 'Drill rod',
     condition: 'New', year: null, location: 'Bengaluru, Karnataka', country: 'India',
-    priceType: 'fixed', price: 12800, priceUSD: 154, currency: 'INR',
+    priceType: 'fixed', price: 580, priceUSD: 154, currency: 'SAR',
     availability: '220 in stock', featured: false,
     headlineSpecs: [{ label: 'Size', value: 'NQ' }, { label: 'Length', value: '3.0 m' }, { label: 'Wall', value: '4.85 mm' }],
     specs: [
@@ -505,7 +505,7 @@ export const LISTINGS: Listing[] = [
     title: 'QL60 DTH hammer — high pressure', brand: 'Numa', model: 'QL60',
     categoryId: 'downhole', subCategoryId: 'hammer', categoryLabel: 'DTH hammer',
     condition: 'New', year: null, location: 'Bellary, Karnataka', country: 'India',
-    priceType: 'fixed', price: 285000, priceUSD: 3420, currency: 'INR',
+    priceType: 'fixed', price: 12800, priceUSD: 3420, currency: 'SAR',
     availability: '6 in stock', featured: false,
     headlineSpecs: [{ label: 'Size', value: '6"' }, { label: 'Pressure', value: '10–25 bar' }, { label: 'Shank', value: 'QL60' }],
     specs: [
@@ -525,7 +525,7 @@ export const LISTINGS: Listing[] = [
     title: 'Atlas Copco XAS 186 portable compressor', brand: 'Atlas Copco', model: 'XAS 186',
     categoryId: 'support', subCategoryId: 'compressor', categoryLabel: 'Compressor',
     condition: 'Used', year: 2020, location: 'Hospet, Karnataka', country: 'India',
-    priceType: 'fixed', price: 1450000, priceUSD: 17400, currency: 'INR',
+    priceType: 'fixed', price: 65200, priceUSD: 17400, currency: 'SAR',
     availability: 'Available now', featured: false,
     headlineSpecs: [{ label: 'Free air', value: '10.6 m³/min' }, { label: 'Pressure', value: '7 bar' }, { label: 'Hours', value: '4,100' }],
     specs: [
@@ -584,7 +584,7 @@ export const LISTINGS: Listing[] = [
     title: 'High-yield bentonite — 25 kg bags', brand: 'Meridian', model: 'BEN-HY',
     categoryId: 'consumables', subCategoryId: 'fluids', categoryLabel: 'Drilling fluid',
     condition: 'New', year: null, location: 'Bengaluru, Karnataka', country: 'India',
-    priceType: 'fixed', price: 1250, priceUSD: 15, currency: 'INR',
+    priceType: 'fixed', price: 60, priceUSD: 15, currency: 'SAR',
     availability: '1,400 bags in stock', featured: false,
     headlineSpecs: [{ label: 'Pack', value: '25 kg' }, { label: 'Yield', value: '16 m³/t' }, { label: 'Grade', value: 'API' }],
     specs: [
@@ -622,7 +622,7 @@ export const LISTINGS: Listing[] = [
     title: 'Driller PPE kit — helmet, visor, gloves, hearing', brand: 'Meridian', model: 'PPE-STD',
     categoryId: 'safety', subCategoryId: 'ppe', categoryLabel: 'PPE kit',
     condition: 'New', year: null, location: 'Bengaluru, Karnataka', country: 'India',
-    priceType: 'fixed', price: 4800, priceUSD: 58, currency: 'INR',
+    priceType: 'fixed', price: 220, priceUSD: 58, currency: 'SAR',
     availability: '300 kits in stock', featured: false,
     headlineSpecs: [{ label: 'Standard', value: 'IS 2925' }, { label: 'Items', value: '6 piece' }, { label: 'Sizes', value: 'M – XXL' }],
     specs: [
@@ -641,7 +641,7 @@ export const LISTINGS: Listing[] = [
     title: 'Core drilling rig rental — operated, Karnataka', brand: 'Kalyan', model: 'Rental',
     categoryId: 'services', subCategoryId: 'rig-rental', categoryLabel: 'Rig rental',
     condition: 'New', year: null, location: 'Bellary, Karnataka', country: 'India',
-    priceType: 'rental', price: 185000, priceUSD: 2220, currency: 'INR',
+    priceType: 'rental', price: 8300, priceUSD: 2220, currency: 'SAR',
     availability: 'Two rigs available', featured: true,
     headlineSpecs: [{ label: 'Rate basis', value: 'Per day' }, { label: 'Crew', value: 'Included' }, { label: 'Minimum', value: '30 days' }],
     specs: [
@@ -700,8 +700,8 @@ export const CONDITIONS: Condition[] = ['New', 'Used', 'Refurbished']
 
 export function formatPrice(l: Listing): string {
   if (l.priceType === 'on_request' || l.price === null) return 'Price on request'
-  const symbol = l.currency === 'INR' ? '₹' : '$'
-  const n = l.currency === 'INR' ? l.price.toLocaleString('en-IN') : l.price.toLocaleString('en-US')
+  const symbol = l.currency === 'SAR' ? 'SAR ' : '$'
+  const n = l.price.toLocaleString('en-US')
   return l.priceType === 'rental' ? `${symbol}${n} / day` : `${symbol}${n}`
 }
 

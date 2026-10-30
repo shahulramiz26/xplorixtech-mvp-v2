@@ -55,13 +55,13 @@ export default function Structures() {
   return (
     <Page>
       <PageHead question="Which way do the fractures and veins dip?"
-        answer={<>{all.length.toLocaleString('en-IN')} structures picked on the televiewer in {view.tvHoles.length} holes, each with true dip and dip direction. The tray photos give the angle to the core (alpha) on all {data.holes.length} holes; the televiewer adds which way each plane faces.</>}
+        answer={<>{all.length.toLocaleString('en-US')} structures picked on the televiewer in {view.tvHoles.length} holes, each with true dip and dip direction. The tray photos give the angle to the core (alpha) on all {data.holes.length} holes; the televiewer adds which way each plane faces.</>}
         right={<><DemoPhotos /><SampleBadge>Sample televiewer</SampleBadge><Btn onClick={() => download('xplorix_structures.csv', ['HOLE_ID,DEPTH,TYPE,ALPHA,BETA,DIP,DIP_DIRECTION,SET', ...all.map(s => [s.hole, s.at, s.type, s.alpha, s.beta, s.dip, s.dipDir, s.set + 1].join(','))].join('\n'))}>Download structures (CSV)</Btn></>} />
 
       <Grid min={170}>
         <Tile label="Holes with televiewer" value={`${view.tvHoles.length} of ${data.holes.length}`} note="True dip and dip direction" />
-        <Tile label="Structures picked" value={all.length.toLocaleString('en-IN')} note={`${all.filter(s => s.type === 'Vein').length} veins · ${all.filter(s => s.type === 'Shear').length} shears`} />
-        <Tile label="Fractures on photos" value={data.holes.reduce((s, x) => s + x.flat.breaks.filter(b => b.kind === 'natural').length, 0).toLocaleString('en-IN')} note="Alpha on every hole" />
+        <Tile label="Structures picked" value={all.length.toLocaleString('en-US')} note={`${all.filter(s => s.type === 'Vein').length} veins · ${all.filter(s => s.type === 'Shear').length} shears`} />
+        <Tile label="Fractures on photos" value={data.holes.reduce((s, x) => s + x.flat.breaks.filter(b => b.kind === 'natural').length, 0).toLocaleString('en-US')} note="Alpha on every hole" />
       </Grid>
 
       <Card title={`${sel}: poles to planes`} subtitle={`Lower hemisphere, equal area. Hole drilled toward ${o.az}° at ${Math.abs(o.dip)}°. Each dot is the pole of one plane; clusters are joint sets.`}

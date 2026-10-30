@@ -43,7 +43,7 @@ function liveCost(p: PulseRig, t: number, m?: RigToday): Live {
   return { cpm: metres >= 1 ? costSoFar / metres : null, rate: m.rate, costSoFar, metres, how: 'time' }
 }
 
-const fmt = (m: Metric, v: number | null) => v == null ? '—' : v.toLocaleString('en-IN', { maximumFractionDigits: m.dp, minimumFractionDigits: m.dp })
+const fmt = (m: Metric, v: number | null) => v == null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: m.dp, minimumFractionDigits: m.dp })
 
 export default function PulsePage() {
   const o = useAdminOverview()
@@ -109,7 +109,7 @@ export default function PulsePage() {
 
       <Grid min={180}>
         <Tile label="Rigs sending" value={`${sending}/${fleet.length}`} note={fleet.length - sending ? `${fleet.length - sending} with no signal` : 'All on line'} tone={fleet.length - sending ? 'warn' : 'good'} />
-        <Tile label="Metres by sensor today" value={`${metresNow.toLocaleString('en-IN', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} m`} note="Counted by the depth encoders" />
+        <Tile label="Metres by sensor today" value={`${metresNow.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} m`} note="Counted by the depth encoders" />
         <Tile label="Fleet penetration now" value={fleetRop.length ? `${(fleetRop.reduce((s, v) => s + v, 0) / fleetRop.length).toFixed(1)} m/h` : '—'} note={`Average of ${fleetRop.length} drilling ${fleetRop.length === 1 ? 'rig' : 'rigs'}`} />
         <Tile label="Cost a metre now" value={fleetCpm != null ? perUnit(fleetCpm) : '—'} note={`Fleet, live: today's cost so far over sensor metres`} />
         <Tile label="Alarms" value={al.length} note={act ? `${act} to act on now` : al.length ? 'To watch, none urgent' : 'None'} tone={act ? 'bad' : al.length ? 'warn' : 'good'} />

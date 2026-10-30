@@ -360,7 +360,7 @@ function QuoteModal({ listing, onClose }: { listing: Listing; onClose: () => voi
                   Sent with your request
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
-                  {[['Company', 'Apex Drilling Solutions'], ['Country', 'India'], ['Active rigs', '14'], ['Contact', 'Admin User']].map(([k, v]) => (
+                  {[['Company', 'Apex Drilling Solutions'], ['Country', 'Saudi Arabia'], ['Active rigs', '14'], ['Contact', 'Admin User']].map(([k, v]) => (
                     <div key={k}>
                       <div style={{ fontSize: 10, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{k}</div>
                       <div style={{ fontSize: 13, color: C.text, fontWeight: 600, marginTop: 2 }}>{v}</div>

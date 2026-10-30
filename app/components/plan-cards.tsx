@@ -15,7 +15,7 @@ import { T, Card, Legend, Tip, Meter, Empty, Status, axisTick, gridStroke, displ
  *                  against what a metre should cost
  * ========================================================================== */
 
-const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const short = (d: string) => `${Number(d.slice(8))} ${MON[Number(d.slice(5, 7)) - 1]}`
 const dayN = (d: string) => Math.round(new Date(`${d}T00:00:00Z`).getTime() / 86400000)

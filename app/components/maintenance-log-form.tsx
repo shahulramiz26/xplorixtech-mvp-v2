@@ -234,7 +234,7 @@ export function MaintenanceLogForm({ variant, scopes, existing, lockSupervisor, 
           {!contractor && (
             <>
               <div style={grid(240)}>
-                <L label="Service Cost (₹)" req hint="Enter service/repair cost only. Do not include any parts cost.">
+                <L label="Service Cost (SAR)" req hint="Enter service/repair cost only. Do not include any parts cost.">
                   <input type="number" min={0} value={f.cost} onChange={e => u({ cost: e.target.value })} placeholder="0" style={numIn} />
                 </L>
                 <div />

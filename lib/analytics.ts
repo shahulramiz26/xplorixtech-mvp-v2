@@ -32,9 +32,9 @@ export interface Insight {
 
 const sum = <T,>(xs: T[], f: (x: T) => number) => xs.reduce((s, x) => s + f(x), 0)
 const r1 = (v: number) => Math.round(v * 10) / 10
-const f1 = (v: number) => r1(v).toLocaleString('en-IN')
+const f1 = (v: number) => r1(v).toLocaleString('en-US')
 const ground = (l: { formationType: string }): Formation => groundOfLog(l.formationType)
-const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-IN')} ${n === 1 ? one : many}`
+const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`
 
 /* The first day and the last day the period covers. */
 export function range(period: Period, today: string = TODAY): { from: string; to: string; label: string } {
@@ -427,7 +427,7 @@ export function dashboardInsights(x: DashboardInsightInput): Insight[] {
   })
   if (best && worst && best !== worst && best.marginPerMetre > 0) out.push({
     id: 'best', tone: 'good', title: `${best.name} leaves the most: ${money(best.marginPerMetre)} a metre`,
-    detail: `${money(best.revenue - best.cost)} on ${Math.round(best.metres).toLocaleString('en-IN')} m, against ${money(worst.marginPerMetre)} a metre for ${worst.name}.`,
+    detail: `${money(best.revenue - best.cost)} on ${Math.round(best.metres).toLocaleString('en-US')} m, against ${money(worst.marginPerMetre)} a metre for ${worst.name}.`,
     href: '/admin/intelligence/contractors',
   })
   rigs.filter(r => r.kind === 'own' && r.days >= 5 && r.ratePerMetre > 0).forEach(r => {

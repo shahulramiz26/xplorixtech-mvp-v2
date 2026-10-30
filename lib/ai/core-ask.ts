@@ -30,7 +30,7 @@ export interface CoreAiCtx {
 
 const has = (q: string, ...w: (string | RegExp)[]) => w.some(x => typeof x === 'string' ? q.includes(x) : x.test(q))
 const pct = (v: number) => `${Math.round(v)}%`
-const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 const list = (xs: string[]) => xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
 const S = {
   today: { label: 'Geology today', href: '/admin/geology' }, holes: { label: 'Hole logs', href: '/admin/geology/holes' }, review: { label: 'Review trays', href: '/admin/geology/review' },

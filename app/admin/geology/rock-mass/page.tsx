@@ -137,7 +137,7 @@ export default function RockMass() {
               <span aria-hidden style={{ width: 14, height: 14, borderRadius: 3, background: RAMP[k.i], marginTop: 1 }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>{k.name} <span style={{ fontWeight: 400, color: T.faint }}>{k.range}</span></div>
-                <div style={{ ...num, fontSize: 12, color: T.muted }}>{Math.round(allMetres[k.i]).toLocaleString('en-IN')} m · {totalM ? Math.round((allMetres[k.i] / totalM) * 100) : 0}%</div>
+                <div style={{ ...num, fontSize: 12, color: T.muted }}>{Math.round(allMetres[k.i]).toLocaleString('en-US')} m · {totalM ? Math.round((allMetres[k.i] / totalM) * 100) : 0}%</div>
               </div>
             </div>
           ))}

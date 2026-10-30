@@ -181,8 +181,8 @@ export interface Alarm {
   title: string; why: string; todo: string; href: string; action: string
   key?: MetricKey
 }
-const r1 = (n: number) => (Math.round(n * 10) / 10).toLocaleString('en-IN')
-const r0 = (n: number) => Math.round(n).toLocaleString('en-IN')
+const r1 = (n: number) => (Math.round(n * 10) / 10).toLocaleString('en-US')
+const r0 = (n: number) => Math.round(n).toLocaleString('en-US')
 export const DIESEL_PER_LITRE = 95
 const IDLE_LITRES_HOUR = 9
 
@@ -222,7 +222,7 @@ export function alarms(fleet: PulseRig[], t: number): Alarm[] {
       out.push({
         id: `${p.rig}-idle`, rig: p.rig, level: 'watch', since: ONSET - 32 * 60, key: 'engine',
         title: `Engine idling on standby for ${mins} minutes`,
-        why: `The rig is on standby with no rotation, but the engine has been running for **${mins} minutes**. At about ${IDLE_LITRES_HOUR} L an hour idling that is **${r0(litres)} L of diesel, about ₹${r0(litres * DIESEL_PER_LITRE)}**, for no metres.`,
+        why: `The rig is on standby with no rotation, but the engine has been running for **${mins} minutes**. At about ${IDLE_LITRES_HOUR} L an hour idling that is **${r0(litres)} L of diesel, about SAR ${r0(litres * DIESEL_PER_LITRE)}**, for no metres.`,
         todo: 'Ask the crew to switch off while they wait, unless they need it for lights or heating.',
         href: '/admin/rigs', action: 'Open rigs',
       })

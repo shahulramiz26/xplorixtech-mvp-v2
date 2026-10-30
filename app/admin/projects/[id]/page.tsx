@@ -47,7 +47,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'overview', label: 'Overview' }, { value: 'holes', label: 'Holes' }, { value: 'map', label: 'Map' }, { value: 'rates', label: 'Contract rates' },
   { value: 'team', label: 'Rigs and crew' }, { value: 'changes', label: 'Changes' },
 ]
-const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 const link: React.CSSProperties = { background: 'none', border: 'none', padding: 0, color: T.orange, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
 
 // ── change the rates ──────────────────────────────────────────────────────
@@ -532,7 +532,7 @@ function DetailsModal({ p, onClose, onSave }: { p: ProjectRecord; onClose: () =>
   const num = (v: string) => parseFloat(v) || undefined
   const metres = num(f.plannedMetres), target = num(f.dailyTarget), total = num(f.budgetTotal), perM = num(f.budgetPerMetre)
   const end = f.plannedEnd || undefined
-  const rupees = (v?: number) => v ? `₹${Math.round(v).toLocaleString('en-IN')}` : 'none'
+  const rupees = (v?: number) => v ? `SAR ${Math.round(v).toLocaleString('en-US')}` : 'none'
   /* What the client may read in the change list, and what stays yours: the
    * daily target and the budget are never in a line the client sees. */
   const shared = [
@@ -576,10 +576,10 @@ function DetailsModal({ p, onClose, onSave }: { p: ProjectRecord; onClose: () =>
         <div style={{ padding: 14, borderRadius: 10, border: `1px solid ${T.border}`, display: 'grid', gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Budget <span style={{ fontWeight: 400, color: T.faint }}>· your own figures, never shown to the client, a contractor or a supervisor</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="Total budget, ₹" hint={total ? rupees(total) : 'What the whole project may cost.'}>
+            <Field label="Total budget, SAR" hint={total ? rupees(total) : 'What the whole project may cost.'}>
               <input type="number" min={0} value={f.budgetTotal} onChange={e => setF({ ...f, budgetTotal: e.target.value })} placeholder="e.g. 12000000" style={{ ...inputStyle, textAlign: 'right' }} />
             </Field>
-            <Field label="Budget per metre, ₹" hint={metres && total ? `${rupees(total / metres)} if the total is spread over ${metres.toLocaleString('en-IN')} m.` : 'What a metre should cost.'}>
+            <Field label="Budget per metre, SAR" hint={metres && total ? `${rupees(total / metres)} if the total is spread over ${metres.toLocaleString('en-US')} m.` : 'What a metre should cost.'}>
               <input type="number" min={0} value={f.budgetPerMetre} onChange={e => setF({ ...f, budgetPerMetre: e.target.value })} placeholder="e.g. 5000" style={{ ...inputStyle, textAlign: 'right' }} />
             </Field>
           </div>

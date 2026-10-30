@@ -23,7 +23,7 @@ import { ProjectStatusTag, ChangeList, HolesTable, AddHolesModal, Fact } from '.
  * Nothing on this screen is a cost of the contractor's. */
 
 type Tab = 'rates' | 'holes' | 'team' | 'changes'
-const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 
 export default function ClientProjectPage() {
   const { id } = useParams<{ id: string }>()

@@ -209,7 +209,7 @@ export function GroundDonut({ rows }: { rows: { name: string; month: number; tod
           <div key={r.name} style={{ display: 'grid', gridTemplateColumns: '10px minmax(0, 1fr) auto', gap: 8, alignItems: 'baseline', fontSize: 13 }}>
             <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: GROUND[r.name] ?? 'var(--x-blue)' }} />
             <span style={{ color: T.text, fontWeight: 600 }}>{r.name} <span style={{ color: T.faint, fontWeight: 400 }}>{total ? Math.round((r.month / total) * 100) : 0}%</span></span>
-            <span style={{ ...num, fontSize: 12.5, color: T.text, textAlign: 'right' }}>{Math.round(r.month).toLocaleString('en-IN')} m<span style={{ color: T.faint }}> · {Math.round(r.today)} today</span></span>
+            <span style={{ ...num, fontSize: 12.5, color: T.text, textAlign: 'right' }}>{Math.round(r.month).toLocaleString('en-US')} m<span style={{ color: T.faint }}> · {Math.round(r.today)} today</span></span>
           </div>
         ))}
       </div>

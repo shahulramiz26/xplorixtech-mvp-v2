@@ -25,7 +25,7 @@ import { IntelTabs } from '../shared'
 const confTone: Record<Confidence, Tone> = { high: 'good', medium: 'info', low: 'warn', near: 'warn', none: 'bad' }
 const confLabel: Record<Confidence, string> = { high: 'Strong record', medium: 'Some record', low: 'Thin record', near: 'Nearby depth', none: 'No record' }
 const bandLabel = (k: string) => DEPTH_BANDS.find(b => b.key === k)?.label ?? k
-const n0 = (n: number) => Math.round(n).toLocaleString('en-IN')
+const n0 = (n: number) => Math.round(n).toLocaleString('en-US')
 
 export default function PriceTender() {
   const { state } = useCosting()

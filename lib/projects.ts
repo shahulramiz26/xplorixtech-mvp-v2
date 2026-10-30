@@ -12,7 +12,7 @@ import { TODAY } from './inventory-store'
  *
  * The contractor's Projects screen and the client's Projects screen are two
  * views of the same record. These selectors are shared by both, so "12 holes,
- * 4 planned" or "HQ hard rock ₹11,200" cannot differ between them.
+ * 4 planned" or "HQ hard rock SAR 11,200" cannot differ between them.
  *
  * Nothing here reads a cost. A project, as shared, is the contract: where,
  * for whom, at what rates, which holes, and who is on site.

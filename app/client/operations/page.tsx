@@ -17,7 +17,7 @@ import { T, tint, Page, PageHead, Card, Tile, Grid, Split, Seg, Btn, Status, Emp
  * whose stop it was, because that is what decides whether it is charged.
  * ========================================================================== */
 
-const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const short = (d: string) => `${Number(d.slice(8))} ${MON[Number(d.slice(5, 7)) - 1]}`
 

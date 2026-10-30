@@ -18,7 +18,7 @@ import { T, tint, Page, PageHead, Card, Tile, Grid, Status, Empty, DepthBar, row
  * an incident, an invoice, a change to the project.
  * ========================================================================== */
 
-const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')
 interface Item { at: string; tone: Tone; title: string; detail?: string; href?: string; project: string }
 
 function stopWords(s: ClientShift) {

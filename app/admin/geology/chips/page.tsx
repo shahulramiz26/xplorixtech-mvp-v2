@@ -108,12 +108,12 @@ export default function Chips() {
   return (
     <Page>
       <PageHead question="What do the RC chips say?"
-        answer={<>{ms.length} metres of RC chips on {RC_HOLES.length} holes, {stats.grains.toLocaleString('en-IN')} chips measured: colour, size, shape and how ragged each one is. They fall into {stats.clusters.length} groups that look alike; name them once and every RC log uses your names.</>}
+        answer={<>{ms.length} metres of RC chips on {RC_HOLES.length} holes, {stats.grains.toLocaleString('en-US')} chips measured: colour, size, shape and how ragged each one is. They fall into {stats.clusters.length} groups that look alike; name them once and every RC log uses your names.</>}
         right={<SampleBadge>Sample RC holes</SampleBadge>} />
 
       <Grid min={170}>
         <Tile label="RC metres read" value={ms.length} note={`${RC_HOLES.length} holes · ${Math.ceil(ms.length / 20)} chip trays`} />
-        <Tile label="Chips measured" value={stats.grains.toLocaleString('en-IN')} note="Area, perimeter, eccentricity, colour" />
+        <Tile label="Chips measured" value={stats.grains.toLocaleString('en-US')} note="Area, perimeter, eccentricity, colour" />
         <Tile label="Chip groups" value={stats.clusters.length} note={`${Object.keys(edits.chipNames).length} named by a geologist`} />
         <Tile label="Groups that match the log" value={`${stats.clusters.filter(c => c.lithShare >= 0.75).length} of ${stats.clusters.length}`} note="75% or more of a group is one logged rock" />
       </Grid>

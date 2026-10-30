@@ -223,7 +223,7 @@ function AddPhotos() {
             {[
               ['Archive already read', `${index?.holes.reduce((s2, x) => s2 + x.trays, 0) ?? 0} tray photos`],
               ['Holes logged from it', `${index?.holes.length ?? 0}`],
-              ['Metres', `${Math.round(index?.holes.reduce((s2, x) => s2 + x.photographedTo, 0) ?? 0).toLocaleString('en-IN')} m`],
+              ['Metres', `${Math.round(index?.holes.reduce((s2, x) => s2 + x.photographedTo, 0) ?? 0).toLocaleString('en-US')} m`],
               ['Source', 'National Virtual Core Library'],
               ['Last run', (index?.generatedAt ?? '').replace('T', ' ')],
             ].map(([a, b]) => <div key={a} style={{ padding: '10px 12px', borderRadius: 10, border: `1px solid ${T.border}` }}><div style={{ fontSize: 11.5, color: T.faint }}>{a}</div><div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginTop: 3 }}>{b}</div></div>)}

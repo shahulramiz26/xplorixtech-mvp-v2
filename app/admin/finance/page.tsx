@@ -25,7 +25,7 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct
 const monthWord = (m: string) => `${MON[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`
 const day = (d?: string) => d ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}` : '—'
 const ageDays = (d?: string) => d ? Math.max(0, Math.round((new Date(TODAY).getTime() - new Date(d).getTime()) / 86400000)) : 0
-const n0 = (n: number) => Math.round(n).toLocaleString('en-IN')
+const n0 = (n: number) => Math.round(n).toLocaleString('en-US')
 
 export default function FinanceRoute() {
   return <Suspense fallback={null}><Finance /></Suspense>

@@ -11,9 +11,9 @@ import { useCosting, loginOfContractor, ADMIN_NAME } from '../../../lib/costing-
  * is stamped with this name; with real logins it becomes the user's own. */
 export const me = () => ADMIN_NAME
 
-export const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
-export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN', { maximumFractionDigits: 1 })
-export const rs = (v: number) => `₹${n0(v)}`
+export const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
+export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US', { maximumFractionDigits: 1 })
+export const rs = (v: number) => `SAR ${n0(v)}`
 export const pc = (v: number) => `${v.toFixed(1)}%`
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

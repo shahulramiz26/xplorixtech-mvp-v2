@@ -305,9 +305,9 @@ export interface RigSpec {
 }
 
 export const SEED_RIGS: RigSpec[] = [
-  { id: 'RIG-001', name: 'RIG-001', method: 'Diamond Core', maxDepth: 600, sizes: ['NQ', 'HQ'], fuelLitresPerHour: 10, historicalRopFactor: 1.04, maintenancePerDay: 3200, status: 'Assigned', locationKm: 240 },
-  { id: 'RIG-002', name: 'RIG-002', method: 'Diamond Core', maxDepth: 450, sizes: ['NQ', 'HQ'], fuelLitresPerHour: 9.2, historicalRopFactor: 0.96, maintenancePerDay: 2900, status: 'Available', locationKm: 90 },
-  { id: 'RIG-003', name: 'RIG-003', method: 'Diamond Core', maxDepth: 800, sizes: ['NQ', 'HQ', 'PQ'], fuelLitresPerHour: 11.5, historicalRopFactor: 1.00, maintenancePerDay: 3600, status: 'Under Maintenance', availableFrom: '2026-10-05', locationKm: 410 },
+  { id: 'RIG-001', name: 'RIG-001', method: 'Diamond Core', maxDepth: 600, sizes: ['NQ', 'HQ'], fuelLitresPerHour: 10, historicalRopFactor: 1.04, maintenancePerDay: 280, status: 'Assigned', locationKm: 240 },
+  { id: 'RIG-002', name: 'RIG-002', method: 'Diamond Core', maxDepth: 450, sizes: ['NQ', 'HQ'], fuelLitresPerHour: 9.2, historicalRopFactor: 0.96, maintenancePerDay: 250, status: 'Available', locationKm: 90 },
+  { id: 'RIG-003', name: 'RIG-003', method: 'Diamond Core', maxDepth: 800, sizes: ['NQ', 'HQ', 'PQ'], fuelLitresPerHour: 11.5, historicalRopFactor: 1.00, maintenancePerDay: 3600, status: 'Under Maintenance', availableFrom: '2026-11-22', locationKm: 410 },
 ]
 
 export const RIG_WEIGHTS = {
@@ -386,13 +386,13 @@ export interface CrewRole {
 }
 
 export const SEED_CREW: CrewRole[] = [
-  { id: 'c1', role: 'Driller',           perDay: 1400, perRig: 2, projectWide: 0, accommodation: 300 },
-  { id: 'c2', role: 'Assistant Driller', perDay: 950,  perRig: 2, projectWide: 0, accommodation: 250 },
-  { id: 'c3', role: 'Helper',            perDay: 650,  perRig: 4, projectWide: 0, accommodation: 200 },
-  { id: 'c4', role: 'Supervisor',        perDay: 2200, perRig: 0, projectWide: 1, accommodation: 400 },
-  { id: 'c5', role: 'Mechanic',          perDay: 1500, perRig: 0, projectWide: 1, accommodation: 300 },
-  { id: 'c6', role: 'Geologist',         perDay: 2400, perRig: 0, projectWide: 1, accommodation: 400 },
-  { id: 'c7', role: 'HSE Officer',       perDay: 1600, perRig: 0, projectWide: 1, accommodation: 300 },
+  { id: 'c1', role: 'Driller',           perDay: 450, perRig: 2, projectWide: 0, accommodation: 120 },
+  { id: 'c2', role: 'Assistant Driller', perDay: 300,  perRig: 2, projectWide: 0, accommodation: 100 },
+  { id: 'c3', role: 'Helper',            perDay: 180,  perRig: 4, projectWide: 0, accommodation: 90 },
+  { id: 'c4', role: 'Supervisor',        perDay: 650, perRig: 0, projectWide: 1, accommodation: 150 },
+  { id: 'c5', role: 'Mechanic',          perDay: 400, perRig: 0, projectWide: 1, accommodation: 120 },
+  { id: 'c6', role: 'Geologist',         perDay: 750, perRig: 0, projectWide: 1, accommodation: 150 },
+  { id: 'c7', role: 'HSE Officer',       perDay: 450, perRig: 0, projectWide: 1, accommodation: 120 },
 ]
 
 export interface CrewLine { role: string; heads: number; perDay: number; accommodation: number; total: number }
@@ -480,9 +480,9 @@ export interface UnitPrices {
 }
 
 export const DEFAULT_PRICES: UnitPrices = {
-  fuelPerLitre: 104, waterPerMetre: 480, additivesPerMetre: 152,
-  coreBoxPerMetre: 150, mobPerRig: 175000, demobPerRig: 140000,
-  sitePerDay: 4500, overheadPct: 8,
+  fuelPerLitre: 1.7, waterPerMetre: 6, additivesPerMetre: 11,
+  coreBoxPerMetre: 12, mobPerRig: 85000, demobPerRig: 65000,
+  sitePerDay: 600, overheadPct: 8,
 }
 
 export interface CostLine { label: string; layer: 'operating' | 'ownership' | 'indirect'; amount: number; note?: string }
@@ -582,15 +582,15 @@ export interface RiskItem {
 }
 
 export const SEED_RISKS: RiskItem[] = [
-  { id: 'k1', category: 'Geology', label: 'Formation split is an assumption', detail: 'No client geological report, so the rock mix is the estimator’s own. A 10% swing toward harder ground moves cost per metre more than any other single variable.', weight: 14, costPerMetre: 90, active: false },
-  { id: 'k2', category: 'Geology', label: 'Broken ground expected', detail: 'Fractured or broken formations raise downtime, shorten bit life and reduce recovery.', weight: 10, costPerMetre: 60, active: false },
-  { id: 'k3', category: 'Equipment', label: 'No rig free at project start', detail: 'The recommended rig is assigned or under maintenance, so the start date depends on something outside this tender.', weight: 18, costPerMetre: 70, active: false },
-  { id: 'k4', category: 'Schedule', label: 'Deadline cannot be met at this fleet size', detail: 'Planned duration exceeds the tender window. Either add a rig or accept the penalty exposure.', weight: 20, costPerMetre: 110, active: false },
-  { id: 'k5', category: 'Logistics', label: 'Remote site', detail: 'Long haul for crew, fuel, water and parts. Every shortage costs a day rather than an hour.', weight: 8, costPerMetre: 45, active: false },
-  { id: 'k6', category: 'Logistics', label: 'Water not available on site', detail: 'Tankering water is both a standing cost and a stoppage risk.', weight: 10, costPerMetre: 55, active: false },
-  { id: 'k7', category: 'Commercial', label: 'High retention', detail: 'A large share of the contract is held back until completion.', weight: 6, costPerMetre: 25, active: false },
-  { id: 'k8', category: 'Financial', label: 'Long payment period', detail: 'Working capital is carried for months before the first payment lands.', weight: 7, costPerMetre: 30, active: false },
-  { id: 'k9', category: 'Commercial', label: 'Delay penalty in the contract', detail: 'Late completion is charged, so schedule risk becomes money risk.', weight: 9, costPerMetre: 40, active: false },
+  { id: 'k1', category: 'Geology', label: 'Formation split is an assumption', detail: 'No client geological report, so the rock mix is the estimator’s own. A 10% swing toward harder ground moves cost per metre more than any other single variable.', weight: 14, costPerMetre: 8, active: false },
+  { id: 'k2', category: 'Geology', label: 'Broken ground expected', detail: 'Fractured or broken formations raise downtime, shorten bit life and reduce recovery.', weight: 10, costPerMetre: 5, active: false },
+  { id: 'k3', category: 'Equipment', label: 'No rig free at project start', detail: 'The recommended rig is assigned or under maintenance, so the start date depends on something outside this tender.', weight: 18, costPerMetre: 6, active: false },
+  { id: 'k4', category: 'Schedule', label: 'Deadline cannot be met at this fleet size', detail: 'Planned duration exceeds the tender window. Either add a rig or accept the penalty exposure.', weight: 20, costPerMetre: 9, active: false },
+  { id: 'k5', category: 'Logistics', label: 'Remote site', detail: 'Long haul for crew, fuel, water and parts. Every shortage costs a day rather than an hour.', weight: 8, costPerMetre: 4, active: false },
+  { id: 'k6', category: 'Logistics', label: 'Water not available on site', detail: 'Tankering water is both a standing cost and a stoppage risk.', weight: 10, costPerMetre: 5, active: false },
+  { id: 'k7', category: 'Commercial', label: 'High retention', detail: 'A large share of the contract is held back until completion.', weight: 6, costPerMetre: 2, active: false },
+  { id: 'k8', category: 'Financial', label: 'Long payment period', detail: 'Working capital is carried for months before the first payment lands.', weight: 7, costPerMetre: 2, active: false },
+  { id: 'k9', category: 'Commercial', label: 'Delay penalty in the contract', detail: 'Late completion is charged, so schedule risk becomes money risk.', weight: 9, costPerMetre: 3, active: false },
 ]
 
 export interface RiskResult {
@@ -831,7 +831,7 @@ export function blankBid(n: number): Bid {
   return {
     id: uid('bid'), number: `BID-2026-${String(n).padStart(3, '0')}`,
     name: '', client: '', state: '', district: '', siteName: '',
-    status: 'draft', issueDate: '2026-09-13', deadline: '2026-10-15', expectedStart: '2026-11-01',
+    status: 'draft', issueDate: '2026-10-31', deadline: '2026-12-02', expectedStart: '2026-12-19',
     scope: {
       method: 'Diamond Core', holeSize: 'HQ', totalMetres: 5000, holeCount: 20,
       avgDepth: 250, maxDepth: 320, inclinationDeg: 90,
@@ -843,7 +843,7 @@ export function blankBid(n: number): Bid {
     prices: { ...DEFAULT_PRICES }, ropSettings: { ...DEFAULT_ROP_SETTINGS },
     risks: SEED_RISKS.map(r => ({ ...r })),
     pricingMethod: 'margin', targetMarginPct: 20, markupPct: 18, manualRate: 0,
-    remoteSite: false, waterOnSite: true, createdAt: '2026-09-13',
+    remoteSite: false, waterOnSite: true, createdAt: '2026-10-31',
   }
 }
 
@@ -851,9 +851,9 @@ export const SEED_BIDS: Bid[] = [
   {
     ...blankBid(1),
     id: 'bid_sandur', number: 'BID-2026-001',
-    name: 'Sandur Iron Ore Exploration', client: 'ABC Mining Corporation',
-    state: 'Karnataka', district: 'Ballari', siteName: 'Sandur Block C',
-    status: 'pricing', issueDate: '2026-09-01', deadline: '2026-10-30', expectedStart: '2026-11-15',
+    name: 'Shield Gold Exploration', client: 'ABC Mining Company',
+    state: 'Al Madinah', district: 'Mahd adh Dhahab', siteName: 'Block C',
+    status: 'pricing', issueDate: '2026-10-19', deadline: '2026-12-17', expectedStart: '2027-01-02',
     scope: {
       method: 'Diamond Core', holeSize: 'HQ', totalMetres: 12500, holeCount: 42,
       avgDepth: 298, maxDepth: 420, inclinationDeg: 70,
@@ -872,9 +872,9 @@ export const SEED_BIDS: Bid[] = [
   {
     ...blankBid(2),
     id: 'bid_raj', number: 'BID-2026-002',
-    name: 'Rajasthan Base Metal RC Programme', client: 'XYZ Minerals Ltd',
-    state: 'Rajasthan', district: 'Bhilwara', siteName: 'Pur Banera Belt',
-    status: 'draft', issueDate: '2026-09-10', deadline: '2026-11-12', expectedStart: '2026-12-01',
+    name: 'Najran Base Metal Programme', client: 'XYZ Minerals Co.',
+    state: 'Najran', district: 'Al Masane', siteName: 'North Belt',
+    status: 'draft', issueDate: '2026-10-28', deadline: '2026-12-30', expectedStart: '2027-01-18',
     scope: {
       method: 'Diamond Core', holeSize: 'NQ', totalMetres: 8200, holeCount: 34,
       avgDepth: 241, maxDepth: 300, inclinationDeg: 90,
@@ -895,7 +895,7 @@ export const SEED_BIDS: Bid[] = [
 
 interface State { bids: Bid[] }
 
-const KEY = 'xplorix_bids_v1'
+const KEY = 'xplorix_bids_v2_sar'
 
 interface Ctx {
   state: State
@@ -952,15 +952,15 @@ export function useBids() {
 /* ── Formatting ────────────────────────────────────────────────────────── */
 
 export function money(n: number) {
-  return `${n < 0 ? '−' : ''}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
+  return `${n < 0 ? '−' : ''}SAR ${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 }
 export function moneyL(n: number) {
   const a = Math.abs(n)
-  if (a >= 10000000) return `${n < 0 ? '−' : ''}₹${(a / 10000000).toFixed(2)}Cr`
-  if (a >= 100000) return `${n < 0 ? '−' : ''}₹${(a / 100000).toFixed(1)}L`
+  if (a >= 1000000) return `${n < 0 ? '−' : ''}SAR ${(a / 1000000).toFixed(2)}M`
+  if (a >= 100000) return `${n < 0 ? '−' : ''}SAR ${Math.round(a / 1000)}K`
   return money(n)
 }
-export function perMetre(n: number) { return `₹${Math.round(n).toLocaleString('en-IN')}/m` }
+export function perMetre(n: number) { return `SAR ${Math.round(n).toLocaleString('en-US')}/m` }
 export function pct(n: number) { return `${n.toFixed(1)}%` }
 export function signed(n: number) { return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%` }
 

@@ -35,8 +35,8 @@ export interface Source { label: string; href: string }
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const dw = (d?: string) => d ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}` : ''
-export const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
-export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+export const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
+export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')
 export const pct = (v: number) => `${Math.round(v)}%`
 export const plural = (n: number, one: string, many = `${one}s`) => `${n0(n)} ${n === 1 ? one : many}`
 export const list = (xs: string[]) => xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`

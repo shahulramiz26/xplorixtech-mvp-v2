@@ -73,7 +73,7 @@ export interface ValueReport {
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const day = (d?: string) => d ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}` : ''
-const money = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`
+const money = (n: number) => `SAR ${Math.round(n).toLocaleString('en-US')}`
 
 /* What one of the company's own rigs costs on a day it does not drill:
  * crew, ownership and the rest of the day, from the record. */

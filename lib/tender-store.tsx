@@ -6,7 +6,7 @@ import { IS_DEMO } from './company'
 
 /* The tenders, kept in this browser like the rest of the demo. A real
  * company starts with none. */
-const KEY = 'xplorix_tenders_v1'
+const KEY = 'xplorix_tenders_v2_sar'
 
 interface Ctx {
   tenders: Tender[]

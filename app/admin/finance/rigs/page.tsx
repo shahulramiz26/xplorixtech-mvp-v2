@@ -221,7 +221,7 @@ function SideItem({ on, onClick, label }: { on: boolean; onClick: () => void; la
 /* RATES HISTORY — a list of changes, not of states.
  *
  * Each row is diffed against the previous entry of the same kind, so it reads
- * "₹12,650 → ₹14,100" rather than making you compare two rows by eye. There is
+ * "SAR 12,650 → SAR 14,100" rather than making you compare two rows by eye. There is
  * no delete: forward-only dates exist so nothing already costed can be
  * rewritten, and a delete button would walk straight through that. */
 function RatesHistoryModal({ project, rig, onClose }: { project: string; rig: string; onClose: () => void }) {
@@ -250,14 +250,14 @@ function RatesHistoryModal({ project, rig, onClose }: { project: string; rig: st
   ops.forEach((o, i) => {
     const prev = ops[i + 1]
     const changed: string[] = []
-    if (!prev) changed.push(`First set — fuel ₹${o.fuelPricePerLitre}/L, labour ${money(o.labourRate)}`)
+    if (!prev) changed.push(`First set — fuel SAR ${o.fuelPricePerLitre}/L, labour ${money(o.labourRate)}`)
     else {
-      if (prev.fuelPricePerLitre !== o.fuelPricePerLitre) changed.push(`Fuel ₹${prev.fuelPricePerLitre} → ₹${o.fuelPricePerLitre}/L${delta(prev.fuelPricePerLitre, o.fuelPricePerLitre)}`)
+      if (prev.fuelPricePerLitre !== o.fuelPricePerLitre) changed.push(`Fuel SAR ${prev.fuelPricePerLitre} → SAR ${o.fuelPricePerLitre}/L${delta(prev.fuelPricePerLitre, o.fuelPricePerLitre)}`)
       if (prev.labourRate !== o.labourRate) changed.push(`Labour ${money(prev.labourRate)} → ${money(o.labourRate)}${delta(prev.labourRate, o.labourRate)}`)
       if (prev.lodgingRate !== o.lodgingRate) changed.push(`Lodging ${money(prev.lodgingRate)} → ${money(o.lodgingRate)}`)
       if (prev.transportRate !== o.transportRate) changed.push(`Transport ${money(prev.transportRate)} → ${money(o.transportRate)}`)
-      if (prev.waterPricePerLitre !== o.waterPricePerLitre) changed.push(`Water ₹${prev.waterPricePerLitre} → ₹${o.waterPricePerLitre}/L`)
-      if (prev.additivePricePerKg !== o.additivePricePerKg) changed.push(`Additives ₹${prev.additivePricePerKg} → ₹${o.additivePricePerKg}/kg`)
+      if (prev.waterPricePerLitre !== o.waterPricePerLitre) changed.push(`Water SAR ${prev.waterPricePerLitre} → SAR ${o.waterPricePerLitre}/L`)
+      if (prev.additivePricePerKg !== o.additivePricePerKg) changed.push(`Additives SAR ${prev.additivePricePerKg} → SAR ${o.additivePricePerKg}/kg`)
       if (prev.chargePerMetre !== o.chargePerMetre) changed.push(o.chargePerMetre ? 'Switched to charging per metre' : 'Switched to charging per day')
       if (!changed.length) changed.push('No change')
     }
@@ -668,8 +668,8 @@ function Detail({ title, tone, rows }: { title: string; tone: string; rows: stri
  *
  * The old version drew one dashed line at the blended average of every rate
  * line on the contract — a figure that matches no metre anyone ever drills.
- * Site A bills soft at ₹6,200 and very hard at ₹14,100; averaging them to
- * ₹9,954 hides the fact that a cheap-looking soft day can be the thinnest
+ * Site A bills soft at SAR 6,200 and very hard at SAR 14,100; averaging them to
+ * SAR 9,954 hides the fact that a cheap-looking soft day can be the thinnest
  * margin of the month.
  *
  * So: one ceiling per formation, in the formation's own colour, and each day's
@@ -756,8 +756,8 @@ function CPUChart({ days, rate, clientRate, month }: {
                   <div style={{ position: 'absolute', inset: 0, width: `${(Math.min(g.cost, g.paid || g.cost) / gMax) * 100}%`, background: g.tone }} />
                 </div>
                 <div style={{ fontSize: 12, color: C.text }}>
-                  Cost <b>₹{Math.round(g.cost).toLocaleString('en-IN')}</b> · paid <b>₹{Math.round(g.paid).toLocaleString('en-IN')}</b> ·{' '}
-                  <b style={{ color: m >= 0 ? 'var(--x-good-text)' : 'var(--x-bad-text)' }}>{m >= 0 ? 'kept' : 'lost'} ₹{Math.abs(Math.round(m)).toLocaleString('en-IN')}</b> a metre
+                  Cost <b>SAR {Math.round(g.cost).toLocaleString('en-US')}</b> · paid <b>SAR {Math.round(g.paid).toLocaleString('en-US')}</b> ·{' '}
+                  <b style={{ color: m >= 0 ? 'var(--x-good-text)' : 'var(--x-bad-text)' }}>{m >= 0 ? 'kept' : 'lost'} SAR {Math.abs(Math.round(m)).toLocaleString('en-US')}</b> a metre
                 </div>
               </div>
             )
@@ -771,7 +771,7 @@ function CPUChart({ days, rate, clientRate, month }: {
             return (
               <g key={fr}>
                 <line x1={PL} x2={W - PR} y1={y(val)} y2={y(val)} stroke={C.border} strokeWidth={1} opacity={0.4} />
-                <text x={PL - 8} y={y(val) + 4} textAnchor="end" fill={C.dim} fontSize={10.5}>{val >= 1000 ? `₹${Math.round(val / 1000)}k` : '0'}</text>
+                <text x={PL - 8} y={y(val) + 4} textAnchor="end" fill={C.dim} fontSize={10.5}>{val >= 1000 ? `SAR ${Math.round(val / 1000)}k` : '0'}</text>
               </g>
             )
           })}
@@ -1401,7 +1401,7 @@ function InvoiceView({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
               <td style={{ ...tdN, fontWeight: 800, color: C.text }}>{money(inv.subtotal)}</td>
               {inv.ownerStatus && <td />}
             </tr>
-            <tr><td style={td} colSpan={4}>Tax at {inv.taxPercent}%</td><td style={tdN}>{money(inv.subtotal * inv.taxPercent / 100)}</td>{inv.ownerStatus && <td />}</tr>
+            <tr><td style={td} colSpan={4}>VAT at {inv.taxPercent}%</td><td style={tdN}>{money(inv.subtotal * inv.taxPercent / 100)}</td>{inv.ownerStatus && <td />}</tr>
             <tr style={{ background: 'color-mix(in srgb, var(--x-blue) 6%, transparent)' }}>
               <td style={{ ...td, fontWeight: 900, color: LAYER.revenue, fontSize: 13 }} colSpan={4}>Total</td>
               <td style={{ ...tdN, fontWeight: 900, color: LAYER.revenue, fontSize: 13 }}>{money(inv.total)}</td>
@@ -1420,7 +1420,7 @@ function ReviewModal({ project, linked, clientRate, holes, nextNumber, onClose, 
 }) {
   const [number, setNumber] = useState(nextNumber)
   const [date, setDate] = useState(TODAY)
-  const [taxPercent, setTax] = useState(18)
+  const [taxPercent, setTax] = useState(15)
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date(TODAY + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 30); return d.toISOString().slice(0, 10)
   })
@@ -1525,7 +1525,7 @@ function ReviewModal({ project, linked, clientRate, holes, nextNumber, onClose, 
                 <td style={{ ...td, fontWeight: 800, color: C.text }} colSpan={4}>Subtotal</td>
                 <td style={{ ...tdN, fontWeight: 800, color: C.text }}>{money(subtotal)}</td>
               </tr>
-              <tr><td style={td} colSpan={4}>Tax at {taxPercent}%</td><td style={tdN}>{money(subtotal * taxPercent / 100)}</td></tr>
+              <tr><td style={td} colSpan={4}>VAT at {taxPercent}%</td><td style={tdN}>{money(subtotal * taxPercent / 100)}</td></tr>
               <tr style={{ background: 'color-mix(in srgb, var(--x-blue) 6%, transparent)' }}>
                 <td style={{ ...td, fontWeight: 900, color: LAYER.revenue, fontSize: 13 }} colSpan={4}>Total</td>
                 <td style={{ ...tdN, fontWeight: 900, color: LAYER.revenue, fontSize: 13 }}>{money(total)}</td>
@@ -1651,7 +1651,7 @@ td{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px}
 <table><thead><tr><th>Description</th><th>Depth</th><th class="r">Quantity</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
 <tbody>${rows}</tbody><tfoot>
 <tr><td colspan="4" class="r">Subtotal</td><td class="r">${money(inv.subtotal)}</td></tr>
-<tr><td colspan="4" class="r">Tax at ${inv.taxPercent}%</td><td class="r">${money(inv.subtotal * inv.taxPercent / 100)}</td></tr>
+<tr><td colspan="4" class="r">VAT at ${inv.taxPercent}%</td><td class="r">${money(inv.subtotal * inv.taxPercent / 100)}</td></tr>
 <tr class="tot"><td colspan="4" class="r">Total</td><td class="r">${money(inv.total)}</td></tr>
 </tfoot></table>
 <div class="f">Generated from XPLORIX Costing</div></body></html>`

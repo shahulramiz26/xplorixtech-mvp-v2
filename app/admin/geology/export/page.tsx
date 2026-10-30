@@ -59,7 +59,7 @@ export default function ExportCore() {
   return (
     <Page>
       <PageHead question="Export the core logs"
-        answer={<>{rows.length.toLocaleString('en-IN')} intervals from {chosen.length} holes, {checkedRows.toLocaleString('en-IN')} of them fully checked by a geologist. CSV with HOLE_ID, FROM, TO first, so Leapfrog, Micromine, Datamine and acQuire read it as an interval table.</>}
+        answer={<>{rows.length.toLocaleString('en-US')} intervals from {chosen.length} holes, {checkedRows.toLocaleString('en-US')} of them fully checked by a geologist. CSV with HOLE_ID, FROM, TO first, so Leapfrog, Micromine, Datamine and acQuire read it as an interval table.</>}
         right={<><DemoPhotos /><Btn kind="primary" disabled={!rows.length} onClick={() => download(`xplorix_core_${step}m.csv`, toCsv(rows, cols))}>Download CSV</Btn></>} />
 
       <Card title="Holes">

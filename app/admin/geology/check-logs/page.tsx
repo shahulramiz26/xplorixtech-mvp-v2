@@ -67,7 +67,7 @@ export default function CheckLogs() {
     <Page>
       <PageHead question="Does the geologist's log agree with the core?"
         tone={sum.agree >= 0.8 ? 'good' : 'warn'}
-        answer={<>Across {data.holes.length} holes the hand log and the photos agree on <b>{pct(sum.agree * 100)}</b> of {sum.n.toLocaleString('en-IN')} logged metres. {sum.dis.length} stretches of 2 m or more disagree, and {sum.boundsOff.length} of {sum.bounds.length} unit boundaries sit more than 1 m from where the core changes. {sum.rq.length ? <>On the {sum.geoHoles} holes with a hand geotech log, logged RQD reads <b>{sum.bias >= 0 ? '+' : ''}{sum.bias.toFixed(0)} points</b> against the photos on average.</> : null}</>}
+        answer={<>Across {data.holes.length} holes the hand log and the photos agree on <b>{pct(sum.agree * 100)}</b> of {sum.n.toLocaleString('en-US')} logged metres. {sum.dis.length} stretches of 2 m or more disagree, and {sum.boundsOff.length} of {sum.bounds.length} unit boundaries sit more than 1 m from where the core changes. {sum.rq.length ? <>On the {sum.geoHoles} holes with a hand geotech log, logged RQD reads <b>{sum.bias >= 0 ? '+' : ''}{sum.bias.toFixed(0)} points</b> against the photos on average.</> : null}</>}
         right={<><DemoPhotos /><SampleBadge>Sample hand logs</SampleBadge></>} />
 
       <Grid min={170}>

@@ -99,7 +99,7 @@ export default function MoneyChecks() {
         <Tile label="Standby with no note" value={noNote} tone={noNote ? 'warn' : 'good'} note="The client can dispute these" />
         <Tile label="Client stops on drilling days" value={`${partHours} h`} tone={partHours ? 'warn' : 'good'} note="2 h or more, not billed as standby" />
         <Tile label="Holes blocked by their logs" value={holesBlocked.length} tone={holesBlocked.length ? 'bad' : 'good'} note={holesBlocked.length ? moneyL(blockedMoney) : 'None'} />
-        <Tile label="Fuel above each rig's normal" value={moneyL(fuelMoney)} tone={fuelMoney ? 'warn' : 'good'} note={`${Math.round(fuel.reduce((s, r) => s + r.extraLitres, 0)).toLocaleString('en-IN')} L`} />
+        <Tile label="Fuel above each rig's normal" value={moneyL(fuelMoney)} tone={fuelMoney ? 'warn' : 'good'} note={`${Math.round(fuel.reduce((s, r) => s + r.extraLitres, 0)).toLocaleString('en-US')} L`} />
       </Grid>
 
       <Card title="Client standby, day by day" pad={false}
@@ -173,12 +173,12 @@ export default function MoneyChecks() {
                 <tr key={r.rig} style={{ borderTop: rowLine }}>
                   <td style={tdStrong}>{r.rig}</td>
                   <td style={tdR}>{r.shifts}</td>
-                  <td style={tdR}>{Math.round(r.litres).toLocaleString('en-IN')}</td>
+                  <td style={tdR}>{Math.round(r.litres).toLocaleString('en-US')}</td>
                   <td style={tdR}>{Math.round(r.engineHours)}</td>
                   <td style={{ ...tdR, color: r.perHour > r.normal * 1.15 ? T.amber : T.text, fontWeight: 600 }}>{r.perHour.toFixed(1)}</td>
                   <td style={tdR}>{r.normal.toFixed(1)}</td>
                   <td style={{ ...tdR, color: r.overShifts.length ? T.amber : T.faint }}>{r.overShifts.length}</td>
-                  <td style={tdR}>{Math.round(r.extraLitres).toLocaleString('en-IN')}</td>
+                  <td style={tdR}>{Math.round(r.extraLitres).toLocaleString('en-US')}</td>
                   <td style={{ ...tdR, color: r.extraMoney ? T.text : T.faint, fontWeight: 600 }}>{r.extraMoney ? money(r.extraMoney) : '—'}</td>
                   <td style={td}>{r.overShifts[0] ? `${day(r.overShifts[0].log.date)} ${r.overShifts[0].log.shift.toLowerCase()} · ${r.overShifts[0].perHour.toFixed(1)} L/h` : '—'}</td>
                 </tr>

@@ -91,7 +91,7 @@ function fromAttention(a: Attention): Finding | null {
   /* The overview's own wording is for a button ("Open invoice"); here the
    * line says what to do, and the money sits in its own column. */
   const iso = (t: string) => t.replace(/(\d{4})-(\d{2})-(\d{2})/g, (_, y, m, d) => `${Number(d)} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m) - 1]}`)
-  const title = a.money ? a.title.replace(/ · ₹[\d,.]+(?:L|Cr)?$/, '') : a.title
+  const title = a.money ? a.title.replace(/ · SAR [\d,.]+(?:K|M)?$/, '') : a.title
   const base = { title, detail: iso(a.detail), href: a.href, action: ACTION[k] ?? ACTION[k.startsWith('ctr_late_') ? 'ctr_late_' : k.startsWith('ctr_bill_') ? 'ctr_' : k.replace(/_.*$/, '_')], money: a.money, since: a.since }
   const make = (dept: Dept, severity: Severity, extra: Partial<Finding> = {}): Finding =>
     ({ id: `live:${k}`, dept, severity, owner: ownerOf(dept), subject: `live:${k}`, ...base, ...extra })

@@ -66,9 +66,9 @@ export default function Predict() {
 
       <Grid min={180}>
         <Tile label="Strength fit, unseen holes" value={pct(p.ucsFit.r2 * 100)} note={`R² on log UCS · ${p.ucsFit.n} lab tests`} tone={p.ucsFit.r2 > 0.5 ? 'good' : 'warn'} />
-        <Tile label="Mineral right, unseen holes" value={pct(p.mineralFit.accuracy * 100)} note={`${p.mineralFit.n.toLocaleString('en-IN')} scanned metres`} tone={p.mineralFit.accuracy > 0.6 ? 'good' : 'warn'} />
+        <Tile label="Mineral right, unseen holes" value={pct(p.mineralFit.accuracy * 100)} note={`${p.mineralFit.n.toLocaleString('en-US')} scanned metres`} tone={p.mineralFit.accuracy > 0.6 ? 'good' : 'warn'} />
         <Tile label="RQD from a probe, no photo" value={pct(p.rqdFit.r2 * 100)} note="R² from chemistry and geophysics alone" tone={p.rqdFit.r2 > 0.4 ? 'good' : undefined} />
-        <Tile label="Metres with strength" value={`${data.metres.length.toLocaleString('en-IN')}`} note={`Was ${p.ucsFit.n} lab tests`} tone="good" />
+        <Tile label="Metres with strength" value={`${data.metres.length.toLocaleString('en-US')}`} note={`Was ${p.ucsFit.n} lab tests`} tone="good" />
       </Grid>
 
       <Grid min={380}>

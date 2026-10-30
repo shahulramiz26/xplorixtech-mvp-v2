@@ -339,7 +339,7 @@ function CatalogueTab({ onEdit, onImport }: { onEdit: (p: Part) => void; onImpor
                   <td style={td}><Tag tone={C.dim}>{p.category}</Tag></td>
                   <td style={{ ...td, color: C.muted }}>{useLabel(p)}</td>
                   <td style={tdN}>{money(p.rate)}</td>
-                  <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-IN')} m</td>
+                  <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-US')} m</td>
                   <td style={{ ...tdN, color: C.orange, fontWeight: 700 }}>{perMetre(costPerMetre(p))}</td>
                   <td style={td}>{p.supplier}</td>
                   <td style={tdN}>{p.leadTimeDays}d</td>
@@ -391,7 +391,7 @@ function PartModal({ part, onSave, onClose }: { part: Part; onSave: (p: Part) =>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
-          <Field label="Rate (₹)"><input type="number" value={f.rate} onChange={e => u({ rate: parseFloat(e.target.value) || 0 })} style={{ ...numStyle, color: C.orange }} /></Field>
+          <Field label="Rate (SAR)"><input type="number" value={f.rate} onChange={e => u({ rate: parseFloat(e.target.value) || 0 })} style={{ ...numStyle, color: C.orange }} /></Field>
           <Field label="Used in" hint="Which ground this part is consumed in. Only metres of that ground carry its cost.">
             <select value={formationUse(f)} onChange={e => u({ formationUse: e.target.value as FormationUse })} style={{ ...iStyle, cursor: 'pointer' }}>
               {FORMATION_USES.map(k => <option key={k} value={k}>{FORMATION_USE_LABEL[k]}</option>)}
@@ -432,7 +432,7 @@ function PartModal({ part, onSave, onClose }: { part: Part; onSave: (p: Part) =>
 function ImportModal({ onClose }: { onClose: () => void }) {
   const { state, importParts } = useInventory()
   const [text, setText] = useState('')
-  const TEMPLATE = 'part_number,name,serial_number,category,rate,life_metres,used_in,size,supplier,lead_days,min_stock\nHQ-BIT-IMP,HQ Impregnated Bit,,Bit,22000,100,hard+,HQ,Sandvik Mining,18,3\nHQ-ROD-30,HQ Wire Line Drill Rod 3.0 m,,Rod & Casing,7840,5000,all,HQ,Boart Longyear India,21,6\n'
+  const TEMPLATE = 'part_number,name,serial_number,category,rate,life_metres,used_in,size,supplier,lead_days,min_stock\nHQ-BIT-IMP,HQ Impregnated Bit,,Bit,1830,100,hard+,HQ,Sandvik Mining,18,3\nHQ-ROD-30,HQ Wire Line Drill Rod 3.0 m,,Rod & Casing,650,5000,all,HQ,Boart Longyear Saudi,21,6\n'
 
   const parsed = useMemo<Part[]>(() => {
     if (!text.trim()) return []
@@ -478,7 +478,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                     <td style={{ ...td, color: C.text }}>{p.name}</td>
                     <td style={{ ...td, color: C.muted }}>{useLabel(p)}</td>
                     <td style={tdN}>{money(p.rate)}</td>
-                    <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-IN')} m</td>
+                    <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-US')} m</td>
                     <td style={{ ...tdN, color: C.orange, fontWeight: 700 }}>{p.lifeMetres > 0 ? perMetre(p.rate / p.lifeMetres) : '—'}</td>
                     <td style={td}><Tag tone={existing(p) ? C.amber : C.green}>{existing(p) ? 'update' : 'new'}</Tag></td>
                   </tr>
@@ -877,7 +877,7 @@ function StoreTab() {
             const spent = metres > 0 ? total / metres : 0
             return (
               <Card key={rig} pad={false} title={rig}
-                subtitle={`${money(total)} of parts on this rig, ${metres.toLocaleString('en-IN')} m drilled`}
+                subtitle={`${money(total)} of parts on this rig, ${metres.toLocaleString('en-US')} m drilled`}
                 accent={C.blue}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
                   <Stat label="Counted on the rig" value={moneyL(lines.reduce((s, l) => s + l.kitValue, 0))} color={C.purple} />
@@ -922,7 +922,7 @@ function StoreTab() {
                           <td style={{ ...tdMono, color: C.text, fontWeight: 700 }}>{l.partNumber || '—'}</td>
                           <td style={{ ...td, color: C.text, fontWeight: 600, whiteSpace: 'normal', maxWidth: 190 }}>{l.name}</td>
                           <td style={{ ...td, color: C.muted }}>{FORMATION_USE_LABEL[l.use]}{l.size ? ` · ${l.size} only` : ''}</td>
-                          <td style={{ ...tdN, color: C.faint }}>{l.lifeMetres.toLocaleString('en-IN')} m</td>
+                          <td style={{ ...tdN, color: C.faint }}>{l.lifeMetres.toLocaleString('en-US')} m</td>
                           <td style={{ ...tdN, color: l.kitQty > 0 ? C.purple : C.dim }}>{l.kitQty > 0 ? l.kitQty : '—'}</td>
                           <td style={{ ...tdN, color: l.issuedQty > 0 ? C.amber : C.dim, fontWeight: l.issuedQty > 0 ? 700 : 400 }}>{l.issuedQty > 0 ? l.issuedQty : '—'}</td>
                           <td style={{ ...tdN, color: C.text, fontWeight: 700 }}>{l.totalQty}</td>
@@ -1058,7 +1058,7 @@ function PickPartsModal({ title, subtitle, tone, note, qtyLabel, withRig, confir
                 <th style={thR}>Life</th>
                 <th style={thR}>Catalogue rate</th>
                 <th style={thR}>{qtyLabel}</th>
-                <th style={thR}>Rate paid (₹)</th>
+                <th style={thR}>Rate paid (SAR)</th>
                 <th style={thR}>Cost / m</th>
               </tr>
             </thead>
@@ -1078,7 +1078,7 @@ function PickPartsModal({ title, subtitle, tone, note, qtyLabel, withRig, confir
                         <td style={{ ...tdMono, color: C.text, fontWeight: 700 }}>{p.partNumber}</td>
                         <td style={{ ...td, color: on ? C.text : C.muted, fontWeight: on ? 700 : 400, whiteSpace: 'normal', maxWidth: 190 }}>{p.name}</td>
                         <td style={{ ...td, color: C.muted }}>{useLabel(p)}</td>
-                        <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-IN')} m</td>
+                        <td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-US')} m</td>
                         <td style={tdN}>{money(p.rate)}</td>
                         <td style={{ padding: '4px 8px', width: 92 }}>
                           <input type="number" min={0} placeholder="0" value={row?.qty ?? ''}
@@ -1263,7 +1263,7 @@ function TerrainPanel({ rows, metres }: { rows: TerrainRow[]; metres: number }) 
 
   return (
     <Card title="What the ground is doing to your parts"
-      subtitle={`${metres.toLocaleString('en-IN')} m of log. Catalogue life is what was assumed; observed life is what the ground actually gave.`}
+      subtitle={`${metres.toLocaleString('en-US')} m of log. Catalogue life is what was assumed; observed life is what the ground actually gave.`}
       pad={false} accent={C.amber}
       right={
         <div style={{ display: 'flex', gap: 4, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: 4 }}>
@@ -1278,8 +1278,8 @@ function TerrainPanel({ rows, metres }: { rows: TerrainRow[]; metres: number }) 
         <div style={{ padding: '13px 16px', borderBottom: `1px solid ${C.border}` }}>
           <Note tone={C.red}>
             <strong>{headline.r.name}</strong> is priced at {perMetre(headline.worst.cataloguePerMetre)} on a
-            catalogue life of {headline.r.catalogueLife.toLocaleString('en-IN')} m. In {headline.worst.formation.toLowerCase()} ground
-            it is lasting {Math.round(headline.worst.observedLife!).toLocaleString('en-IN')} m, which makes those
+            catalogue life of {headline.r.catalogueLife.toLocaleString('en-US')} m. In {headline.worst.formation.toLowerCase()} ground
+            it is lasting {Math.round(headline.worst.observedLife!).toLocaleString('en-US')} m, which makes those
             metres {perMetre(headline.worst.observedPerMetre!)} — every one of them was quoted
             {' '}{money(headline.worst.observedPerMetre! - headline.worst.cataloguePerMetre)} too cheap.
           </Note>
@@ -1307,7 +1307,7 @@ function TerrainPanel({ rows, metres }: { rows: TerrainRow[]; metres: number }) 
                 </td>
                 <td style={{ ...tdN, color: C.faint }}>
                   {mode === 'life'
-                    ? `${r.catalogueLife.toLocaleString('en-IN')} m`
+                    ? `${r.catalogueLife.toLocaleString('en-US')} m`
                     : perMetre(r.cells.Hard.cataloguePerMetre)}
                 </td>
                 {FORMATIONS.map(f => {
@@ -1317,7 +1317,7 @@ function TerrainPanel({ rows, metres }: { rows: TerrainRow[]; metres: number }) 
                   return (
                     <td key={f} style={{ ...tdN, color: c.confident ? tone : C.faint, fontWeight: c.confident ? 700 : 400 }}>
                       <div>{mode === 'life'
-                        ? `${Math.round(c.observedLife!).toLocaleString('en-IN')} m`
+                        ? `${Math.round(c.observedLife!).toLocaleString('en-US')} m`
                         : perMetre(c.observedPerMetre!)}</div>
                       <div style={{ fontSize: 9.5, color: c.confident ? tone : C.dim, opacity: 0.85 }}>
                         {c.confident
@@ -1350,7 +1350,7 @@ function TerrainPanel({ rows, metres }: { rows: TerrainRow[]; metres: number }) 
                 </td>
                 <td style={{ ...tdN, color: C.faint }}>
                   {mode === 'life'
-                    ? `${r.catalogueLife.toLocaleString('en-IN')} m`
+                    ? `${r.catalogueLife.toLocaleString('en-US')} m`
                     : perMetre(r.cells.Hard.cataloguePerMetre)}
                 </td>
                 {FORMATIONS.map(f => <td key={f} style={{ ...tdN, color: C.dim }}>—</td>)}
@@ -1392,7 +1392,7 @@ function GroundPanel({ bands, tooling, rig }: { bands: ReturnType<typeof groundM
               <tr key={b.formation} style={{ borderBottom: rowBorder }}>
                 <td style={{ ...td, color: FORMATION_TONE[b.formation], fontWeight: 700 }}>{b.formation}</td>
                 <td style={{ ...td, width: '38%' }}><Bar value={b.metres} max={maxM} tone={FORMATION_TONE[b.formation]} /></td>
-                <td style={{ ...tdN, color: C.text, fontWeight: 700 }}>{b.metres.toLocaleString('en-IN')}</td>
+                <td style={{ ...tdN, color: C.text, fontWeight: 700 }}>{b.metres.toLocaleString('en-US')}</td>
                 <td style={{ ...tdN, color: C.faint }}>{b.sharePct.toFixed(1)}%</td>
                 <td style={{ ...tdN, color: C.orange, fontWeight: 700 }}>{perMetre(b.toolingPerMetre)}</td>
                 <td style={{ ...tdN, color: C.amber }}>{money(b.toolingSpend)}</td>
@@ -1402,7 +1402,7 @@ function GroundPanel({ bands, tooling, rig }: { bands: ReturnType<typeof groundM
           <tfoot>
             <tr style={{ borderTop: `2px solid ${C.border}`, background: 'rgba(var(--x-ov),0.02)' }}>
               <td style={{ ...td, fontWeight: 800, color: C.text }} colSpan={2}>Whole project</td>
-              <td style={{ ...tdN, fontWeight: 900, color: C.text }}>{total.toLocaleString('en-IN')}</td>
+              <td style={{ ...tdN, fontWeight: 900, color: C.text }}>{total.toLocaleString('en-US')}</td>
               <td style={tdN} />
               <td style={{ ...tdN, fontWeight: 900, color: C.orange }}>{total > 0 ? perMetre(spend / total) : '—'}</td>
               <td style={{ ...tdN, fontWeight: 900, color: C.amber }}>{money(spend)}</td>
@@ -1752,7 +1752,7 @@ function POModal({ po, onSave, onPlace, onClose }: { po: PurchaseOrder; onSave: 
               <thead><tr><th style={th}>Part number</th><th style={th}>Item</th><th style={th}>Category</th><th style={thR}>Life</th><th style={thR}>Cost/m</th><th style={thR}>Rate</th><th style={thR}>Quantity</th><th style={thR}>Line value</th></tr></thead>
               <tbody>
                 {catalogue.length === 0 && <tr><td colSpan={8}><Empty>No parts match. Tick &quot;All suppliers&quot; to buy from another supplier.</Empty></td></tr>}
-                {catalogue.map(p => { const qty = qtyOf(p.id); const on = qty > 0; return (<tr key={p.id} style={{ borderBottom: rowBorder, background: on ? 'color-mix(in srgb, var(--x-orange) 6%, transparent)' : undefined }}><td style={{ ...tdMono, color: C.text, fontWeight: 700 }}>{p.partNumber || '—'}</td><td style={{ ...td, color: C.text, whiteSpace: 'normal', maxWidth: 220 }}>{p.name}</td><td style={td}><Tag tone={C.dim}>{p.category}</Tag></td><td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-IN')} m</td><td style={{ ...tdN, color: C.orange }}>{perMetre(costPerMetre(p))}</td><td style={{ padding: '5px 8px', width: 120 }}><input type="number" min={0} value={rateOf(p.id)} disabled={!on} onChange={e => setRate(p.id, parseFloat(e.target.value) || 0)} style={{ ...numStyle, opacity: on ? 1 : 0.45 }} /></td><td style={{ padding: '5px 8px', width: 100 }}><input type="number" min={0} value={qty} onChange={e => setQty(p.id, Math.max(0, parseFloat(e.target.value) || 0))} style={{ ...numStyle, color: on ? C.orange : C.muted }} /></td><td style={{ ...tdN, color: on ? C.text : C.dim, fontWeight: on ? 700 : 400 }}>{on ? money(qty * rateOf(p.id)) : '—'}</td></tr>) })}
+                {catalogue.map(p => { const qty = qtyOf(p.id); const on = qty > 0; return (<tr key={p.id} style={{ borderBottom: rowBorder, background: on ? 'color-mix(in srgb, var(--x-orange) 6%, transparent)' : undefined }}><td style={{ ...tdMono, color: C.text, fontWeight: 700 }}>{p.partNumber || '—'}</td><td style={{ ...td, color: C.text, whiteSpace: 'normal', maxWidth: 220 }}>{p.name}</td><td style={td}><Tag tone={C.dim}>{p.category}</Tag></td><td style={{ ...tdN, color: C.faint }}>{p.lifeMetres.toLocaleString('en-US')} m</td><td style={{ ...tdN, color: C.orange }}>{perMetre(costPerMetre(p))}</td><td style={{ padding: '5px 8px', width: 120 }}><input type="number" min={0} value={rateOf(p.id)} disabled={!on} onChange={e => setRate(p.id, parseFloat(e.target.value) || 0)} style={{ ...numStyle, opacity: on ? 1 : 0.45 }} /></td><td style={{ padding: '5px 8px', width: 100 }}><input type="number" min={0} value={qty} onChange={e => setQty(p.id, Math.max(0, parseFloat(e.target.value) || 0))} style={{ ...numStyle, color: on ? C.orange : C.muted }} /></td><td style={{ ...tdN, color: on ? C.text : C.dim, fontWeight: on ? 700 : 400 }}>{on ? money(qty * rateOf(p.id)) : '—'}</td></tr>) })}
               </tbody>
             </table>
           </div>

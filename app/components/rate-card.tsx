@@ -142,7 +142,7 @@ export function RateEditor({ value, onChange, paying }: { value: ClientRate; onC
               </>
             )}
             <div style={{ width: 140 }}>
-              <Field label="₹ a metre">
+              <Field label="SAR a metre">
                 <input type="number" value={r.rate || ''} placeholder="0" onChange={e => row(i, { rate: parse(e.target.value) })} style={{ ...num, fontWeight: 600 }} />
               </Field>
             </div>
@@ -156,13 +156,13 @@ export function RateEditor({ value, onChange, paying }: { value: ClientRate; onC
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-        <Field label="Standby, ₹ a day" hint={paying ? 'Paid for a day lost for a reason that is not the contractor’s.' : 'Billed when the client stops work.'}>
+        <Field label="Standby, SAR a day" hint={paying ? 'Paid for a day lost for a reason that is not the contractor’s.' : 'Billed when the client stops work.'}>
           <input type="number" value={f.standbyPerDay || ''} placeholder="0" onChange={e => u({ standbyPerDay: parse(e.target.value) })} style={num} />
         </Field>
-        <Field label="Mobilisation, ₹">
+        <Field label="Mobilisation, SAR">
           <input type="number" value={f.mobilisation || ''} placeholder="0" onChange={e => u({ mobilisation: parse(e.target.value) })} style={num} />
         </Field>
-        <Field label="Demobilisation, ₹">
+        <Field label="Demobilisation, SAR">
           <input type="number" value={f.demobilisation || ''} placeholder="0" onChange={e => u({ demobilisation: parse(e.target.value) })} style={num} />
         </Field>
       </div>

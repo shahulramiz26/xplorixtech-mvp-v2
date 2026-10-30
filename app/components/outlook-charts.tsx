@@ -17,8 +17,8 @@ import { T, tint, display, num, mono } from './kit'
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const mon = (m: string) => MON[Number(m.slice(5, 7)) - 1]
-const n0 = (n: number) => Math.round(n).toLocaleString('en-IN')
-const short = (n: number) => { const a = Math.abs(n); const s = a >= 1e7 ? `${(a / 1e7).toFixed(1)}Cr` : a >= 1e5 ? `${(a / 1e5).toFixed(1)}L` : a >= 1e3 ? `${Math.round(a / 1e3)}k` : `${Math.round(a)}`; return `${n < 0 ? '−' : ''}₹${s}` }
+const n0 = (n: number) => Math.round(n).toLocaleString('en-US')
+const short = (n: number) => { const a = Math.abs(n); const s = a >= 1e6 ? `${(a / 1e6).toFixed(2)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}k` : `${Math.round(a)}`; return `${n < 0 ? '−' : ''}SAR ${s}` }
 
 export type Metric = 'metres' | 'revenue' | 'margin'
 
@@ -178,7 +178,7 @@ export function WarningCard({ w }: { w: Warning }) {
   const W = 220, H = 56
   const pts = vals.map((v, i) => v == null ? null : [8 + (i / (vals.length - 1)) * (W - 16), 6 + (1 - (max === min ? 0.5 : (v - min) / (max - min))) * (H - 12)] as [number, number]).filter(Boolean) as [number, number][]
   const color = w.state === 'worse' ? T.red : w.state === 'better' ? T.green : 'var(--x-muted)'
-  const fmt = (v: number | null) => v == null ? '—' : w.unit === '₹' ? short(v) : `${v.toFixed(w.unit === 'h' ? 0 : 1)}${w.unit === '%' ? '%' : ` ${w.unit}`}`
+  const fmt = (v: number | null) => v == null ? '—' : w.unit === 'SAR' ? short(v) : `${v.toFixed(w.unit === 'h' ? 0 : 1)}${w.unit === '%' ? '%' : ` ${w.unit}`}`
   const word = { worse: 'Turning the wrong way', better: 'Improving', steady: 'Steady', thin: 'Not enough weeks yet' }[w.state]
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, boxShadow: w.state === 'worse' ? 'inset 3px 0 0 var(--x-red)' : w.state === 'better' ? 'inset 3px 0 0 var(--x-green)' : 'none', borderRadius: 10, padding: '12px 14px', display: 'grid', gap: 6 }}>

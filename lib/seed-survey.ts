@@ -26,9 +26,9 @@ function rand(text: string, salt: number) {
 
 /* Where each demo project sits, and how it keeps its collars. */
 export const DEMO_SITES: Record<string, { coords: 'latlon' | 'utm'; utmZone?: string; lat: number; lon: number; rl: number; azimuth: number; dip: number }> = {
-  'Site A - North Field': { coords: 'latlon', lat: 14.2251, lon: 76.3982, rl: 712, azimuth: 60, dip: -60 },
-  'Site B - South Ridge': { coords: 'utm', utmZone: '43N', lat: 24.3561, lon: 73.7092, rl: 548, azimuth: 135, dip: -70 },
-  'Site C - East Basin': { coords: 'latlon', lat: 21.8122, lon: 85.4511, rl: 466, azimuth: 0, dip: -90 },
+  'Site A - North Field': { coords: 'latlon', lat: 23.4812, lon: 40.8621, rl: 1015, azimuth: 60, dip: -60 },
+  'Site B - South Ridge': { coords: 'utm', utmZone: '38N', lat: 22.2047, lon: 43.2183, rl: 962, azimuth: 135, dip: -70 },
+  'Site C - East Basin': { coords: 'latlon', lat: 20.9815, lon: 42.6034, rl: 1120, azimuth: 0, dip: -90 },
 }
 
 /* Collar and direction for every planned hole on a demo site. Holes are set

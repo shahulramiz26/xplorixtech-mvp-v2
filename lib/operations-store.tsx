@@ -25,7 +25,7 @@ export interface OperationalRecord {
   metersDrilled: number       // from Operational Dashboard
   fuelLitresPerDay: number    // from Operational Dashboard
   downtimeHoursPerDay: number // from Operational Dashboard
-  maintenanceCost: number     // from Maintenance Dashboard, already in ₹ for the month
+  maintenanceCost: number     // from Maintenance Dashboard, already in SAR for the month
 }
 
 export const OPERATIONAL_RECORDS: OperationalRecord[] = [

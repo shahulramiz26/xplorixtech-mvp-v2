@@ -108,8 +108,8 @@ export default function ConsumablesDashboard() {
               <BarChart data={c.partsTrend} margin={{ top: 10, right: 12, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke={gridStroke} vertical={false} />
                 <XAxis dataKey="week" tick={axisTick} tickLine={false} axisLine={{ stroke: T.border }} />
-                <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => `₹${Math.round(v / 1000)}k`} />
-                <Tooltip content={<Tip names={{ cost: 'Cost ₹' }} />} />
+                <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => `SAR ${Math.round(v / 1000)}k`} />
+                <Tooltip content={<Tip names={{ cost: 'Cost SAR' }} />} />
                 <Bar dataKey="cost" fill={T.purple} maxBarSize={30} radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>

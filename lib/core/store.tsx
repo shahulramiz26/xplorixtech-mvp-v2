@@ -26,7 +26,7 @@ export interface CoreReview {
 }
 
 const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
-const KEY = 'xplorix_core_v1'
+const KEY = 'xplorix_core_v2_oct'
 
 export function stamp() {
   const d = new Date()

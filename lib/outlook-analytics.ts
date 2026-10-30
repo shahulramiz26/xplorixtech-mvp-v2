@@ -133,7 +133,7 @@ export function earlyWarnings(costing: OverviewCosting, inv: OverviewInv, today:
   const wl = (w: { from: string; to: string }) => logs.filter(l => inWeek(l.date, w))
   return [
     measure('pace', 'Metres a rig-day', 'm', true, w => { const l = wl(w); const d = new Set(l.map(x => `${x.rig}|${x.date}`)).size; return d ? sum(l, x => x.metresDrilled) / d : null }, 'All rigs, yours and contractors\''),
-    measure('cpm', 'Cost a metre', '₹', false, w => { const d = dayCosts.filter(x => inWeek(x.date, w)); const u = sum(d, x => x.units); return u ? sum(d, x => x.total) / u : null }, 'All-in, from the costing'),
+    measure('cpm', 'Cost a metre', 'SAR', false, w => { const d = dayCosts.filter(x => inWeek(x.date, w)); const u = sum(d, x => x.units); return u ? sum(d, x => x.total) / u : null }, 'All-in, from the costing'),
     measure('own', 'Hours lost to own stops', 'h', false, w => { const l = wl(w); return l.length ? sum(l.filter(x => x.downtimeSide !== 'client'), x => x.downtimeHours) : null }, 'Breakdowns and own delays, not billable'),
     measure('standby', 'Client standby hours', 'h', false, w => { const l = wl(w); return l.length ? sum(l.filter(x => x.downtimeSide === 'client'), x => x.downtimeHours) : null }, 'Billable, but rigs not drilling'),
     measure('core', 'Core recovery', '%', true, w => { const l = wl(w).filter(x => x.metresDrilled > 0); const m = sum(l, x => x.metresDrilled); return m ? (sum(l, x => x.coreRecovery) / m) * 100 : null }, 'Core recovered against metres drilled'),
