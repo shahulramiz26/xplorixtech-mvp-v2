@@ -586,12 +586,12 @@ function CompareStep({ t, quotes, own, rigs, withRecord }: { t: Tender; quotes: 
             {row('With mobilisation, per metre', q => <b style={{ color: T.text }}>{perM(q.perMetre)}</b>, <b style={{ color: T.text }}>{perM(own.avgWalkAway)}</b>)}
             {row('Whole job', q => moneyL(q.total), moneyL(own.cost + own.riskAllowance))}
             {t.clientRate ? row('You keep, per metre', q => q.keep != null ? (q.keep > 0 ? good(perM(q.keep)) : bad(perM(q.keep))) : '—', own.avgWalkAway != null ? good(perM(t.clientRate - own.avgWalkAway)) : '—') : null}
-            {row('Standby per day', q => q.quote.standbyPerDay ? `₹${n0(q.quote.standbyPerDay)}` : '—', 'Your own crew and rig')}
+            {row('Standby per day', q => q.quote.standbyPerDay ? `SAR ${n0(q.quote.standbyPerDay)}` : '—', 'Your own crew and rig')}
             {row('Pace, from your record', q => q.record ? `${q.record.perRigDay.toFixed(1)} m a rig-day` : 'No record', `${own.rigDays != null ? n0(t.metres / own.rigDays) : '—'} m a rig-day`)}
             {row(`Finishes, with ${t.rigs} ${t.rigs === 1 ? 'rig' : 'rigs'}`, q => q.finishOn ? (q.late ? bad(`${day(q.finishOn, true)}, late`) : good(day(q.finishOn, true))) : 'Not known', own.rigDays != null ? day(addDaysLocal(t.start, Math.ceil(own.rigDays / Math.max(1, t.rigs))), true) : '—')}
             {row('Core recovery', q => q.record ? `${q.record.recoveryPct.toFixed(1)}%` : '—', '—')}
             {row('Days stopped by his own rig', q => q.record ? `${q.record.breakdownShare.toFixed(1)}% of rig-days` : '—', '—')}
-            {row('Bills claimed above the record', q => q.record ? (q.record.billsOver ? bad(`${q.record.billsOver} of ${q.record.bills}, ₹${n0(q.record.overBy)} in all`) : good(`None of ${q.record.bills}`)) : '—', '—')}
+            {row('Bills claimed above the record', q => q.record ? (q.record.billsOver ? bad(`${q.record.billsOver} of ${q.record.bills}, SAR ${n0(q.record.overBy)} in all`) : good(`None of ${q.record.bills}`)) : '—', '—')}
             {row('Shift reports sent back', q => q.record ? `${q.record.returned} of ${q.record.reports}` : '—', '—')}
             {row('Has cost you, all-in', q => q.record ? perM(q.record.costPerMetre) : '—', '—')}
           </tbody>
@@ -609,7 +609,7 @@ function DecideStep({ t, save, quotes }: { t: Tender; save: (t: Tender) => void;
   if (t.status === 'won' && chosen) return (
     <Card title="4. Awarded">
       <div style={{ display: 'grid', gap: 10, fontSize: 13.5, color: T.text, lineHeight: 1.6 }}>
-        <div>Given to <b>{chosen.quote.name}</b> at {perM(chosen.quote.rate)}{chosen.quote.mobilisation ? ` plus ₹${n0(chosen.quote.mobilisation)} mobilisation` : ''}, on {day(t.result?.on, true)}.</div>
+        <div>Given to <b>{chosen.quote.name}</b> at {perM(chosen.quote.rate)}{chosen.quote.mobilisation ? ` plus SAR ${n0(chosen.quote.mobilisation)} mobilisation` : ''}, on {day(t.result?.on, true)}.</div>
         <div>Next: raise the work order under <Link href="/admin/contractors" style={{ color: T.orange, fontWeight: 600 }}>Contractors</Link>, with these rates. Every shift and bill he sends is then checked against it.</div>
         <div className="xpl-noprint"><Btn onClick={() => save({ ...t, status: 'pricing', awardedTo: undefined, result: undefined })}>Reopen</Btn></div>
       </div>

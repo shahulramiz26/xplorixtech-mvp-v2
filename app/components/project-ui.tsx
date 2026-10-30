@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, useState } from 'react'
-import { FileText, Share2, PencilLine, Truck, Users, Target, IndianRupee, CircleDot } from 'lucide-react'
+import { FileText, Share2, PencilLine, Truck, Users, Target, Banknote, CircleDot } from 'lucide-react'
 import { HOLE_SIZES, type ProjectEvent, type ProjectEventKind, type ProjectStatus, type HolePlan, PROJECT_STATUS_LABEL } from '../../lib/costing-store'
 import { when, nextHoleId, PLAN_STATUS_LABEL, type ProjectHole, type PlanStatus } from '../../lib/projects'
 import { T, tint, Status, Modal, Btn, Field, DepthBar, Table, Empty, inputStyle, th, thR, td, tdR, tdStrong, rowLine, type Tone } from './kit'
@@ -29,7 +29,7 @@ const HOLE_TONE: Record<PlanStatus, Tone> = {
 // ── CHANGES ───────────────────────────────────────────────────────────────
 
 const KIND_ICON: Record<ProjectEventKind, React.ElementType> = {
-  created: FileText, shared: Share2, details: PencilLine, status: CircleDot, rig: Truck, crew: Users, hole: Target, rates: IndianRupee,
+  created: FileText, shared: Share2, details: PencilLine, status: CircleDot, rig: Truck, crew: Users, hole: Target, rates: Banknote,
 }
 
 /* The project's change list. `viewer` decides the wording of who did it and

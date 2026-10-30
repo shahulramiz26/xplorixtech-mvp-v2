@@ -858,10 +858,10 @@ export function buildForecast(costing: CostingState, inv: InvState, today: strin
   // ── one line ─────────────────────────────────────────────────────────────
   const firstIdle = idleRigs.map(r => r.idleFrom!).sort()[0]
   const headline = idleDays > 0
-    ? { tone: 'warn' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-IN')} m and ${moneyL(next.revenue)} billed, but planned holes run out on ${shortDate(firstIdle)} and ${plural(idleRigs.length, 'rig')} will stand idle.` }
+    ? { tone: 'warn' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-US')} m and ${moneyL(next.revenue)} billed, but planned holes run out on ${shortDate(firstIdle)} and ${plural(idleRigs.length, 'rig')} will stand idle.` }
     : lateParts.length
-      ? { tone: 'warn' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-IN')} m and ${moneyL(next.revenue)} billed. ${plural(lateParts.length, 'part')} will run out before a new order can arrive.` }
-      : { tone: 'good' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-IN')} m and ${moneyL(next.revenue)} billed, with holes planned for every rig.` }
+      ? { tone: 'warn' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-US')} m and ${moneyL(next.revenue)} billed. ${plural(lateParts.length, 'part')} will run out before a new order can arrive.` }
+      : { tone: 'good' as Tone, text: `${nextName} looks like ${round(next.metres).toLocaleString('en-US')} m and ${moneyL(next.revenue)} billed, with holes planned for every rig.` }
 
   return {
     today, thisMonth, nextMonth, horizonStart, horizonEnd,

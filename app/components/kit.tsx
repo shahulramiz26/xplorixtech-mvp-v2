@@ -294,7 +294,7 @@ export function Tip({ active, payload, label, unit = '', names, fmt }: {
           <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />
           <span style={{ color: T.muted }}>{names?.[String(p.dataKey)] ?? p.name}</span>
           <span style={{ marginLeft: 'auto', paddingLeft: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            {typeof p.value === 'number' ? p.value.toLocaleString('en-IN') : p.value}{unit}
+            {typeof p.value === 'number' ? p.value.toLocaleString('en-US') : p.value}{unit}
           </span>
         </div>
       ))}

@@ -54,8 +54,8 @@ export default function MaintenanceDashboard() {
                 <CartesianGrid stroke={gridStroke} vertical={false} />
                 <XAxis dataKey="week" tick={axisTick} tickLine={false} axisLine={{ stroke: T.border }} />
                 <YAxis yAxisId="h" tick={axisTick} tickLine={false} axisLine={false} width={36} />
-                <YAxis yAxisId="c" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => `₹${Math.round(v / 1000)}k`} />
-                <Tooltip content={<Tip names={{ hours: 'Hours', cost: 'Cost ₹' }} />} />
+                <YAxis yAxisId="c" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => `SAR ${Math.round(v / 1000)}k`} />
+                <Tooltip content={<Tip names={{ hours: 'Hours', cost: 'Cost SAR' }} />} />
                 <Bar yAxisId="h" dataKey="hours" fill={T.bar} maxBarSize={30} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 <Line yAxisId="c" dataKey="cost" stroke={T.orangeD} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
               </ComposedChart>

@@ -17,9 +17,9 @@ const PLANS = [
   { name: 'Enterprise', billing: 'Billed yearly, 16% less', current: false, adds: 'Everything in Growth, plus an account manager, custom features, API links and your own branding.' },
 ]
 const INVOICES = [
-  { id: 'XPL-2026-008', period: 'August 2026', days: 84, amount: 840, status: 'Pending', due: '2026-09-15' },
-  { id: 'XPL-2026-007', period: 'July 2026', days: 59, amount: 590, status: 'Paid', due: '2026-08-15' },
-  { id: 'XPL-2026-006', period: 'June 2026', days: 53, amount: 530, status: 'Paid', due: '2026-07-15' },
+  { id: 'XPL-2026-010', period: 'October 2026', days: 84, amount: 840, status: 'Pending', due: '2026-11-02' },
+  { id: 'XPL-2026-009', period: 'September 2026', days: 59, amount: 590, status: 'Paid', due: '2026-10-02' },
+  { id: 'XPL-2026-008', period: 'August 2026', days: 53, amount: 530, status: 'Paid', due: '2026-09-01' },
 ]
 
 export default function BillingPage() {

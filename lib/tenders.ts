@@ -196,7 +196,7 @@ export interface ContractorRecord {
   costPerMetre: number       // what he has cost you, all-in
   bills: number
   billsOver: number          // bills that claimed more than the record
-  overBy: number             // ₹ claimed above the record, all bills
+  overBy: number             // SAR claimed above the record, all bills
   returned: number           // shift reports sent back
   reports: number
 }
@@ -274,44 +274,44 @@ export const SEED_TENDERS: Tender[] = [
   {
     id: 'td_7', number: 'T-2026-07', kind: 'bid', name: 'West Plateau infill', client: 'West Plateau Minerals', place: 'West Plateau block',
     holeSize: 'HQ', metres: 2400, avgDepth: 160, mix: mix(20, 0, 50, 30), rigs: 2,
-    start: '2026-11-02', finishBy: '2027-02-15', due: '2026-09-24', margin: 55,
-    risks: freshRisks(['remote', 'newclient']), yourRates: {}, quotes: [], status: 'pricing', createdAt: '2026-09-08',
+    start: '2026-12-20', finishBy: '2027-04-04', due: '2026-11-11', margin: 55,
+    risks: freshRisks(['remote', 'newclient']), yourRates: {}, quotes: [], status: 'pricing', createdAt: '2026-10-26',
   },
   {
     id: 'td_8', number: 'T-2026-08', kind: 'bid', name: 'Red Valley deep holes', client: 'Red Valley Resources', place: 'Red Valley',
     holeSize: 'HQ', metres: 1500, avgDepth: 360, mix: mix(0, 30, 40, 30), rigs: 1,
-    start: '2026-12-01', finishBy: '2027-04-30', due: '2026-09-30', margin: 55,
-    risks: freshRisks(['ground', 'water', 'newclient']), yourRates: {}, quotes: [], status: 'pricing', createdAt: '2026-09-11',
+    start: '2027-01-18', finishBy: '2027-06-17', due: '2026-11-17', margin: 55,
+    risks: freshRisks(['ground', 'water', 'newclient']), yourRates: {}, quotes: [], status: 'pricing', createdAt: '2026-10-29',
   },
   {
     id: 'td_5', number: 'T-2026-05', kind: 'bid', name: 'East Basin phase 2', client: 'East Basin Resources', place: 'East Basin block',
     holeSize: 'HQ', metres: 900, avgDepth: 120, mix: mix(0, 0, 60, 40), rigs: 1,
-    start: '2026-10-20', finishBy: '2027-01-15', due: '2026-09-01', margin: 55,
-    risks: freshRisks(['payment']), yourRates: {}, quotes: [], status: 'sent', sentOn: '2026-09-01', sentRate: 9680, createdAt: '2026-08-18',
+    start: '2026-12-07', finishBy: '2027-03-04', due: '2026-10-19', margin: 55,
+    risks: freshRisks(['payment']), yourRates: {}, quotes: [], status: 'sent', sentOn: '2026-10-19', sentRate: 9680, createdAt: '2026-10-05',
   },
   {
     id: 'td_3', number: 'T-2026-03', kind: 'bid', name: 'South Ridge extension', client: 'South Ridge Minerals', place: 'South Ridge block',
     holeSize: 'HQ', metres: 1200, avgDepth: 150, mix: mix(0, 0, 70, 30), rigs: 1,
-    start: '2026-09-01', finishBy: '2026-12-15', due: '2026-07-25', margin: 58,
-    risks: freshRisks(['standby']), yourRates: {}, quotes: [], status: 'lost', sentOn: '2026-07-24', sentRate: 10210,
-    result: { on: '2026-08-20', note: 'Went to a lower price', winningRate: 9400 }, createdAt: '2026-07-10',
+    start: '2026-10-19', finishBy: '2027-02-01', due: '2026-09-11', margin: 58,
+    risks: freshRisks(['standby']), yourRates: {}, quotes: [], status: 'lost', sentOn: '2026-09-10', sentRate: 10210,
+    result: { on: '2026-10-07', note: 'Went to a lower price', winningRate: 9400 }, createdAt: '2026-08-27',
   },
   {
     id: 'td_2', number: 'T-2026-02', kind: 'bid', name: 'North Field infill', client: 'Demo Mining Co.', place: 'North Field block',
     holeSize: 'HQ', metres: 2400, avgDepth: 150, mix: mix(20, 0, 40, 40), rigs: 2,
-    start: '2026-06-01', finishBy: '2026-12-31', due: '2026-05-10', margin: 60,
-    risks: freshRisks([]), yourRates: {}, quotes: [], status: 'won', sentOn: '2026-05-09', sentRate: 10650,
-    result: { on: '2026-05-20', note: 'Became Site A - North Field' }, createdAt: '2026-04-28',
+    start: '2026-07-19', finishBy: '2027-02-17', due: '2026-06-27', margin: 60,
+    risks: freshRisks([]), yourRates: {}, quotes: [], status: 'won', sentOn: '2026-06-26', sentRate: 10650,
+    result: { on: '2026-07-07', note: 'Became Site A - North Field' }, createdAt: '2026-06-15',
   },
   {
     id: 'ta_1', number: 'A-2026-01', kind: 'award', name: 'Site B infill holes', client: 'South Ridge Minerals', place: 'Site B - South Ridge',
     holeSize: 'HQ', metres: 1200, avgDepth: 140, mix: mix(0, 0, 70, 30), rigs: 1,
-    start: '2026-10-15', finishBy: '2027-01-31', due: '2026-09-20', margin: 0,
-    risks: freshRisks([]), yourRates: {}, clientRate: 8900, status: 'pricing', createdAt: '2026-09-05',
+    start: '2026-12-02', finishBy: '2027-03-20', due: '2026-11-07', margin: 0,
+    risks: freshRisks([]), yourRates: {}, clientRate: 8900, status: 'pricing', createdAt: '2026-10-23',
     quotes: [
-      { id: 'q1', contractorId: 'ctr_p', name: 'Contractor P', rate: 7050, standbyPerDay: 9000, mobilisation: 150000 },
-      { id: 'q2', contractorId: 'ctr_q', name: 'Contractor Q', rate: 6400, standbyPerDay: 8000, mobilisation: 120000 },
-      { id: 'q3', name: 'Contractor R', rate: 5900, standbyPerDay: 7000, mobilisation: 100000, note: 'New to you: no shifts or bills in your record' },
+      { id: 'q1', contractorId: 'ctr_p', name: 'Contractor P', rate: 640, standbyPerDay: 6000, mobilisation: 60000 },
+      { id: 'q2', contractorId: 'ctr_q', name: 'Contractor Q', rate: 585, standbyPerDay: 5600, mobilisation: 50000 },
+      { id: 'q3', name: 'Contractor R', rate: 540, standbyPerDay: 5200, mobilisation: 45000, note: 'New to you: no shifts or bills in your record' },
     ],
   },
 ]

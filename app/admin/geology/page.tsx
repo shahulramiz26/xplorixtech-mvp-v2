@@ -46,11 +46,11 @@ export default function GeologyToday() {
     <Page>
       <PageHead question="How is the core coming out of the ground?"
         tone={t.recovery < 90 ? 'warn' : 'good'}
-        answer={<>{Math.round(t.metres).toLocaleString('en-IN')} m of core photographed on {all.list.length} holes: recovery {pct(t.recovery)}, RQD {pct(t.rqd)} ({rqdClass(t.rqd).toLowerCase()}). {waiting > 0 ? <><b>{waiting} trays</b> wait for a geologist's check.</> : 'Every tray is checked.'} {low.length ? <>{low.length} shifts brought up under 85% of their core.</> : null}</>}
+        answer={<>{Math.round(t.metres).toLocaleString('en-US')} m of core photographed on {all.list.length} holes: recovery {pct(t.recovery)}, RQD {pct(t.rqd)} ({rqdClass(t.rqd).toLowerCase()}). {waiting > 0 ? <><b>{waiting} trays</b> wait for a geologist's check.</> : 'Every tray is checked.'} {low.length ? <>{low.length} shifts brought up under 85% of their core.</> : null}</>}
         right={<><DemoPhotos /><Btn kind="primary" href="/admin/geology/photos">Add tray photos</Btn></>} />
 
       <Grid>
-        <Tile label="Core photographed" value={`${Math.round(t.metres).toLocaleString('en-IN')} m`} note={`${trays} trays on ${all.list.length} holes`} />
+        <Tile label="Core photographed" value={`${Math.round(t.metres).toLocaleString('en-US')} m`} note={`${trays} trays on ${all.list.length} holes`} />
         <Tile label="Core recovery, photo" value={pct(t.recovery)} note={`Driller's own measure: ${pct(drillerRec)}`} tone={t.recovery >= 95 ? 'good' : t.recovery >= 85 ? 'warn' : 'bad'} />
         <Tile label="RQD" value={pct(t.rqd)} note={rqdClass(t.rqd)} tone={t.rqd >= 75 ? 'good' : t.rqd >= 50 ? 'warn' : 'bad'} />
         <Tile label="Natural fractures" value={`${t.ff.toFixed(1)} /m`} note="Breaks made in handling left out" />

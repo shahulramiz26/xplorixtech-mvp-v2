@@ -228,7 +228,7 @@ export function DrillLogsScreen({ who, supervisor, top }: { who: string; supervi
         )}
         {rows.length > 0 && (
           <div style={{ padding: '11px 18px', borderTop: rowLine, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', fontSize: 12.5, color: T.faint }}>
-            <span>Showing {Math.min(shown, rows.length)} of {rows.length} logs · {Math.round(rows.reduce((s, l) => s + l.metresDrilled + (seg[l.id]?.metresDrilled ?? 0), 0)).toLocaleString('en-IN')} m in all</span>
+            <span>Showing {Math.min(shown, rows.length)} of {rows.length} logs · {Math.round(rows.reduce((s, l) => s + l.metresDrilled + (seg[l.id]?.metresDrilled ?? 0), 0)).toLocaleString('en-US')} m in all</span>
             {rows.length > shown && <button type="button" onClick={() => setShown(n => n + 50)} style={{ background: 'none', border: 'none', color: T.orange, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5 }}>Show 50 more</button>}
           </div>
         )}
@@ -293,7 +293,7 @@ export function MaintenanceLogsScreen({ who, supervisor, top }: { who: string; s
   }
   const dirty = project !== 'all' || rig !== 'all' || shift !== 'all' || type !== 'all' || !!from || !!to
   const reset = () => { setProject('all'); setRig('all'); setShift('all'); setType('all'); setFrom(''); setTo('') }
-  const money = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const money = (n: number) => `SAR ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   const exportIt = () => downloadCsv('maintenance-logs', [
     ['Date', 'Shift', 'Type', 'Project', 'Rig', 'Supervisor', 'Duration (hours)', 'Component', 'Action taken', 'Service cost', 'Engine oil (L)', 'Hydraulic oil (L)', 'Transmission oil (L)', 'Notes'],

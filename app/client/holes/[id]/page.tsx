@@ -31,7 +31,7 @@ import { SurveyTable, DepthPanel } from '../../../components/survey-panel'
  * What the hole cost to drill is not here and is never sent to this side.
  * ========================================================================== */
 
-const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')
 
 export default function ClientHole() {
   const { id } = useParams<{ id: string }>()
@@ -276,7 +276,7 @@ export default function ClientHole() {
             <Btn kind="danger" disabled={!reason.trim()} onClick={() => { c.ownerDecideHole(hole.id, false, reason.trim()); setSendBack(false) }}>Send back</Btn>
           </>}>
           <Field label="What needs to be put right?">
-            <textarea autoFocus value={reason} onChange={e => setReason(e.target.value)} rows={4} placeholder="For example: the standby on 9 Sep was their own breakdown" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+            <textarea autoFocus value={reason} onChange={e => setReason(e.target.value)} rows={4} placeholder="For example: the standby on 27 Oct was their own breakdown" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
           </Field>
         </Modal>
       )}

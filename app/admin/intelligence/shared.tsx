@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GitCompare, Flag, CalendarRange, ShieldAlert, ListChecks, ClipboardCheck, IndianRupee, Calculator } from 'lucide-react'
+import { GitCompare, Flag, CalendarRange, ShieldAlert, ListChecks, ClipboardCheck, Banknote, Calculator } from 'lucide-react'
 import { useCosting, C } from '../../../lib/costing-store'
 import { useInventory } from '../../../lib/inventory-store'
 import { buildForecast } from '../../../lib/forecast'
@@ -26,7 +26,7 @@ export function useIntel() {
 const SCREENS = [
   { href: '/admin/intelligence', label: 'Today', icon: ListChecks },
   { href: '/admin/intelligence/drill-logs', label: 'Drill log check', icon: ClipboardCheck },
-  { href: '/admin/intelligence/money', label: 'Money checks', icon: IndianRupee },
+  { href: '/admin/intelligence/money', label: 'Money checks', icon: Banknote },
   { href: '/admin/intelligence/pricing', label: 'Price a tender', icon: Calculator },
   { href: '/admin/intelligence/contractors', label: 'Contractor comparison', icon: GitCompare },
   { href: '/admin/intelligence/holes', label: 'Hole finish prediction', icon: Flag },
@@ -50,5 +50,5 @@ export function Dot({ colour }: { colour: string }) {
   return <span aria-hidden style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 3, background: colour, marginRight: 7, flexShrink: 0 }} />
 }
 
-export const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
-export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+export const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
+export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')

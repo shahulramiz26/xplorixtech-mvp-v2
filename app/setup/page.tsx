@@ -137,7 +137,7 @@ export default function SetupPage() {
       {error && <div role="alert" style={alert}>{error}</div>}
       <button type="submit" disabled={busy} style={{ ...btn, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Setting up…' : 'Create the Company Admin'}</button>
     </form>
-    <p style={{ ...p, fontSize: 12.5, marginTop: 16 }}>The demo company (Apex Drilling Solutions, on demo data dated 13 Sep 2026) is loaded next, so there is something to look at. There is no way to recover this password yet, so keep it somewhere safe.</p>
+    <p style={{ ...p, fontSize: 12.5, marginTop: 16 }}>The demo company (Apex Drilling Solutions, on demo data dated 31 Oct 2026) is loaded next, so there is something to look at. There is no way to recover this password yet, so keep it somewhere safe.</p>
   </>
 
   return (

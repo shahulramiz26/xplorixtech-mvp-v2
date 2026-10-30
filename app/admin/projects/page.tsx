@@ -17,7 +17,7 @@ import { ProjectStatusTag, SharedTag } from '../../components/project-ui'
  * client reads in his portal. Bits and other parts are not listed here; they
  * belong to Parts & inventory, which knows what each rig is carrying. */
 
-const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
+const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 const WHO_TONE: Record<WhoDrills, Tone> = { own: 'good', mixed: 'info', contractor: 'warn', none: 'neutral' }
 type Filter = 'all' | WhoDrills
 

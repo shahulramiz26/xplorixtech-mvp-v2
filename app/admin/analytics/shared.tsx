@@ -86,5 +86,5 @@ export { InsightsCard } from '../../components/insights-card'
 const RIG_COLOURS = [C.blue, C.orangeD, C.teal, C.purple, C.green, C.amber]
 export const rigColour = (i: number) => RIG_COLOURS[i % RIG_COLOURS.length]
 
-export const n0 = (v: number) => Math.round(v).toLocaleString('en-IN')
-export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-IN')
+export const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
+export const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US')

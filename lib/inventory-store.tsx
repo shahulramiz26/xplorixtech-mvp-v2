@@ -9,7 +9,7 @@ import { useServerSync } from './backend'
  * Every drilling consumable is a cost spread across the metres it drills.
  *
  *     cost per metre = rate paid / life in metres
- *     ₹22,000 bit / 100 m = ₹220 per metre
+ *     SAR 22,000 bit / 100 m = SAR 220 per metre
  *
  * Three things happen to a part, and they are different facts:
  *
@@ -26,7 +26,7 @@ import { useServerSync } from './backend'
  *
  * Starting kit plus everything issued since is what a rig is carrying, and
  * that is what decides its tooling cost per metre. Adding a second bit does
- * not make each metre cost twice as much — a bit is ₹220/m whether the rig
+ * not make each metre cost twice as much — a bit is SAR 220/m whether the rig
  * holds one or three. Quantity decides how long you can keep drilling; rate
  * and life decide what each metre costs.
  *
@@ -111,7 +111,7 @@ export interface Part {
   name: string
   serialNumber?: string
   category: PartCategory
-  rate: number            // ₹ per unit
+  rate: number            // SAR per unit
   formation?: string      // legacy tag, read by formationUse()
   formationUse?: FormationUse
   lifeMetres: number      // metres before replacement
@@ -982,7 +982,7 @@ export interface Alert {
 export interface AlertSettings {
   idleDays: number; idleValue: number; coverDays: number
 }
-export const DEFAULT_ALERTS: AlertSettings = { idleDays: 30, idleValue: 20000, coverDays: 5 }
+export const DEFAULT_ALERTS: AlertSettings = { idleDays: 30, idleValue: 1500, coverDays: 5 }
 
 export interface RigBurn { rig: string; metresPerDay: number; formation: Formation }
 
@@ -1070,7 +1070,7 @@ export function buildAlerts(
       id: `running_${part.id}`, kind: 'runningOut', days: Math.floor(days), gapDays: Math.max(0, Math.ceil(part.leadTimeDays - days)),
       level: days < part.leadTimeDays && onWay === 0 ? 'urgent' : 'warn',
       title: n === 0 ? `${part.name} — none in the store` : `${part.name} runs out in ${Math.floor(days)} days`,
-      detail: `${n} in store covers ${Math.round(metresOfLife).toLocaleString('en-IN')} m at ${totalBurn.toFixed(1)} m/day. Lead time is ${part.leadTimeDays} days`
+      detail: `${n} in store covers ${Math.round(metresOfLife).toLocaleString('en-US')} m at ${totalBurn.toFixed(1)} m/day. Lead time is ${part.leadTimeDays} days`
         + (onWay > 0 ? `, and ${onWay} is already on order.` : days < part.leadTimeDays ? ' — already too late to avoid a gap.' : ' — order now.'),
       value: Math.max(1, part.minStock - n) * part.rate,
     })
@@ -1126,30 +1126,30 @@ const P = (
 })
 
 export const SEED_CATALOGUE: Part[] = [
-  P('t01', 'HQ-ROD-30',  'HQ Wire Line Drill Rod 3.0 m',   'Rod & Casing', 5000,  7840,  'Boart Longyear India', 21, 6,  'all'),
-  P('t02', 'HQ-CB-30',   'HQ Core Barrel 3.0 m',           'Core Barrel',  2000,  58800, 'Boart Longyear India', 28, 1,  'all'),
-  P('t03', 'HQ-ITA-01',  'HQ Inner Tube Assembly',         'Core Barrel',  2000,  49000, 'Boart Longyear India', 28, 1,  'all'),
-  P('t04', 'HQ-RS-01',   'HQ Diamond Reamer Shell',        'Bit',          500,   17150, 'Sandvik Mining',       18, 2,  'hard+'),
-  P('t05', 'HQ-OS-01',   'HQ Over Shot Assembly',          'Accessory',    2000,  34300, 'Boart Longyear India', 24, 1,  'all'),
-  P('t06', 'HQ-CL-01',   'HQ Core Lifter',                 'Accessory',    20,    980,   'Drillco Tools',        10, 20, 'all'),
-  P('t07', 'HQ-CLC-01',  'HQ Core Lifter Case',            'Accessory',    50,    1274,  'Drillco Tools',        10, 12, 'all'),
-  P('t08', 'HQ-BIT-IMP', 'HQ Impregnated Bit',             'Bit',          100,   22000, 'Sandvik Mining',       18, 3,  'hard+'),
-  P('t09', 'HQ-CB-SPR',  'HQ Core Barrel Spares',          'Spares',       500,   37440, 'Boart Longyear India', 28, 1,  'all'),
-  P('t10', 'WS-NQNW-01', 'Water Swivel NQ/NW Connection',  'Accessory',    5000,  24990, 'Drillco Tools',        14, 1,  'all'),
-  P('t11', 'HP-NQNW-01', 'Hoisting Plug NQ/NW Connection', 'Accessory',    5000,  29400, 'Drillco Tools',        14, 1,  'all'),
-  P('t12', 'ADP-01',     'Adaptors',                       'Accessory',    5000,  4900,  'Drillco Tools',        10, 2,  'all'),
-  P('t13', 'PW-CSG-30',  'PW Casing 3.0 m',                'Rod & Casing', 10000, 10780, 'Mahalaxmi Steel',      30, 4,  'soft'),
-  P('t14', 'HW-CSG-30',  'HW Casing 3.0 m',                'Rod & Casing', 10000, 8820,  'Mahalaxmi Steel',      30, 4,  'soft'),
-  P('t15', 'PW-TC-BIT',  'PW Casing TC Bit',               'Bit',          200,   5390,  'Mahalaxmi Steel',      30, 2,  'soft'),
-  P('t16', 'HW-TC-BIT',  'HW Casing TC / Shoe Bit',        'Bit',          200,   3773,  'Mahalaxmi Steel',      30, 2,  'soft'),
-  P('t17', 'WS-SPR-02',  'Water Swivel Spares, 2 sets',    'Spares',       5000,  25000, 'Drillco Tools',        14, 1,  'all'),
+  P('t01', 'HQ-ROD-30',  'HQ Wire Line Drill Rod 3.0 m',   'Rod & Casing', 5000,  650,  'Boart Longyear Saudi', 21, 6,  'all'),
+  P('t02', 'HQ-CB-30',   'HQ Core Barrel 3.0 m',           'Core Barrel',  2000,  4900, 'Boart Longyear Saudi', 28, 1,  'all'),
+  P('t03', 'HQ-ITA-01',  'HQ Inner Tube Assembly',         'Core Barrel',  2000,  4100, 'Boart Longyear Saudi', 28, 1,  'all'),
+  P('t04', 'HQ-RS-01',   'HQ Diamond Reamer Shell',        'Bit',          500,   1430, 'Sandvik Mining',       18, 2,  'hard+'),
+  P('t05', 'HQ-OS-01',   'HQ Over Shot Assembly',          'Accessory',    2000,  2860, 'Boart Longyear Saudi', 24, 1,  'all'),
+  P('t06', 'HQ-CL-01',   'HQ Core Lifter',                 'Accessory',    20,    82,   'Drillco Tools',        10, 20, 'all'),
+  P('t07', 'HQ-CLC-01',  'HQ Core Lifter Case',            'Accessory',    50,    106,  'Drillco Tools',        10, 12, 'all'),
+  P('t08', 'HQ-BIT-IMP', 'HQ Impregnated Bit',             'Bit',          100,   1830, 'Sandvik Mining',       18, 3,  'hard+'),
+  P('t09', 'HQ-CB-SPR',  'HQ Core Barrel Spares',          'Spares',       500,   3120, 'Boart Longyear Saudi', 28, 1,  'all'),
+  P('t10', 'WS-NQNW-01', 'Water Swivel NQ/NW Connection',  'Accessory',    5000,  2080, 'Drillco Tools',        14, 1,  'all'),
+  P('t11', 'HP-NQNW-01', 'Hoisting Plug NQ/NW Connection', 'Accessory',    5000,  2450, 'Drillco Tools',        14, 1,  'all'),
+  P('t12', 'ADP-01',     'Adaptors',                       'Accessory',    5000,  410,  'Drillco Tools',        10, 2,  'all'),
+  P('t13', 'PW-CSG-30',  'PW Casing 3.0 m',                'Rod & Casing', 10000, 900, 'Gulf Casing & Steel',      30, 4,  'soft'),
+  P('t14', 'HW-CSG-30',  'HW Casing 3.0 m',                'Rod & Casing', 10000, 735,  'Gulf Casing & Steel',      30, 4,  'soft'),
+  P('t15', 'PW-TC-BIT',  'PW Casing TC Bit',               'Bit',          200,   450,  'Gulf Casing & Steel',      30, 2,  'soft'),
+  P('t16', 'HW-TC-BIT',  'HW Casing TC / Shoe Bit',        'Bit',          200,   315,  'Gulf Casing & Steel',      30, 2,  'soft'),
+  P('t17', 'WS-SPR-02',  'Water Swivel Spares, 2 sets',    'Spares',       5000,  2080, 'Drillco Tools',        14, 1,  'all'),
 ]
 
 export const SEED_SUPPLIERS: Supplier[] = [
-  { id: 's1', name: 'Boart Longyear India', contact: 'R. Menon',     phone: '+91 98450 11234', quotedLeadDays: 25, rating: 5, ratingNote: 'Reliable, never had to chase' },
-  { id: 's2', name: 'Sandvik Mining',       contact: 'A. Deshpande', phone: '+91 99870 44521', quotedLeadDays: 18, rating: 4 },
-  { id: 's3', name: 'Drillco Tools',        contact: 'S. Iyer',      phone: '+91 90035 77810', quotedLeadDays: 12, rating: 2, ratingNote: 'Cheap but slow, and packaging is poor' },
-  { id: 's4', name: 'Mahalaxmi Steel',      contact: 'P. Shah',      phone: '+91 98200 33456', quotedLeadDays: 30, rating: 3 },
+  { id: 's1', name: 'Boart Longyear Saudi', contact: 'Faisal Al-Harbi', phone: '+966 50 214 3381', quotedLeadDays: 25, rating: 5, ratingNote: 'Reliable, never had to chase' },
+  { id: 's2', name: 'Sandvik Mining',       contact: 'Omar Siddiqui',  phone: '+966 55 870 1142', quotedLeadDays: 18, rating: 4 },
+  { id: 's3', name: 'Drillco Tools',        contact: 'Yousef Al-Qahtani', phone: '+966 53 377 8104', quotedLeadDays: 12, rating: 2, ratingNote: 'Cheap but slow, and packaging is poor' },
+  { id: 's4', name: 'Gulf Casing & Steel',      contact: 'Majed Al-Otaibi', phone: '+966 56 208 4519', quotedLeadDays: 30, rating: 3 },
 ]
 
 const seedRate = (id: string) => SEED_CATALOGUE.find(p => p.id === id)!.rate
@@ -1178,63 +1178,63 @@ const PO = (
 })
 
 export const SEED_POS: PurchaseOrder[] = [
-  PO('po1', 'PO-2026-041', 'Sandvik Mining', 'Site A - North Field', '2026-07-02', '2026-07-03', '2026-07-21',
+  PO('po1', 'PO-2026-041', 'Sandvik Mining', 'Site A - North Field', '2026-08-19', '2026-08-20', '2026-09-07',
     [['t08', 3], ['t04', 2]],
-    [['2026-07-19', [['t08', 3], ['t04', 2]]]],
-    [['2026-08-01', 'RIG-001', [['t08', 1]]], ['2026-08-16', 'RIG-001', [['t04', 1]]], ['2026-08-02', 'RIG-002', [['t08', 1]]]]),
+    [['2026-09-05', [['t08', 3], ['t04', 2]]]],
+    [['2026-09-18', 'RIG-001', [['t08', 1]]], ['2026-10-03', 'RIG-001', [['t04', 1]]], ['2026-09-19', 'RIG-002', [['t08', 1]]]]),
 
-  PO('po2', 'PO-2026-047', 'Mahalaxmi Steel', 'Site A - North Field', '2026-07-10', '2026-07-11', '2026-08-10',
+  PO('po2', 'PO-2026-047', 'Gulf Casing & Steel', 'Site A - North Field', '2026-08-27', '2026-08-28', '2026-09-27',
     [['t13', 4], ['t14', 4], ['t16', 2]],
-    [['2026-08-06', [['t14', 4]]]],
+    [['2026-09-23', [['t14', 4]]]],
     []),
 
-  PO('po3', 'PO-2026-052', 'Drillco Tools', 'Site A - North Field', '2026-07-18', '2026-07-19', '2026-07-31',
+  PO('po3', 'PO-2026-052', 'Drillco Tools', 'Site A - North Field', '2026-09-04', '2026-09-05', '2026-09-17',
     [['t06', 30], ['t07', 20], ['t12', 2]],
-    [['2026-08-09', [['t06', 30], ['t07', 18, 2], ['t12', 2]], 'Transport']],
-    [['2026-08-12', 'RIG-001', [['t06', 10], ['t07', 8]]], ['2026-08-14', 'RIG-002', [['t06', 8], ['t07', 5]]]],
-    [{ id: 'ro_1', itemId: 't07', qty: 2, reason: 'Cases cracked in transit', raisedDate: '2026-08-10', round: 1, status: 'promised', promisedDate: '2026-09-15' }]),
+    [['2026-09-26', [['t06', 30], ['t07', 18, 2], ['t12', 2]], 'Transport']],
+    [['2026-09-29', 'RIG-001', [['t06', 10], ['t07', 8]]], ['2026-10-01', 'RIG-002', [['t06', 8], ['t07', 5]]]],
+    [{ id: 'ro_1', itemId: 't07', qty: 2, reason: 'Cases cracked in transit', raisedDate: '2026-09-27', round: 1, status: 'promised', promisedDate: '2026-11-02' }]),
 
-  PO('po4', 'PO-2026-033', 'Boart Longyear India', 'Site A - North Field', '2026-06-05', '2026-06-06', '2026-07-01',
+  PO('po4', 'PO-2026-033', 'Boart Longyear Saudi', 'Site A - North Field', '2026-07-23', '2026-07-24', '2026-08-18',
     [['t03', 1], ['t09', 1], ['t05', 1]],
-    [['2026-06-28', [['t03', 1], ['t09', 1], ['t05', 1]]]],
-    [['2026-08-01', 'RIG-001', [['t03', 1], ['t05', 1]]]]),
+    [['2026-08-15', [['t03', 1], ['t09', 1], ['t05', 1]]]],
+    [['2026-09-18', 'RIG-001', [['t03', 1], ['t05', 1]]]]),
 
-  PO('po5', 'PO-2026-055', 'Sandvik Mining', 'Site B - South Ridge', '2026-07-20', '2026-07-21', '2026-08-08',
+  PO('po5', 'PO-2026-055', 'Sandvik Mining', 'Site B - South Ridge', '2026-09-06', '2026-09-07', '2026-09-25',
     [['t08', 2], ['t04', 1]],
-    [['2026-08-05', [['t08', 2], ['t04', 1]]]],
-    [['2026-08-07', 'RIG-003', [['t08', 2], ['t04', 1]]]]),
+    [['2026-09-22', [['t08', 2], ['t04', 1]]]],
+    [['2026-09-24', 'RIG-003', [['t08', 2], ['t04', 1]]]]),
 
-  PO('po6', 'PO-2026-018', 'Drillco Tools', 'Site C - East Basin', '2026-05-02', '2026-05-03', '2026-05-20',
+  PO('po6', 'PO-2026-018', 'Drillco Tools', 'Site C - East Basin', '2026-06-19', '2026-06-20', '2026-07-07',
     [['t10', 1], ['t17', 1]],
-    [['2026-05-18', [['t10', 1], ['t17', 1]]]],
+    [['2026-07-05', [['t10', 1], ['t17', 1]]]],
     []),
 
-  PO('po7', 'PO-2026-058', 'Boart Longyear India', 'Site A - North Field', '2026-08-20', '2026-08-21', '2026-09-18',
+  PO('po7', 'PO-2026-058', 'Boart Longyear Saudi', 'Site A - North Field', '2026-10-07', '2026-10-08', '2026-11-05',
     [['t01', 6], ['t02', 1]], [], []),
 
-  PO('po10', 'PO-2026-063', 'Sandvik Mining', 'Site A - North Field', '2026-08-22', '2026-08-23', '2026-09-10',
+  PO('po10', 'PO-2026-063', 'Sandvik Mining', 'Site A - North Field', '2026-10-09', '2026-10-10', '2026-10-28',
     [['t08', 4], ['t04', 2]],
-    [['2026-09-08', [['t08', 4], ['t04', 2]]]],
-    [['2026-09-04', 'RIG-001', [['t08', 1]]], ['2026-09-09', 'RIG-001', [['t08', 1], ['t04', 1]]],
-     ['2026-09-05', 'RIG-002', [['t08', 1]]]]),
+    [['2026-10-26', [['t08', 4], ['t04', 2]]]],
+    [['2026-10-22', 'RIG-001', [['t08', 1]]], ['2026-10-27', 'RIG-001', [['t08', 1], ['t04', 1]]],
+     ['2026-10-23', 'RIG-002', [['t08', 1]]]]),
 
-  PO('po11', 'PO-2026-064', 'Drillco Tools', 'Site A - North Field', '2026-09-01', '2026-09-02', '2026-09-16',
+  PO('po11', 'PO-2026-064', 'Drillco Tools', 'Site A - North Field', '2026-10-19', '2026-10-20', '2026-11-03',
     [['t06', 24], ['t07', 16]],
     [],
     []),
 
-  PO('po9', 'PO-2026-060', 'Boart Longyear India', 'Site A - North Field', '2026-08-02', '2026-08-03', '2026-08-24',
+  PO('po9', 'PO-2026-060', 'Boart Longyear Saudi', 'Site A - North Field', '2026-09-19', '2026-09-20', '2026-10-11',
     [['t03', 2]],
-    [['2026-08-20', [['t03', 1, 1]]]],
+    [['2026-10-07', [['t03', 1, 1]]]],
     [],
     [
-      { id: 'ro_2', itemId: 't03', qty: 1, reason: 'Tube bent, latch would not seat', raisedDate: '2026-08-21', round: 1, status: 'closed', promisedDate: '2026-09-02',
-        receipt: { date: '2026-09-02', accepted: 0, damaged: 1, rejected: 0, note: 'Same fault again' } },
-      { id: 'ro_3', itemId: 't03', qty: 1, reason: 'Replacement arrived with the same fault', raisedDate: '2026-09-02', round: 2, parentId: 'ro_2', status: 'promised', promisedDate: '2026-09-25' },
+      { id: 'ro_2', itemId: 't03', qty: 1, reason: 'Tube bent, latch would not seat', raisedDate: '2026-10-08', round: 1, status: 'closed', promisedDate: '2026-10-20',
+        receipt: { date: '2026-10-20', accepted: 0, damaged: 1, rejected: 0, note: 'Same fault again' } },
+      { id: 'ro_3', itemId: 't03', qty: 1, reason: 'Replacement arrived with the same fault', raisedDate: '2026-10-20', round: 2, parentId: 'ro_2', status: 'promised', promisedDate: '2026-11-12' },
     ]),
 
   { id: 'po8', number: 'PO-2026-061', supplier: 'Drillco Tools', project: 'Site A - North Field',
-    status: 'draft', createdDate: '2026-09-01',
+    status: 'draft', createdDate: '2026-10-19',
     lines: [{ itemId: 't06', qty: 40, rate: seedRate('t06') }, { itemId: 't07', qty: 25, rate: seedRate('t07') }],
     receipts: [], reorders: [], issues: [], transfers: [], note: 'Awaiting approval' },
 ]
@@ -1242,40 +1242,40 @@ export const SEED_POS: PurchaseOrder[] = [
 /* A spare moved from a closed project's store instead of being bought: what
  * the "Before you buy" check on a new order does, kept in the demo record so
  * the Value screen can show it. */
-SEED_POS.find(p => p.id === 'po6')?.transfers.push({ id: 'po6_tr1', date: '2026-09-08', itemId: 't17', qty: 1, toProject: 'Site A - North Field', note: 'Moved instead of buying' })
+SEED_POS.find(p => p.id === 'po6')?.transfers.push({ id: 'po6_tr1', date: '2026-10-26', itemId: 't17', qty: 1, toProject: 'Site A - North Field', note: 'Moved instead of buying' })
 
 /* Kits are dated before the first shift of the month, which is what a real
  * site does — the rig cannot turn until it is kitted. Date one of these
  * after the first log and the early days of the month read free. */
 export const SEED_RIG_KIT: RigKitEntry[] = [
   {
-    id: 'rk_seed_1', date: '2026-05-28', addedBy: 'Store', source: 'count',
+    id: 'rk_seed_1', date: '2026-07-15', addedBy: 'Store', source: 'count',
     project: 'Site A - North Field', rig: 'RIG-001',
     lines: [
-      { itemId: 't08', qty: 2, rate: 22000 },
-      { itemId: 't06', qty: 8, rate: 980 },
-      { itemId: 't07', qty: 5, rate: 1274 },
-      { itemId: 't01', qty: 6, rate: 7840 },
-      { itemId: 't14', qty: 2, rate: 8820 },
-      { itemId: 't16', qty: 1, rate: 3773 },
+      { itemId: 't08', qty: 2, rate: 1830 },
+      { itemId: 't06', qty: 8, rate: 82 },
+      { itemId: 't07', qty: 5, rate: 106 },
+      { itemId: 't01', qty: 6, rate: 650 },
+      { itemId: 't14', qty: 2, rate: 735 },
+      { itemId: 't16', qty: 1, rate: 315 },
     ],
   },
   {
-    id: 'rk_seed_2', date: '2026-05-28', addedBy: 'Store', source: 'count',
+    id: 'rk_seed_2', date: '2026-07-15', addedBy: 'Store', source: 'count',
     project: 'Site A - North Field', rig: 'RIG-002',
     lines: [
-      { itemId: 't08', qty: 1, rate: 22000 },
-      { itemId: 't04', qty: 1, rate: 17150 },
-      { itemId: 't01', qty: 6, rate: 7840 },
-      { itemId: 't14', qty: 2, rate: 8820 },
+      { itemId: 't08', qty: 1, rate: 1830 },
+      { itemId: 't04', qty: 1, rate: 1430 },
+      { itemId: 't01', qty: 6, rate: 650 },
+      { itemId: 't14', qty: 2, rate: 735 },
     ],
   },
   {
-    id: 'rk_seed_3', date: '2026-05-28', addedBy: 'Store', source: 'count',
+    id: 'rk_seed_3', date: '2026-07-15', addedBy: 'Store', source: 'count',
     project: 'Site B - South Ridge', rig: 'RIG-003',
     lines: [
-      { itemId: 't08', qty: 1, rate: 22000 },
-      { itemId: 't01', qty: 6, rate: 7840 },
+      { itemId: 't08', qty: 1, rate: 1830 },
+      { itemId: 't01', qty: 6, rate: 650 },
     ],
   },
 ]
@@ -1347,8 +1347,8 @@ interface Ctx {
 }
 
 const InvCtx = createContext<Ctx | null>(null)
-const KEY = 'xplorix_inventory_v12'
-const LEGACY_KEY = 'xplorix_inventory_v11'
+const KEY = 'xplorix_inventory_v13_sar'
+const LEGACY_KEY = 'xplorix_inventory_v13_sar_legacy'
 
 /* One store per browser tab. The root layout mounts this once; the Finance and
  * Inventory routes also wrap themselves in it, and when they do they join the
@@ -1465,15 +1465,15 @@ const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 export function money(n: number) {
-  return `${n < 0 ? '−' : ''}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
+  return `${n < 0 ? '−' : ''}SAR ${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 }
 export function moneyL(n: number) {
   const a = Math.abs(n)
-  if (a >= 10000000) return `${n < 0 ? '−' : ''}₹${(a / 10000000).toFixed(2)}Cr`
-  if (a >= 100000) return `${n < 0 ? '−' : ''}₹${(a / 100000).toFixed(1)}L`
+  if (a >= 1000000) return `${n < 0 ? '−' : ''}SAR ${(a / 1000000).toFixed(2)}M`
+  if (a >= 100000) return `${n < 0 ? '−' : ''}SAR ${Math.round(a / 1000)}K`
   return money(n)
 }
-export function perMetre(n: number) { return `₹${n.toFixed(2)}/m` }
+export function perMetre(n: number) { return `SAR ${n.toFixed(2)}/m` }
 export function dayLabel(d: string) {
   const [, m, day] = d.split('-').map(Number)
   return `${day} ${MON[m - 1]}`

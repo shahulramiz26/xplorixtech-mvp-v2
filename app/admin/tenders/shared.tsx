@@ -7,8 +7,8 @@ import { SOURCE_WORDS } from '../../../lib/tenders'
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const day = (d?: string, year = false) => d ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}${year ? ` ${d.slice(0, 4)}` : ''}` : '—'
 export const daysBetween = (a: string, b: string) => Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000)
-export const n0 = (n: number) => Math.round(n).toLocaleString('en-IN')
-export const perM = (n: number | null | undefined) => n == null ? '—' : `₹${Math.round(n).toLocaleString('en-IN')}/m`
+export const n0 = (n: number) => Math.round(n).toLocaleString('en-US')
+export const perM = (n: number | null | undefined) => n == null ? '—' : `SAR ${Math.round(n).toLocaleString('en-US')}/m`
 
 export function dueWord(due: string, today: string) {
   const d = daysBetween(today, due)

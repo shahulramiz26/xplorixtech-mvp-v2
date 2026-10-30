@@ -20,7 +20,7 @@ import { me, n0, rs, period, linkBtn, numInput, SourceTag, Sum } from './shared'
  * worked out with their arithmetic showing, and what is left is the amount to
  * pay. Approving freezes those figures on the bill.
  *
- * Tax is deliberately not here. GST and TDS belong on the tax invoice in the
+ * Tax is deliberately not here. VAT and withholding tax belong on the tax invoice in the
  * accounts system; this is the statement that says what the work is worth. */
 
 const TONE: Record<BillStatus, Tone> = { received: 'warn', approved: 'info', returned: 'bad', paid: 'good' }
@@ -135,7 +135,7 @@ function BillModal({ bill, onClose }: { bill: ContractorBill; onClose: () => voi
                   <Field label="Another deduction"><input value={extra.label} onChange={e => setExtra({ ...extra, label: e.target.value })} placeholder="e.g. damaged core boxes, clause 11" style={inputStyle} /></Field>
                 </div>
                 <div style={{ width: 130 }}>
-                  <Field label="₹"><input type="number" value={extra.amount} onChange={e => setExtra({ ...extra, amount: e.target.value })} style={{ ...inputStyle, ...numInput }} /></Field>
+                  <Field label="SAR"><input type="number" value={extra.amount} onChange={e => setExtra({ ...extra, amount: e.target.value })} style={{ ...inputStyle, ...numInput }} /></Field>
                 </div>
                 <Btn onClick={addManual} disabled={!extra.label.trim() || !(parseFloat(extra.amount) > 0)}>Add</Btn>
               </form>
@@ -210,7 +210,7 @@ export function EnterModal({ orders, start, onClose, onSave }: { orders: WorkOrd
           : (
             <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
               <Table>
-                <thead><tr><th style={th}>Line</th><th style={thR}>Record shows</th><th style={thR}>The bill claims</th><th style={thR}>At rate, ₹</th><th style={thR}>Amount</th></tr></thead>
+                <thead><tr><th style={th}>Line</th><th style={thR}>Record shows</th><th style={thR}>The bill claims</th><th style={thR}>At rate, SAR</th><th style={thR}>Amount</th></tr></thead>
                 <tbody>
                   {base.map(l => {
                     const e = edits[l.key] ?? {}

@@ -252,7 +252,7 @@ export function RangeBar({ low, mid, high, unit = '' }: { low: number; mid: numb
   const span = Math.max(hi - lo, 1)
   const pad = span * 0.12
   const at = (v: number) => ((v - (lo - pad)) / (span + pad * 2)) * 100
-  const n = (v: number) => Math.round(v).toLocaleString('en-IN')
+  const n = (v: number) => Math.round(v).toLocaleString('en-US')
   return (
     <div>
       <div style={{ position: 'relative', height: 16 }}>

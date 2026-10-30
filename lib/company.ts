@@ -1,7 +1,7 @@
 /* ==========================================================================
  * WHICH COMPANY THIS IS, AND WHAT DAY IT IS
  *
- * The demo company lives on one fixed day, 13 Sep 2026, so its sample data
+ * The demo company lives on one fixed day, 31 Oct 2026, so its sample data
  * always reads the same. A real company lives on the real day.
  *
  * These are set once, when the app learns who signed in, before any screen
@@ -9,7 +9,7 @@
  * give the current value. Imports nothing, so anything may import it.
  * ========================================================================== */
 
-export const DEMO_TODAY = '2026-09-13'
+export const DEMO_TODAY = '2026-10-31'
 export const DEMO_COMPANY = 'Apex Drilling Solutions'
 export const DEMO_CODE = 'APX'
 

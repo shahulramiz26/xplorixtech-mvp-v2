@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Truck, CreditCard, BarChart3, LogOut, Menu, Search,
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
-  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
+  Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, Banknote, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
   Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'

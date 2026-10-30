@@ -110,7 +110,7 @@ export function ruleWords(r: DeductionRule): string {
     return slabs.length ? slabs.map(s => `below ${s.belowPct}% recovery, ${s.deductPct}% off the hole's metres`).join('; ') : 'no bands set'
   }
   if (r.kind === 'lateCompletion') return `${r.pctPerWeek ?? 0}% for each week past the finish date, on work done late${r.capPct ? `, up to ${r.capPct}%` : ''}`
-  if (r.kind === 'shortfall') return `under ${r.minMetres ?? 0} m a rig a month, ₹${Math.round(r.perMetre ?? 0).toLocaleString('en-IN')} for each metre short`
+  if (r.kind === 'shortfall') return `under ${r.minMetres ?? 0} m a rig a month, SAR ${Math.round(r.perMetre ?? 0).toLocaleString('en-US')} for each metre short`
   return `${r.holdPct ?? 0}% held from every bill until the work order closes`
 }
 
@@ -494,7 +494,7 @@ export function recordStatement(state: ContractingState, wo: WorkOrder, from: st
 
 export interface Deduction { kind: DeductionKind | 'other'; label: string; working: string; amount: number; clause?: string }
 
-const rupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`
+const rupees = (n: number) => `SAR ${Math.round(n).toLocaleString('en-US')}`
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const dmy = (date: string) => { const [y, m, d] = date.split('-').map(Number); return `${d} ${MON[m - 1]} ${y}` }
 
@@ -733,19 +733,19 @@ export function seedBills(state: ContractingState): ContractorBill[] {
   const out: ContractorBill[] = []
   if (p) {
     // 6 m more than was checked on the deepest band: approved at the record.
-    const lines = draftLines({ ...state, contractorBills: [] }, p, '2026-08-01', '2026-08-31')
+    const lines = draftLines({ ...state, contractorBills: [] }, p, '2026-09-18', '2026-10-18')
     const deep = [...lines].reverse().find(l => l.kind === 'metres')
     if (deep) { deep.qty = r2(deep.qty + 6); deep.amount = Math.round(deep.qty * deep.rate) }
     const bill: ContractorBill = {
       id: 'cb_1', number: 'CP/26-27/041', workOrderId: p.id, project: p.project, contractorId: p.contractorId,
-      periodFrom: '2026-08-01', periodTo: '2026-08-31', receivedAt: '2026-09-03T11:20', source: 'login',
+      periodFrom: '2026-09-18', periodTo: '2026-10-18', receivedAt: '2026-10-21T11:20', source: 'login',
       lines, manual: [], status: 'received',
     }
     const c = checkBill({ ...state, contractorBills: [bill] }, bill)
-    out.push({ ...bill, status: 'approved', approved: snapshotOf(c, 'Admin User', '2026-09-06T15:05') })
+    out.push({ ...bill, status: 'approved', approved: snapshotOf(c, 'Admin User', '2026-10-24T15:05') })
   }
   if (q) {
-    const lines = draftLines({ ...state, contractorBills: [] }, q, '2026-08-01', '2026-08-31').map(l => {
+    const lines = draftLines({ ...state, contractorBills: [] }, q, '2026-09-18', '2026-10-18').map(l => {
       // 8 m more than was checked on the deepest band, and three standby days for one.
       if (l.kind === 'standby') return { ...l, qty: 3, amount: 3 * l.rate }
       return l
@@ -754,7 +754,7 @@ export function seedBills(state: ContractingState): ContractorBill[] {
     if (deep) { deep.qty = r2(deep.qty + 8); deep.amount = Math.round(deep.qty * deep.rate) }
     out.push({
       id: 'cb_2', number: 'Q-INV-118', workOrderId: q.id, project: q.project, contractorId: q.contractorId,
-      periodFrom: '2026-08-01', periodTo: '2026-08-31', receivedAt: '2026-09-05T16:40', source: 'login',
+      periodFrom: '2026-09-18', periodTo: '2026-10-18', receivedAt: '2026-10-23T16:40', source: 'login',
       lines, manual: [], status: 'received',
     })
   }

@@ -79,7 +79,7 @@ export const CAMPAIGNS: Campaign[] = [
     points: ['24 hour dispatch across APAC', '120 units in stock', 'Volume pricing from 10'],
     ctaLabel: 'View the range', href: '/admin/marketplace?category=bits',
     accent: 'var(--x-blue-b)', brandMark: 'PCS',
-    startsOn: '2026-08-01', endsOn: '2026-10-31', weight: 3,
+    startsOn: '2026-09-18', endsOn: '2026-12-18', weight: 3,
     impressions: 18420, clicks: 604,
   },
   {
@@ -91,7 +91,7 @@ export const CAMPAIGNS: Campaign[] = [
     points: ['220 rods ready to ship', 'Ex-Bengaluru, 3 day delivery', 'Bulk rates above 50'],
     ctaLabel: 'See rod stock', href: '/admin/marketplace?category=rods',
     accent: 'var(--x-orange)', brandMark: 'MDS',
-    startsOn: '2026-08-15', endsOn: '2026-09-30', weight: 3,
+    startsOn: '2026-10-02', endsOn: '2026-11-17', weight: 3,
     impressions: 9310, clicks: 388,
   },
   {
@@ -103,19 +103,19 @@ export const CAMPAIGNS: Campaign[] = [
     points: ['30 tonne capacity', 'Zambia border cleared', 'Escort included'],
     ctaLabel: 'Request a route quote', href: '/admin/marketplace/rig-transport-mobilisation-drc',
     accent: 'var(--x-green-b)', brandMark: 'KMS',
-    startsOn: '2026-07-01', endsOn: '2026-12-31', weight: 2,
+    startsOn: '2026-08-18', endsOn: '2027-02-17', weight: 2,
     impressions: 12040, clicks: 271,
   },
   {
     id: 'cp4', partnerId: 'p2', partnerName: 'Kalyan Exploration Equipment', partnerCountry: 'India',
     verified: true, placement: 'carousel', tier: 'Premium',
     eyebrow: 'Operated hire',
-    headline: 'Two core rigs available in Karnataka from October',
+    headline: 'Two core rigs available in Al Madinah from December',
     subline: 'Driller and two assistants included, NQ and HQ capable to 900 metres.',
     points: ['Crew included', 'Production into your dashboard', '30 day minimum'],
     ctaLabel: 'Check availability', href: '/admin/marketplace/core-drilling-rig-rental-karnataka',
     accent: 'var(--x-yellow)', brandMark: 'KEE',
-    startsOn: '2026-08-10', endsOn: '2026-11-30', weight: 2,
+    startsOn: '2026-09-27', endsOn: '2027-01-17', weight: 2,
     impressions: 5120, clicks: 196,
   },
   {
@@ -127,7 +127,7 @@ export const CAMPAIGNS: Campaign[] = [
     points: ['Delivery within a week', '90 lengths in stock', 'Flush joint'],
     ctaLabel: 'Browse stock', href: '/admin/marketplace?category=rods',
     accent: 'var(--x-purple-b)', brandMark: 'CDT',
-    startsOn: '2026-08-05', endsOn: '2026-11-15', weight: 2,
+    startsOn: '2026-09-22', endsOn: '2027-01-02', weight: 2,
     impressions: 7440, clicks: 158,
   },
   {
@@ -139,7 +139,7 @@ export const CAMPAIGNS: Campaign[] = [
     points: ['Three week lead time', 'Export from Sharjah', 'Split tube included'],
     ctaLabel: 'Enquire now', href: '/admin/marketplace/hq3-core-barrel-assembly',
     accent: 'var(--x-pink)', brandMark: 'SRS',
-    startsOn: '2026-08-20', endsOn: '2026-10-20', weight: 1,
+    startsOn: '2026-10-07', endsOn: '2026-12-07', weight: 1,
     impressions: 3110, clicks: 64,
   },
 
@@ -148,12 +148,12 @@ export const CAMPAIGNS: Campaign[] = [
     id: 'cp7', partnerId: 'p2', partnerName: 'Kalyan Exploration Equipment', partnerCountry: 'India',
     verified: true, placement: 'grid', tier: 'Standard',
     eyebrow: 'Operated hire',
-    headline: 'Two core rigs available in Karnataka',
+    headline: 'Two core rigs available in Al Madinah',
     subline: 'Crew included, production reported straight into your XPLORIX dashboard.',
     points: [],
     ctaLabel: 'Check availability', href: '/admin/marketplace/core-drilling-rig-rental-karnataka',
     accent: 'var(--x-yellow)', brandMark: 'KEE',
-    startsOn: '2026-08-10', endsOn: '2026-11-30', weight: 2,
+    startsOn: '2026-09-27', endsOn: '2027-01-17', weight: 2,
     impressions: 5120, clicks: 196,
   },
 ]
@@ -170,7 +170,7 @@ export const HOUSE_CAMPAIGNS: Campaign[] = [
     points: ['Verified buyers only', 'Monthly slot, not per click', 'Full impression reporting'],
     ctaLabel: 'Become a partner', href: '/partner/register',
     accent: 'var(--x-orange)', brandMark: 'XPX',
-    startsOn: '2026-01-01', endsOn: '2099-01-01', weight: 1,
+    startsOn: '2026-02-18', endsOn: '2099-01-01', weight: 1,
     impressions: 0, clicks: 0,
   },
   {
@@ -182,14 +182,14 @@ export const HOUSE_CAMPAIGNS: Campaign[] = [
     points: [],
     ctaLabel: 'Browse available crew', href: '/admin/crew',
     accent: 'var(--x-orange)', brandMark: 'XPX',
-    startsOn: '2026-01-01', endsOn: '2099-01-01', weight: 1,
+    startsOn: '2026-02-18', endsOn: '2099-01-01', weight: 1,
     impressions: 0, clicks: 0,
   },
 ]
 
 /* ---------------- Selection ---------------- */
 
-const TODAY = '2026-08-30'
+const TODAY = '2026-10-17'
 
 const isActive = (c: Campaign) => c.startsOn <= TODAY && c.endsOn >= TODAY
 

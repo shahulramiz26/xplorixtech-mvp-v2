@@ -75,8 +75,8 @@ function RulesEditor({ rules, onChange }: { rules: DeductionRule[]; onChange: (r
               )}
               {r.kind === 'shortfall' && (
                 <div style={row}>
-                  Under <input type="number" aria-label="Metres a rig a month" value={r.minMetres || ''} onChange={e => set(r.kind, { minMetres: num(e.target.value) })} style={small} /> m a rig a month, charge ₹
-                  <input type="number" aria-label="Rupees a metre short" value={r.perMetre || ''} onChange={e => set(r.kind, { perMetre: num(e.target.value) })} style={small} /> a metre short
+                  Under <input type="number" aria-label="Metres a rig a month" value={r.minMetres || ''} onChange={e => set(r.kind, { minMetres: num(e.target.value) })} style={small} /> m a rig a month, charge SAR
+                  <input type="number" aria-label="Riyals a metre short" value={r.perMetre || ''} onChange={e => set(r.kind, { perMetre: num(e.target.value) })} style={small} /> a metre short
                 </div>
               )}
               {r.kind === 'retention' && (

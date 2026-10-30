@@ -110,7 +110,7 @@ export function HoleSetupModal({ project, holes, plans, only, onClose, onSave }:
               <input value={zone} onChange={e => setZone(e.target.value)} placeholder="e.g. 43N" style={{ ...inputStyle, width: 110 }} aria-label="UTM zone" />
             </label>
           )}
-          <span style={{ fontSize: 12, color: T.faint, paddingBottom: 9 }}>{coords === 'utm' ? 'India is mostly zones 42N–46N; Saudi Arabia 36N–40N.' : 'As a GPS or Google Maps gives them, e.g. 14.22512, 76.39821.'}</span>
+          <span style={{ fontSize: 12, color: T.faint, paddingBottom: 9 }}>{coords === 'utm' ? 'Saudi Arabia is zones 36N–40N; India mostly 42N–46N.' : 'As a GPS or Google Maps gives them, e.g. 23.48120, 40.86210.'}</span>
         </div>
         {zoneBad && <Note tone="warn">Enter the UTM zone, for example 43N, so the holes can be put on the map.</Note>}
 

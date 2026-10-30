@@ -11,7 +11,7 @@ import { COMPANY_NAME, COMPANY_CODE, IS_DEMO } from '../../../lib/company'
  * One Save button for the whole screen, and it says so when it has saved. */
 
 const START = {
-  company: 'Apex Drilling Solutions', email: 'admin@apexdrilling.com', phone: '+91 98765 43210',
+  company: 'Apex Drilling Solutions', email: 'admin@apexdrilling.com', phone: '+966 11 465 2290',
   shiftHours: '12', overlapWarning: true,
   alertMaintenance: true, dailySummary: true, billingNotices: false, incidentReports: true,
   passwordPolicy: 'standard', rotatePasswords: true, twoFactor: false,

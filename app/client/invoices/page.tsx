@@ -261,7 +261,7 @@ function Review({ inv, onClose, onReview, onPaid }: {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginTop: 16 }}>
         <Tile label="Claimed, before tax" value={money(inv.subtotal)} note={`${inv.lines.length} lines · ${inv.holes.length} ${inv.holes.length === 1 ? 'hole' : 'holes'}`} />
         <Tile label="In dispute" value={money(disputedValue(inv))} tone={disputedValue(inv) ? 'warn' : undefined} note={disputedValue(inv) ? 'Held back until settled' : 'Nothing disputed'} />
-        <Tile label={`Tax at ${inv.taxPercent}%`} value={money(tax)} note="On the part you accept" />
+        <Tile label={`VAT at ${inv.taxPercent}%`} value={money(tax)} note="On the part you accept" />
         <Tile label="Payable" value={money(payable(inv))} note={untouched ? 'If the unchecked lines are approved' : locked ? `Paid ${day(inv.paidDate)}` : `Due ${day(inv.due)}`} />
       </div>
 
