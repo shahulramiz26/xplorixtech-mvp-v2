@@ -10,6 +10,10 @@ import { NVCL_CREDIT } from '../../../lib/core/sources'
 import { Page, PageHead, Grid, Tile, Card, Btn, Table, Status, Empty, th, thR, td, tdR, tdStrong, rowLine, T } from '../../components/kit'
 import { Bar, recColour, rqdColour, pct, DemoPhotos } from '../../components/core-ui'
 import { CoreFactors } from '../../components/core-factors'
+import { useGeo } from '../../../lib/core/geo-data'
+import { useGeoEngine, useAsk, Md } from '../../components/ai'
+import { RC_HOLES } from '../../../lib/core/chips'
+import { Sparkles, Camera, FileCheck2, Gem, Grip, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
 
 /* GEOLOGY TODAY — the geologist's first screen.
  *
@@ -21,6 +25,10 @@ export default function GeologyToday() {
   const { state } = useCosting()
   const { review } = useCore()
   const all = useAllHoles()
+  const { data: geo } = useGeo()
+  const engine = useGeoEngine()
+  const { open } = useAsk()
+  const brief = useMemo(() => geo.ready ? engine.answer('Give me the geology brief') : null, [geo.ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const view = useMemo(() => {
     const rows = all.list.flatMap(h => h.rows)
@@ -49,6 +57,17 @@ export default function GeologyToday() {
         answer={<>{Math.round(t.metres).toLocaleString('en-IN')} m of core photographed on {all.list.length} holes: recovery {pct(t.recovery)}, RQD {pct(t.rqd)} ({rqdClass(t.rqd).toLowerCase()}). {waiting > 0 ? <><b>{waiting} trays</b> wait for a geologist's check.</> : 'Every tray is checked.'} {low.length ? <>{low.length} shifts brought up under 85% of their core.</> : null}</>}
         right={<><DemoPhotos /><Btn kind="primary" href="/admin/geology/photos">Add tray photos</Btn></>} />
 
+      <Card title="This morning, from XPLORIX AI" right={<Btn size="sm" kind="primary" onClick={() => open()}><Sparkles size={13} />Ask XPLORIX</Btn>}>
+        {!brief ? <Empty>Reading the core record…</Empty> : (
+          <div style={{ display: 'grid', gap: 7 }}>
+            {brief.text.slice(1).map((p, i) => <p key={i} style={{ margin: 0, fontSize: 13.5, color: T.muted, lineHeight: 1.6 }}><Md text={p} /></p>)}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+              {['Best gold intervals?', 'Which shifts lost core, and why?', 'Where is the weak ground?'].map(q => <button key={q} type="button" onClick={() => open(q)} style={{ padding: '5px 11px', borderRadius: 99, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>{q}</button>)}
+            </div>
+          </div>
+        )}
+      </Card>
+
       <Grid>
         <Tile label="Core photographed" value={`${Math.round(t.metres).toLocaleString('en-IN')} m`} note={`${trays} trays on ${all.list.length} holes`} />
         <Tile label="Core recovery, photo" value={pct(t.recovery)} note={`Driller's own measure: ${pct(drillerRec)}`} tone={t.recovery >= 95 ? 'good' : t.recovery >= 85 ? 'warn' : 'bad'} />
@@ -57,6 +76,8 @@ export default function GeologyToday() {
         <Tile label="GSI proxy" value={Math.round(t.gsi)} note={gsiClass(t.gsi)} />
         <Tile label="Trays to check" value={waiting} note={waiting ? `${t.unsure} breaks the photo step is unsure of` : 'All checked'} tone={waiting ? 'warn' : 'good'} />
       </Grid>
+
+      <Modules geo={geo} trays={trays} waiting={waiting} />
 
       <Card title="Holes" subtitle="Every number is worked out from the tray photos, with the geologist's corrections. Click a hole for its log." pad={false}>
         <Table>
@@ -102,5 +123,42 @@ export default function GeologyToday() {
 
       <div style={{ fontSize: 12, color: T.faint, lineHeight: 1.6 }}>{NVCL_CREDIT} Reviewer: {review.reviewer}.</div>
     </Page>
+  )
+}
+
+/* Everything XPLORIX Core logs, with a live number each: the map of the
+ * geology side for someone seeing it for the first time. */
+function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data']; trays: number; waiting: number }) {
+  const n = geo.checks.reduce((s, c) => s + c.metres, 0)
+  const agree = n ? geo.checks.reduce((s, c) => s + c.agree * c.metres, 0) / n : 0
+  const items: { icon: React.ElementType; title: string; what: string; value: string; href: string }[] = [
+    { icon: Camera, title: 'Core photos', what: 'Rows, core, gaps and every break found on each tray photo', value: `${trays} trays · ${waiting} to check`, href: '/admin/geology/review' },
+    { icon: Mountain, title: 'Geotech logging', what: 'Recovery, RQD, fractures, joint density, GSI, weathering, discing', value: geo.ready ? `${geo.holes.length} holes logged` : '…', href: '/admin/geology/rock-mass' },
+    { icon: Palette, title: 'Geology logging', what: 'Rock classes from colour, grain, veins and staining', value: 'Named by the geologist', href: '/admin/geology/classes' },
+    { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-IN')} veins` : '…', href: '/admin/geology/veins' },
+    { icon: Grip, title: 'RC chips', what: 'Chip colour, size, shape and groups from chip-tray photos', value: `${RC_HOLES.length} RC holes`, href: '/admin/geology/chips' },
+    { icon: FileCheck2, title: 'Check logs', what: "The geologist's log checked against the core, metre by metre", value: geo.ready ? `${Math.round(agree * 100)}% agree` : '…', href: '/admin/geology/check-logs' },
+    { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-IN')} metres joined` : '…', href: '/admin/geology/data' },
+    { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },
+    { icon: BrainCircuit, title: 'Predictions', what: 'Rock strength, minerals and recovery where nobody measured', value: geo.pred ? `Strength R² ${Math.round(geo.pred.ucsFit.r2 * 100)}%` : '…', href: '/admin/geology/predict' },
+    { icon: Compass, title: 'Structures', what: 'True dip and dip direction from the televiewer; joint sets', value: geo.ready ? `${geo.structures.length.toLocaleString('en-IN')} planes` : '…', href: '/admin/geology/structures' },
+    { icon: Box, title: '3D view', what: 'Every hole along its surveyed path, coloured by the core', value: 'By project', href: '/admin/geology/3d' },
+    { icon: Sparkles, title: 'XPLORIX AI', what: 'Ask anything about the core; it drafts the note that follows', value: 'Ctrl J on any screen', href: '/admin/geology/ask' },
+  ]
+  return (
+    <Card title="XPLORIX Core" subtitle="Everything logged from the photos and the other downhole data, joined to the drilling record." pad={false}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))' }}>
+        {items.map(x => (
+          <Link key={x.title} href={x.href} className="xpl-row" style={{ display: 'flex', gap: 12, padding: '14px 18px', textDecoration: 'none', borderTop: `1px solid ${T.line}`, borderRight: `1px solid ${T.line}` }}>
+            <span aria-hidden style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--x-orange) 12%, transparent)', color: T.orange }}><x.icon size={17} /></span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: T.text }}>{x.title}</span>
+              <span style={{ display: 'block', fontSize: 12, color: T.muted, lineHeight: 1.45, marginTop: 2 }}>{x.what}</span>
+              <span style={{ display: 'block', fontSize: 12, color: T.orange, fontWeight: 600, marginTop: 5 }}>{x.value}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Card>
   )
 }

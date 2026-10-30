@@ -8,8 +8,10 @@ import {
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, IndianRupee, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
   Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill, PanelLeftClose, PanelLeftOpen, Radio,
+  FileCheck2, Gem, Grip, Database, Network, Sparkles, Compass, BrainCircuit,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'
+import { GeoDataProvider } from '../../lib/core/geo-data'
 import { CurrencyProvider } from '../components/currency-context'
 import { CostingProvider, monthOf, projectCode, moneyL } from '../../lib/costing-store'
 import { deptLabel, type Dept } from '../../lib/findings'
@@ -86,21 +88,38 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
 /* The geologist's half of XPLORIX. Same company, same projects and holes,
  * same shift logs; a menu of its own. */
 const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
-  { title: null, items: [{ href: '/admin/geology', label: 'Geology today', icon: Layers }] },
+  { title: null, items: [{ href: '/admin/geology', label: 'Geology today', icon: Layers }, { href: '/admin/geology/ask', label: 'XPLORIX AI', icon: Sparkles }] },
   {
     title: 'Core',
     items: [
       { href: '/admin/geology/holes', label: 'Hole logs', icon: Drill, also: ['/admin/geology/trays'] },
       { href: '/admin/geology/review', label: 'Review trays', icon: ScanSearch },
-      { href: '/admin/geology/photos', label: 'Add photos', icon: Camera },
+      { href: '/admin/geology/photos', label: 'Add photos & archive', icon: Camera },
+    ],
+  },
+  {
+    title: 'Automated logging',
+    items: [
+      { href: '/admin/geology/rock-mass', label: 'Geotech: rock mass', icon: Mountain },
+      { href: '/admin/geology/classes', label: 'Geology: rock classes', icon: PaletteIcon },
+      { href: '/admin/geology/veins', label: 'Geology: vein classes', icon: Gem },
+      { href: '/admin/geology/chips', label: 'Chips (RC)', icon: Grip },
+      { href: '/admin/geology/check-logs', label: 'Check logs', icon: FileCheck2 },
+    ],
+  },
+  {
+    title: 'Data-driven',
+    items: [
+      { href: '/admin/geology/data', label: 'Downhole data', icon: Database },
+      { href: '/admin/geology/domains', label: 'Domains', icon: Network },
+      { href: '/admin/geology/predict', label: 'Predictions', icon: BrainCircuit },
+      { href: '/admin/geology/structures', label: 'Structures', icon: Compass },
     ],
   },
   {
     title: 'Interpretation',
     items: [
       { href: '/admin/geology/3d', label: '3D view', icon: Box },
-      { href: '/admin/geology/rock-mass', label: 'Rock mass', icon: Mountain },
-      { href: '/admin/geology/classes', label: 'Rock classes', icon: PaletteIcon },
       { href: '/admin/geology/export', label: 'Export', icon: Download },
     ],
   },
@@ -357,7 +376,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span className="hidden md:inline" style={{ fontSize: 12.5, color: T.faint, whiteSpace: 'nowrap' }}>{longDate(o.today)}</span>
-              {!geology && <AskButton />}
+              <AskButton />
               <SavedState />
               <ThemeToggle />
               <div style={{ position: 'relative' }}>
@@ -503,7 +522,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <CurrencyProvider>
       <CostingProvider>
         <ThemeScope />
-        <Guard role="admin"><CoreProvider><InboxProvider><AskProvider><Shell>{children}</Shell></AskProvider></InboxProvider></CoreProvider></Guard>
+        <Guard role="admin"><CoreProvider><GeoDataProvider><InboxProvider><AskProvider><Shell>{children}</Shell></AskProvider></InboxProvider></GeoDataProvider></CoreProvider></Guard>
       </CostingProvider>
     </CurrencyProvider>
   )

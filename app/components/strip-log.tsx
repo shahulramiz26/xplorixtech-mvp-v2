@@ -22,11 +22,14 @@ import { photoSrc, classHex, pct, type StripDrill } from './core-ui'
 const WEATH_HEX = ['', '#CFE3D3', '#E7D9A2', '#D8A25A', '#B4652E', '#77391B']
 const DRILLER_HEX = ['#5B8DEF', '#E46A9B', '#3FB68B', '#E9A23B', '#9B6BD3', '#3BB0B8']
 
-interface Track { key: string; label: string; scale?: [string, string, string?]; w: number; group: 'core' | 'drill' }
+interface Track { key: string; label: string; scale?: [string, string, string?]; w: number; group: 'core' | 'drill' | 'other' }
+
+/* Logs from the other data, laid beside the core when there is any. */
+export interface StripExtra { manual?: { from: number; to: number; hex: string; lith: string }[]; au?: { from: number; to: number; v: number }[]; domain?: { from: number; to: number; hex: string; name: string }[] }
 
 const SCALES = [{ px: 6, label: 'Whole hole' }, { px: 20, label: '10 m view' }, { px: 60, label: 'Close up' }]
 
-export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[]; drill: StripDrill[]; trays: CoreTray[]; hole: string }) {
+export function StripLog({ rows, drill, trays, hole, extra }: { rows: IntervalResult[]; drill: StripDrill[]; trays: CoreTray[]; hole: string; extra?: StripExtra }) {
   const [pxPerM, setPx] = useState(6)
   const photo = pxPerM >= 15      // below this a 1 m row is a few pixels: show its colour instead
   const { review, index } = useCore()
@@ -45,6 +48,7 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
     { key: 'core', label: 'Core', w: 46, group: 'core' },
     { key: 'cls', label: 'Class', w: 34, group: 'core' },
     { key: 'qual', label: 'Recovery · RQD', scale: ['0', '50', '100%'], w: 130, group: 'core' },
+    { key: 'inc', label: 'Incoherence', scale: ['0', '0.5', '1'], w: 70, group: 'core' },
     { key: 'ff', label: 'Fractures /m', scale: ['0', '10', '20'], w: 96, group: 'core' },
     { key: 'gsi', label: 'GSI proxy', scale: ['0', '50', '100'], w: 96, group: 'core' },
     { key: 'wth', label: 'Weath.', w: 26, group: 'core' },
@@ -52,6 +56,9 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
     { key: 'drl', label: 'Driller', w: 34, group: 'drill' },
     { key: 'stop', label: 'Stops', w: 36, group: 'drill' },
     { key: 'tray', label: 'Trays', w: 46, group: 'drill' },
+    ...(extra?.manual ? [{ key: 'man', label: 'Hand log', w: 34, group: 'other' as const }] : []),
+    ...(extra?.domain ? [{ key: 'dom', label: 'Domain', w: 34, group: 'other' as const }] : []),
+    ...(extra?.au ? [{ key: 'au', label: 'Au g/t', scale: ['0.01', '0.1', '10'] as [string, string, string], w: 90, group: 'other' as const }] : []),
   ]
   const GAP = 8, GROUP_GAP = 26, LEFT = 46
   const xs: Record<string, number> = {}
@@ -91,6 +98,11 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
 
   const rec = step(rows.map(r => ({ from: r.from, to: r.to, v: r.recovery })), xs.qual, tr('qual').w, 100)
   const rqd = step(rows.map(r => ({ from: r.from, to: r.to, v: r.rqd })), xs.qual, tr('qual').w, 100)
+  const rqdW = step(rows.map(r => ({ from: r.from, to: r.to, v: r.rqdWjd })), xs.qual, tr('qual').w, 100)
+  // Incoherence: how broken the core is, 0 whole to 1 rubble — every break and every gap, not only natural ones
+  const inc = step(rows.map(r => ({ from: r.from, to: r.to, v: Math.min(1, (r.natural + r.handling) / Math.max(0.2, r.recovered) / 25 + (1 - r.recovery / 100)) })), xs.inc, tr('inc').w, 1)
+  const auLog = (v: number) => Math.max(0, Math.min(3, Math.log10(Math.max(0.01, v)) + 2))
+  const au = extra?.au ? step(extra.au.map(a => ({ from: a.from, to: a.to, v: auLog(a.v) })), xs.au, tr('au').w, 3) : null
   const ff = step(rows.map(r => ({ from: r.from, to: r.to, v: r.ff })), xs.ff, tr('ff').w, 20)
   const gsi = step(rows.map(r => ({ from: r.from, to: r.to, v: r.gsi })), xs.gsi, tr('gsi').w, 100)
   const rate = step(drill.map(d => ({ from: d.from, to: d.to, v: d.rate })), xs.rate, tr('rate').w, maxRate)
@@ -160,6 +172,10 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
           <line x1={xs.core} x2={xs.wth + tr('wth').w} y1={20} y2={20} stroke={tint(T.orange, 50)} />
           <text x={xs.rate} y={14} fontSize={10.5} fontWeight={700} letterSpacing="0.08em" fill={T.muted}>FROM THE SHIFT LOGS</text>
           <line x1={xs.rate} x2={xs.tray + tr('tray').w} y1={20} y2={20} stroke={T.line} />
+          {tracks.some(t => t.group === 'other') && (() => { const o = tracks.filter(t => t.group === 'other'); return <>
+            <text x={xs[o[0].key]} y={14} fontSize={10.5} fontWeight={700} letterSpacing="0.08em" fill={T.muted}>OTHER DATA</text>
+            <line x1={xs[o[0].key]} x2={xs[o[o.length - 1].key] + o[o.length - 1].w} y1={20} y2={20} stroke={T.line} />
+          </> })()}
 
           {/* track labels and scales */}
           {tracks.map(t => (
@@ -172,7 +188,7 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
               </>}
             </g>
           ))}
-          <text x={xs.qual} y={52} fontSize={9.5} fill={T.faint}><tspan fill="#1F9D6B">■</tspan> RQD  <tspan fill={T.text}>━</tspan> recovery</text>
+          <text x={xs.qual} y={52} fontSize={9.5} fill={T.faint}><tspan fill="#1F9D6B">■</tspan> RQD <tspan fill="#0B6E4F">┄</tspan> pred. <tspan fill={T.text}>━</tspan> rec.</text>
           <text x={xs.rate} y={52} fontSize={9.5} fill={T.faint}><tspan fill="#3E7BFA">━</tspan> rate  <tspan fill={T.muted}>┄</tspan> normal  <tspan fill={T.orange}>■</tspan> fast</text>
 
           {/* depth grid */}
@@ -211,7 +227,13 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
           {rows.filter(r => r.recovery < 90).map(r => <rect key={`lr${r.from}`} x={xs.qual} y={y(r.from)} width={tr('qual').w} height={Math.max(1, y(r.to) - y(r.from))} fill={tint(T.red, 16)} />)}
           <path d={rqd.area} fill={tint('#1F9D6B', 24)} />
           <path d={rqd.line} fill="none" stroke="#1F9D6B" strokeWidth={1} />
+          <path d={rqdW.line} fill="none" stroke="#0B6E4F" strokeWidth={1} strokeDasharray="3 2" />
           <path d={rec.line} fill="none" stroke={T.text} strokeWidth={1.4} />
+
+          {/* incoherence */}
+          {frame('inc')}
+          <path d={inc.area} fill={tint('#E5484D', 18)} />
+          <path d={inc.line} fill="none" stroke="#E5484D" strokeWidth={1.1} />
 
           {/* fractures */}
           {frame('ff')}
@@ -274,6 +296,11 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
             )
           })}
 
+          {/* other data */}
+          {extra?.manual && <>{frame('man')}{extra.manual.map(m => <rect key={`mn${m.from}`} x={xs.man} y={y(m.from)} width={tr('man').w} height={Math.max(1, y(m.to) - y(m.from))} fill={m.hex}><title>{m.from}–{m.to} m · {m.lith}</title></rect>)}</>}
+          {extra?.domain && <>{frame('dom')}{extra.domain.map(m => <rect key={`dm${m.from}`} x={xs.dom} y={y(m.from)} width={tr('dom').w} height={Math.max(1, y(m.to) - y(m.from))} fill={m.hex}><title>{m.name}</title></rect>)}</>}
+          {au && <>{frame('au')}<path d={au.area} fill={tint('#C99A00', 22)} /><path d={au.line} fill="none" stroke="#C99A00" strokeWidth={1.2} /></>}
+
           {/* crosshair */}
           {at && <>
             <line x1={LEFT} x2={W - 4} y1={at.y} y2={at.y} stroke={T.orange} strokeWidth={1} />
@@ -294,6 +321,8 @@ export function StripLog({ rows, drill, trays, hole }: { rows: IntervalResult[];
             <div>{className(review, read.r.cls)} · {WEATHERING[read.r.weathering]?.toLowerCase()}</div>
             <div>Recovery <b style={{ color: T.text }}>{pct(read.r.recovery)}</b> · RQD <b style={{ color: T.text }}>{pct(read.r.rqd)}</b> ({rqdClass(read.r.rqd).toLowerCase()})</div>
             <div>{read.r.ff.toFixed(1)} fractures /m · GSI {read.r.gsi} ({gsiClass(read.r.gsi).toLowerCase()})</div>
+            <div>RQD from joint density {pct(read.r.rqdWjd)}</div>
+            {(() => { const m = extra?.manual?.find(x => at.d >= x.from && at.d < x.to), a = extra?.au?.find(x => at.d >= x.from && at.d < x.to); return m || a ? <div>{m ? `Logged ${m.lith}` : ''}{m && a ? ' · ' : ''}{a ? `Au ${a.v.toFixed(2)} g/t` : ''}</div> : null })()}
           </>}
           {read.s && <div style={{ borderTop: `1px solid ${T.line}`, marginTop: 6, paddingTop: 6 }}>
             {read.s.date} {read.s.shift.toLowerCase()} · {read.s.driller}<br />

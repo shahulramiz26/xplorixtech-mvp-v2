@@ -13,6 +13,10 @@ import { explain, type Draft } from '../../lib/ai/explain'
 import { dailyBrief, weeklyBrief } from '../../lib/ai/brief'
 import { ask, suggestions, type Answer } from '../../lib/ai/ask'
 import { useInbox, useMark } from './inbox'
+import { useGeo } from '../../lib/core/geo-data'
+import { useCore, className as coreClassName } from '../../lib/core/store'
+import { VEIN_CLASSES } from '../../lib/core/downhole'
+import { askCore, coreSuggestions } from '../../lib/ai/core-ask'
 import { T, tint, display, inputStyle, useEscape } from './kit'
 
 /* ==========================================================================
@@ -213,44 +217,80 @@ export function AskButton() {
   )
 }
 
-function AskPanel({ first, onFirst, onClose }: { first: string | null; onFirst: () => void; onClose: () => void }) {
-  useEscape(onClose)
+/* What the panel answers from: the drilling record, or on Geology screens
+ * the core record. Same panel, same look. */
+interface Engine { answer: (q: string) => Answer; start: string[]; subtitle: string; intro: string; placeholder: string }
+
+function useDrillEngine(): Engine {
   const ctx = useAiCtx()
   const path = usePathname()
+  return {
+    answer: q => ask(q, ctx), start: suggestions(path),
+    subtitle: 'Answers from your drill logs, costs, stores, invoices and rig sensors',
+    intro: 'Ask in plain words about rigs, holes, drillers, parts, money or the month ahead. Every answer shows what it read, so you can check it.',
+    placeholder: 'Ask about your rigs, money, stores…',
+  }
+}
+export function useGeoEngine(): Engine {
+  const { data, edits } = useGeo()
+  const { review, index } = useCore()
+  const { state } = useCosting()
+  const path = usePathname()
+  const ctx = { data, review, index, logs: state.shiftLogs, className: (id: number) => coreClassName(review, id), veinName: (id: number) => edits.veinNames[id]?.name ?? VEIN_CLASSES[id].name }
+  return {
+    answer: q => askCore(q, ctx), start: coreSuggestions(path),
+    subtitle: 'Answers from the core photos, logs, assays and the drilling record',
+    intro: 'Ask in plain words about holes, core recovery, rock quality, gold, veins, the geologist\'s log, domains, rock strength, minerals, joint sets or RC chips. Every answer shows what it read.',
+    placeholder: 'Ask about the core, assays, veins…',
+  }
+}
+
+function AskPanel(p: { first: string | null; onFirst: () => void; onClose: () => void }) {
+  const path = usePathname()
+  return path.startsWith('/admin/geology') ? <GeoAskPanel {...p} /> : <DrillAskPanel {...p} />
+}
+function DrillAskPanel(p: { first: string | null; onFirst: () => void; onClose: () => void }) { return <AskView {...p} engine={useDrillEngine()} /> }
+function GeoAskPanel(p: { first: string | null; onFirst: () => void; onClose: () => void }) { return <AskView {...p} engine={useGeoEngine()} /> }
+
+export function AskView({ first, onFirst, onClose, engine, inline }: { first: string | null; onFirst: () => void; onClose: () => void; engine: Engine; inline?: boolean }) {
+  useEscape(() => { if (!inline) onClose() })
   const [turns, setTurns] = useState<Turn[]>([])
   const [text, setText] = useState('')
   const end = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
-  const start = suggestions(path)
+  const start = engine.start
+  const answerRef = useRef(engine.answer)
+  answerRef.current = engine.answer
 
   const send = (q: string) => {
     const t = q.trim(); if (!t) return
     setText('')
     setTurns(ts => [...ts, { q: t, a: null }])
     // A short pause so the answer reads as worked out, not pasted.
-    setTimeout(() => setTurns(ts => ts.map((x, i) => i === ts.length - 1 && !x.a ? { ...x, a: ask(t, ctx) } : x)), 450 + Math.min(500, t.length * 6))
+    setTimeout(() => setTurns(ts => ts.map((x, i) => i === ts.length - 1 && !x.a ? { ...x, a: answerRef.current(t) } : x)), 450 + Math.min(500, t.length * 6))
   }
   useEffect(() => { if (first) { send(first); onFirst() } }, [first]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [turns])
-  useEffect(() => { input.current?.focus() }, [])
+  useEffect(() => { if (turns.length) end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [turns])
+  useEffect(() => { if (!inline) input.current?.focus() }, [inline])
 
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(var(--x-shadow),0.35)', display: 'flex', justifyContent: 'flex-end' }}>
-      <aside role="dialog" aria-modal aria-label="Ask XPLORIX" onClick={e => e.stopPropagation()}
-        style={{ fontFamily: display, color: T.text, width: 'min(480px, 100%)', height: '100%', background: T.card, borderLeft: `1px solid ${T.border}`, display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', boxShadow: '-20px 0 60px rgba(var(--x-shadow),0.35)' }}>
+  const body = (
+      <aside role={inline ? undefined : 'dialog'} aria-modal={inline ? undefined : true} aria-label="Ask XPLORIX" onClick={e => e.stopPropagation()}
+        style={inline
+          ? { fontFamily: display, color: T.text, width: '100%', height: 'min(720px, calc(100vh - 220px))', minHeight: 460, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', overflow: 'hidden' }
+          : { fontFamily: display, color: T.text, width: 'min(480px, 100%)', height: '100%', background: T.card, borderLeft: `1px solid ${T.border}`, display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', boxShadow: '-20px 0 60px rgba(var(--x-shadow),0.35)' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: `1px solid ${T.line}` }}>
           <span aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: tint(T.orange, 14) }}><Sparkles size={17} style={{ color: T.orange }} /></span>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: T.text }}>Ask XPLORIX</div>
-            <div style={{ fontSize: 12, color: T.faint }}>Answers from your drill logs, costs, stores, invoices and rig sensors</div>
+            <div style={{ fontSize: 12, color: T.faint }}>{engine.subtitle}</div>
           </div>
-          <button type="button" aria-label="Close" onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4 }}><X size={18} /></button>
+          {!inline && <button type="button" aria-label="Close" onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4 }}><X size={18} /></button>}
         </header>
 
         <div style={{ overflowY: 'auto', padding: '14px 16px', display: 'grid', alignContent: 'start', gap: 14 }}>
           {turns.length === 0 && (
             <div style={{ display: 'grid', gap: 10 }}>
-              <p style={{ margin: 0, fontSize: 13.5, color: T.muted, lineHeight: 1.6 }}>Ask in plain words about rigs, holes, drillers, parts, money or the month ahead. Every answer shows what it read, so you can check it.</p>
+              <p style={{ margin: 0, fontSize: 13.5, color: T.muted, lineHeight: 1.6 }}>{engine.intro}</p>
               <div style={{ display: 'grid', gap: 6 }}>
                 {start.map(q => <button key={q} type="button" onClick={() => send(q)} className="xpl-row" style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: `1px solid ${T.border}`, background: 'transparent', color: T.text, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><ArrowRight size={13} aria-hidden style={{ color: T.orange, flexShrink: 0 }} />{q}</button>)}
               </div>
@@ -269,7 +309,7 @@ function AskPanel({ first, onFirst, onClose }: { first: string | null; onFirst: 
           <form onSubmit={e => { e.preventDefault(); send(text) }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
             <label style={{ flex: 1 }}>
               <span className="sr-only">Your question</span>
-              <textarea ref={input} value={text} onChange={e => setText(e.target.value)} rows={1} placeholder="Ask about your rigs, money, stores…"
+              <textarea ref={input} value={text} onChange={e => setText(e.target.value)} rows={1} placeholder={engine.placeholder}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(text) } }}
                 style={{ ...inputStyle, resize: 'none', fontSize: 13.5, minHeight: 42, maxHeight: 120, fontFamily: 'inherit' }} />
             </label>
@@ -278,6 +318,11 @@ function AskPanel({ first, onFirst, onClose }: { first: string | null; onFirst: 
           {IS_DEMO && <div style={{ fontSize: 11, color: T.faint, lineHeight: 1.45 }}>Demo: answers are worked out from this company&apos;s record by XPLORIX&apos;s own rules. The live AI model reads the same record and connects with an API key.</div>}
         </footer>
       </aside>
+  )
+  if (inline) return body
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(var(--x-shadow),0.35)', display: 'flex', justifyContent: 'flex-end' }}>
+      {body}
     </div>
   )
 }

@@ -82,6 +82,8 @@ function AddPhotos() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ tone: 'good' | 'bad'; text: string } | null>(null)
   const input = useRef<HTMLInputElement>(null)
+  const folder = useRef<HTMLInputElement>(null)
+  const [batch, setBatch] = useState<{ done: number; total: number; saved: number; unsure: number; stopped?: string } | null>(null)
 
   const holes = index?.holes.map(x => x.hole) ?? []
   const lastTray = h.trays[h.trays.length - 1]
@@ -146,6 +148,37 @@ function AddPhotos() {
     }
   }
 
+  /* A whole folder of old tray photos, read and saved in one go: the way a
+   * photo archive from past drilling is logged without anyone at the core. */
+  const runFolder = async (files: File[]) => {
+    if (!index) return
+    const fs = files.filter(f => /\.(jpe?g|png)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+    if (!fs.length) { setMsg({ tone: 'bad', text: 'No JPEG or PNG photos in that folder.' }); return }
+    setMsg(null)
+    let from = startAt, saved = 0, unsure = 0, no = lastTray?.no ?? 0
+    setBatch({ done: 0, total: fs.length, saved: 0, unsure: 0 })
+    for (let i = 0; i < fs.length; i++) {
+      const r = await readPhoto(fs[i])
+      const to = +(from + metres).toFixed(2)
+      const key = `${Date.now()}${i}`
+      const size = h.data?.holeSize ?? 'HQ'
+      const res = processTray(r.px, { from, to, coreDiameterMm: CORE_DIAMETER_MM[size] ?? 63.5, layout: layoutFor(layouts, r.px.height), idPrefix: `${hole}-U${key}` })
+      const id = `${hole}-U${key.slice(-9)}`
+      const tray: CoreTray & { photo: string } = {
+        id, hole, no: ++no, file: '', from, to, usedTo: res.usedTo, w: res.width, h: res.height, rows: res.rows, spans: res.spans,
+        breaks: res.breaks.map(b => ({ ...b, id: b.id.replace(`${hole}-U${key}`, id) })),
+        bins: res.bins.map(b => ({ ...b, cls: b.core > 0.5 ? nearestClass(b, index.classes, index.scale) : -1 })),
+        rowConfidence: res.rowConfidence, notes: res.notes, shiftIds: state.shiftLogs.filter(l => l.holeNumber === hole && (l.meterEnd ?? 0) > from && (l.meterStart ?? 0) < to).map(l => l.id),
+        takenAt: stamp(), takenBy: `Archive: ${fs[i].name}`, source: 'upload', photo: r.photo,
+      }
+      unsure += res.breaks.filter(b => b.confidence === 'low').length
+      if (!core.addUpload(tray)) { setBatch({ done: i, total: fs.length, saved, unsure, stopped: `The demo keeps photos in this browser and it is full after ${saved}. In the real system the whole archive goes to the server.` }); return }
+      saved++; from = to
+      setBatch({ done: i + 1, total: fs.length, saved, unsure })
+      await new Promise(res2 => setTimeout(res2, 0))
+    }
+  }
+
   const sample = async () => {
     const pick = h.trays.filter(t => t.source !== 'upload').slice(-2)
     await addFiles(pick.map(t => `/core/photos/${t.hole}/${t.file}`), pick.map(t => `Sample: ${t.hole} tray ${t.no} photo`))
@@ -182,6 +215,33 @@ function AddPhotos() {
           <span style={{ fontSize: 12, color: T.faint }}>JPEG or PNG. In this demo, photos stay in your browser.</span>
         </div>
         {msg && <div style={{ marginTop: 12 }}><Note tone={msg.tone === 'good' ? 'good' : 'bad'}>{msg.text}</Note></div>}
+      </Card>
+
+      <Card title="Photo archive: log old holes without the core" subtitle="Tray photos from past drilling, read in one go. The core may be long gone; the photos still give recovery, RQD, fractures, rock classes and veins.">
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 10 }}>
+            {[
+              ['Archive already read', `${index?.holes.reduce((s2, x) => s2 + x.trays, 0) ?? 0} tray photos`],
+              ['Holes logged from it', `${index?.holes.length ?? 0}`],
+              ['Metres', `${Math.round(index?.holes.reduce((s2, x) => s2 + x.photographedTo, 0) ?? 0).toLocaleString('en-IN')} m`],
+              ['Source', 'National Virtual Core Library'],
+              ['Last run', (index?.generatedAt ?? '').replace('T', ' ')],
+            ].map(([a, b]) => <div key={a} style={{ padding: '10px 12px', borderRadius: 10, border: `1px solid ${T.border}` }}><div style={{ fontSize: 11.5, color: T.faint }}>{a}</div><div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginTop: 3 }}>{b}</div></div>)}
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* @ts-expect-error webkitdirectory is not in React's input types */}
+            <input ref={folder} type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={e => { const fs = Array.from(e.target.files ?? []); if (fs.length) void runFolder(fs); e.target.value = '' }} />
+            <Btn kind="primary" onClick={() => folder.current?.click()} disabled={!!batch && batch.done < batch.total && !batch.stopped}>Read a folder of photos into {hole}</Btn>
+            <span style={{ fontSize: 12, color: T.faint }}>Photos are put in name order and laid one tray after another from {startAt.toFixed(1)} m, {metres} m a tray.</span>
+          </div>
+          {batch && (
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ height: 8, borderRadius: 4, background: 'color-mix(in srgb, var(--x-faint) 20%, transparent)' }}><div style={{ width: `${(batch.done / batch.total) * 100}%`, height: '100%', background: T.orange, borderRadius: 4 }} /></div>
+              <div style={{ fontSize: 12.5, color: T.muted }}>{batch.done} of {batch.total} photos read · {batch.saved} saved to {hole} · {batch.unsure} breaks to check{batch.done === batch.total ? <> · <Link href="/admin/geology/review" style={{ color: T.orange, fontWeight: 600 }}>Review them →</Link></> : null}</div>
+              {batch.stopped && <Note tone="warn">{batch.stopped}</Note>}
+            </div>
+          )}
+        </div>
       </Card>
 
       {items.map((p, k) => {
