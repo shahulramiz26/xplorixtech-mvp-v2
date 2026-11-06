@@ -10,6 +10,7 @@ import { companyToday, type RigToday } from '../../../lib/company-overview'
 import { CostBullet } from '../../components/dash-viz'
 import {
   METRICS, METRIC_KEYS, MODE_LABEL, OPEN_AT, alarms, buildFleet, clock, depthAt, history, level, reading, sensorMetres,
+  esgToday, CO2_KG_PER_LITRE, DIESEL_PER_LITRE, SHIFT_START,
   type Level, type Metric, type MetricKey, type PulseRig,
 } from '../../../lib/pulse'
 import { Page, PageHead, Card, Tile, Grid, Btn, T, num, eyebrow, mono, radius, tint, th, thR, td, tdR, tdStrong, rowLine, Status } from '../../components/kit'
@@ -156,6 +157,9 @@ export default function PulsePage() {
           Updates with every reading. It starts from today&rsquo;s costed shifts, the same figure as the Dashboard, so the two agree when the feed opens; it differs only where the sensor counts metres the log does not.
         </div>
       </Card>
+
+      {/* ESG FROM THE RIG */}
+      <EsgCard fleet={fleet} t={t} />
 
       {/* SELECTED RIG */}
       <Card title={`${sel.rig} live`} subtitle={[sel.project, sel.hole ? `hole ${sel.hole}` : null, MODE_LABEL[sel.mode]].filter(Boolean).join(' · ')}
@@ -345,6 +349,55 @@ function Trend({ m, p, t }: { m: Metric; p: PulseRig; t: number }) {
         <text x={W - R} y={H - 4} textAnchor="end" style={{ fontFamily: mono, fontSize: 9, fill: 'var(--x-faint)' }}>now</text>
       </svg>
     </div>
+  )
+}
+
+/* ── ESG from the rig: diesel, CO₂ and water today ──────────────────────── */
+
+function EsgCard({ fleet, t }: { fleet: PulseRig[]; t: number }) {
+  const rows = fleet.map(p => ({ p, e: esgToday(p, t) }))
+  const known = rows.filter(r => r.e.diesel != null)
+  const sum = (f: (r: typeof rows[number]) => number) => known.reduce((s, r) => s + f(r), 0)
+  const diesel = sum(r => r.e.diesel as number), idle = sum(r => r.e.idle as number)
+  const co2 = sum(r => r.e.co2 as number), water = sum(r => r.e.water as number)
+  const metres = known.reduce((s, r) => s + r.e.metres, 0)
+  const perM = metres >= 1 ? co2 / metres : null
+  const worst = known.filter(r => r.e.co2PerMetre != null).sort((a, b) => (b.e.co2PerMetre as number) - (a.e.co2PerMetre as number))[0]
+  const f0 = (n: number) => Math.round(n).toLocaleString('en-US')
+  const f1 = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 })
+  return (
+    <Card title="ESG from the rig" subtitle={`Diesel, CO₂ and water since ${clock(SHIFT_START, false)}, measured by the sensors. This feeds the client's ESG report, with safety and approvals from the shift logs.`} pad={false}>
+      <div style={{ padding: 14 }}>
+        <Grid min={160}>
+          <Tile label="Diesel today" value={`${f0(diesel)} L`} note={`${known.length} rigs reporting`} />
+          <Tile label="CO₂ today" value={`${f1(co2 / 1000)} t`} note={`At ${CO2_KG_PER_LITRE} kg a litre of diesel`} />
+          <Tile label="CO₂ a metre" value={perM != null ? `${f1(perM)} kg/m` : '—'} note={worst ? `Highest: ${worst.p.rig}` : 'No metres yet'} />
+          <Tile label="Burned idling" value={`${f0(idle)} L`} note={idle ? `${f1(idle * CO2_KG_PER_LITRE)} kg CO₂ · SAR ${f0(idle * DIESEL_PER_LITRE)}, for no metres` : 'No engine idling'} tone={idle ? 'warn' : 'good'} />
+          <Tile label="Water used" value={`${f1(water / 1000)} m³`} note={metres >= 1 ? `${f0(water / metres)} L a metre` : 'From the flow meters'} />
+        </Grid>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr><th style={th}>Rig</th><th style={thR}>Metres</th><th style={thR}>Diesel</th><th style={thR}>Idling</th><th style={thR}>CO₂</th><th style={thR}>CO₂ a metre</th><th style={thR}>Water</th></tr></thead>
+          <tbody>
+            {rows.map(({ p, e }) => (
+              <tr key={p.rig} style={{ borderTop: rowLine }}>
+                <td style={td}><div style={{ ...num, color: T.text, fontWeight: 600 }}>{p.rig}</div><div style={{ fontSize: 12, color: T.faint }}>{MODE_LABEL[p.mode]}</div></td>
+                <td style={tdR}>{f1(e.metres)} m</td>
+                <td style={tdR}>{e.diesel != null ? `${f0(e.diesel)} L` : '—'}</td>
+                <td style={{ ...tdR, color: e.idle ? 'var(--x-bad-text)' : undefined }}>{e.idle ? `${f0(e.idle)} L` : '—'}</td>
+                <td style={tdR}>{e.co2 != null ? `${f0(e.co2)} kg` : '—'}</td>
+                <td style={tdR}>{e.co2PerMetre != null ? `${f1(e.co2PerMetre)} kg/m` : '—'}</td>
+                <td style={tdR}>{e.water != null && e.water > 0 ? `${f1(e.water / 1000)} m³` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ padding: '10px 14px', fontSize: 12, color: T.faint, borderTop: rowLine, lineHeight: 1.5 }}>
+        CO₂ is worked out from diesel burned at {CO2_KG_PER_LITRE} kg a litre. Rigs with no signal are left out until their readings arrive. Cutting idle time is the quickest way to bring CO₂ a metre down.
+      </div>
+    </Card>
   )
 }
 

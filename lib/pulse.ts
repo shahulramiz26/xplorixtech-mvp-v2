@@ -174,6 +174,37 @@ export const MODE_LABEL: Record<Mode, string> = {
   drilling: 'Drilling', standby: 'Standby, engine on', breakdown: 'Engine off, breakdown', offline: 'No signal', parked: 'Parked',
 }
 
+/* ── ESG from the rig: diesel, CO₂ and water since the shift began ──────── *
+ * Fuel burn by what the rig is doing (drilling, idling on standby, off),
+ * CO₂ from diesel at the standard factor, and water from the flow meter
+ * while drilling. Same simulated model as the readings above.            */
+
+export const SHIFT_START = 7 * 3600
+export const CO2_KG_PER_LITRE = 2.68       // diesel, tank to exhaust
+const DRILL_LITRES_HOUR = 18
+
+export interface Esg {
+  rig: string; metres: number
+  diesel: number | null; idle: number | null; co2: number | null
+  co2PerMetre: number | null; water: number | null
+}
+
+export function esgToday(p: PulseRig, t: number): Esg {
+  const metres = sensorMetres(p, t)
+  if (p.mode === 'offline') return { rig: p.rig, metres, diesel: null, idle: null, co2: null, co2PerMetre: null, water: null }
+  const own = 1 + noise(p.seed, 30, 0) * 0.1
+  const h = (a: number, b: number) => Math.max(0, b - a) / 3600
+  let drillH = 0, idleH = 0
+  if (p.mode === 'drilling') drillH = h(SHIFT_START, t)
+  if (p.mode === 'standby') { const idleFrom = ONSET - 32 * 60; drillH = h(SHIFT_START, idleFrom); idleH = h(idleFrom, t) }
+  if (p.mode === 'breakdown') drillH = h(SHIFT_START, ONSET - 95 * 60)
+  const idle = idleH * IDLE_LITRES_HOUR
+  const diesel = drillH * DRILL_LITRES_HOUR * own + idle
+  const co2 = diesel * CO2_KG_PER_LITRE
+  const water = drillH * BASE.flow * 60 * own
+  return { rig: p.rig, metres, diesel, idle, co2, co2PerMetre: metres >= 1 ? co2 / metres : null, water }
+}
+
 /* ── Alarms, each with the reading behind it and what to do ─────────────── */
 
 export interface Alarm {
@@ -183,8 +214,8 @@ export interface Alarm {
 }
 const r1 = (n: number) => (Math.round(n * 10) / 10).toLocaleString('en-US')
 const r0 = (n: number) => Math.round(n).toLocaleString('en-US')
-export const DIESEL_PER_LITRE = 95
-const IDLE_LITRES_HOUR = 9
+export const DIESEL_PER_LITRE = 1.62   // SAR, matches the seeded operating rates
+export const IDLE_LITRES_HOUR = 9
 
 export function alarms(fleet: PulseRig[], t: number): Alarm[] {
   const out: Alarm[] = []
