@@ -142,7 +142,7 @@ function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data
     { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },
     { icon: BrainCircuit, title: 'Predictions', what: 'Rock strength, minerals and recovery where nobody measured', value: geo.pred ? `Strength R² ${Math.round(geo.pred.ucsFit.r2 * 100)}%` : '…', href: '/admin/geology/predict' },
     { icon: Compass, title: 'Structures', what: 'True dip and dip direction from the televiewer; joint sets', value: geo.ready ? `${geo.structures.length.toLocaleString('en-US')} planes` : '…', href: '/admin/geology/structures' },
-    { icon: Box, title: '3D view', what: 'Every hole along its surveyed path, coloured by the core', value: 'By project', href: '/admin/geology/3d' },
+    { icon: Box, title: 'Digital twin', what: 'Every hole in 3D with its whole record: core, surveys, cost and consumables', value: 'By project', href: '/admin/geology/3d' },
     { icon: Sparkles, title: 'XPLORIX AI', what: 'Ask anything about the core; it drafts the note that follows', value: 'Ctrl J on any screen', href: '/admin/geology/ask' },
   ]
   return (

@@ -119,7 +119,7 @@ const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: 'Interpretation',
     items: [
-      { href: '/admin/geology/3d', label: '3D view', icon: Box },
+      { href: '/admin/geology/3d', label: 'Digital twin', icon: Box },
       { href: '/admin/geology/export', label: 'Export', icon: Download },
     ],
   },
