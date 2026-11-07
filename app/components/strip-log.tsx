@@ -56,8 +56,8 @@ export function StripLog({ rows, drill, trays, hole, extra }: { rows: IntervalRe
     { key: 'drl', label: 'Driller', w: 34, group: 'drill' },
     { key: 'stop', label: 'Stops', w: 36, group: 'drill' },
     { key: 'tray', label: 'Trays', w: 46, group: 'drill' },
-    ...(extra?.manual ? [{ key: 'man', label: 'Hand log', w: 34, group: 'other' as const }] : []),
-    ...(extra?.domain ? [{ key: 'dom', label: 'Domain', w: 34, group: 'other' as const }] : []),
+    ...(extra?.manual ? [{ key: 'man', label: 'Hand log', w: 64, group: 'other' as const }] : []),
+    ...(extra?.domain ? [{ key: 'dom', label: 'Domain', w: 60, group: 'other' as const }] : []),
     ...(extra?.au ? [{ key: 'au', label: 'Au g/t', scale: ['0.01', '0.1', '10'] as [string, string, string], w: 90, group: 'other' as const }] : []),
   ]
   const GAP = 8, GROUP_GAP = 26, LEFT = 46

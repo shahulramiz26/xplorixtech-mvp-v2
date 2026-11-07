@@ -12,7 +12,7 @@ import { Page, PageHead, Grid, Tile, Card, Btn, Seg, Table, Status, Empty, Note,
 import { TrayPhoto, AlphaChart, Bar, recColour, rqdColour, pct, DemoPhotos, Swatch, classHex } from '../../../../components/core-ui'
 import { StripLog } from '../../../../components/strip-log'
 import { CoreFactors } from '../../../../components/core-factors'
-import { useGeo, lithHex } from '../../../../../lib/core/geo-data'
+import { useGeo } from '../../../../../lib/core/geo-data'
 import { DOMAIN_HEX } from '../../../../../lib/core/downhole'
 
 /* HOLE LOG — what the core says about one hole, and why.
@@ -36,8 +36,6 @@ export default function HoleLog() {
     const d = geo.domains('all')
     const idx = geo.metres.map((m, i) => ({ m, i })).filter(x => x.m.hole === hole)
     return {
-      manual: (geo.logs[hole] ?? []).map(x => ({ from: x.from, to: x.to, lith: x.lith, hex: lithHex(x.lith) })),
-      au: geo.byHole[hole].map(m => ({ from: m.from, to: m.to, v: m.assay.Au })),
       domain: idx.map(({ m, i }) => ({ from: m.from, to: m.to, hex: DOMAIN_HEX[d.labels[i]], name: d.names[d.labels[i]] })),
     }
   }, [geo, hole])
@@ -92,7 +90,7 @@ export default function HoleLog() {
 
       {tab === 'log' && (
         <>
-          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos (dashed RQD is predicted from joint density; incoherence is how broken the core is). Middle: from the shift logs. Right: the hand log, the all-data domain and gold. Move along the log to read every track at one depth; click to open that tray.">
+          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos (dashed RQD is predicted from joint density; incoherence is how broken the core is). Middle: from the shift logs. Right: the all-data domain (sample chemistry and geophysics in the demo). Move along the log to read every track at one depth; click to open that tray.">
             <StripLog rows={h.rows} drill={view.drill} trays={h.trays} hole={hole} extra={extra} />
           </Card>
           <CoreFactors factors={view.f} note={`${hole} only. Each shift is compared with shifts in the same ground in this hole. A pattern to check, not proof of a cause.`} />
