@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useAllHoles, useCore } from '../../../../lib/core/store'
 import { Page, PageHead, Card, Seg, Btn, Empty, Status, Table, th, thR, td, tdR, tdStrong, rowLine, T } from '../../../components/kit'
 import { TrayPhoto, dep, DemoPhotos } from '../../../components/core-ui'
+import { gapId, gapDefault, paleGap } from '../../../../lib/core/geotech'
 
 /* REVIEW TRAYS — the queue. Trays with the most doubt first, so a
  * geologist's time goes where the photo step is least sure. */
@@ -25,9 +26,12 @@ function ReviewQueue() {
 
   const rows = useMemo(() => all.list.flatMap(h => h.trays.map(t => {
     const unsure = t.breaks.filter(b => b.confidence === 'low' && !review.breaks[b.id]).length
-    const gaps = t.spans.filter(s => s.kind === 'empty').reduce((s, x) => s + (x.to - x.from), 0)
-    const doubt = unsure + gaps * 10 + (t.rowConfidence === 'low' ? 5 : 0) + t.notes.length * 2
-    return { t, hole: h.data.hole, unsure, gaps, doubt, checked: review.checked[t.id] }
+    // no core counted as the screens count it: pale patches wait for a geologist
+    const verdict = (x: typeof t.spans[number]) => review.gaps[gapId(t.id, x.row, x.x0)] ?? gapDefault(t, x)
+    const gaps = t.spans.filter(x => x.kind === 'empty' && verdict(x) === 'lost').reduce((s, x) => s + (x.to - x.from), 0)
+    const pale = t.spans.filter(x => paleGap(t, x) && !review.gaps[gapId(t.id, x.row, x.x0)]).length
+    const doubt = unsure + gaps * 10 + pale * 2 + (t.rowConfidence === 'low' ? 5 : 0) + t.notes.length * 2
+    return { t, hole: h.data.hole, unsure, gaps, pale, doubt, checked: review.checked[t.id] }
   })), [all.list, review])
 
   const list = rows
@@ -67,7 +71,7 @@ function ReviewQueue() {
                   <td style={tdStrong}>{r.hole} · tray {r.t.no}</td>
                   <td style={td}>{dep(r.t.from, r.t.usedTo)}</td>
                   <td style={{ ...tdR, color: r.unsure ? T.amber : T.muted }}>{r.unsure || '—'}</td>
-                  <td style={{ ...tdR, color: r.gaps > 0.2 ? T.red : T.muted }}>{r.gaps > 0.005 ? `${(r.gaps * 100).toFixed(0)} cm` : '—'}</td>
+                  <td style={{ ...tdR, color: r.gaps > 0.2 ? T.red : T.muted }}>{r.gaps > 0.005 ? `${(r.gaps * 100).toFixed(0)} cm` : '—'}{r.pale ? <div style={{ fontSize: 11, color: T.amber, fontWeight: 600 }}>{r.pale} pale to check</div> : null}</td>
                   <td style={td}>{r.t.rowConfidence === 'low' ? <Status tone="warn">Check the rows</Status> : 'Clear'}</td>
                   <td style={td}>{r.checked ? <Status tone="good">Checked</Status> : <Status tone="neutral">Suggested</Status>}</td>
                   <td style={{ ...td, textAlign: 'right' }}><Link href={`/admin/geology/trays/${r.t.id}`} style={{ color: T.orange, fontWeight: 600, textDecoration: 'none' }}>{r.checked ? 'Open' : 'Check'} →</Link></td>

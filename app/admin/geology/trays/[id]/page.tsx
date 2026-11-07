@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCosting } from '../../../../../lib/costing-store'
 import { useCore, useHole, overridesOf, holeOfTray, className } from '../../../../../lib/core/store'
-import { flatten, intervals, totals, gapId } from '../../../../../lib/core/geotech'
+import { flatten, intervals, totals, gapId, paleGap, gapDefault } from '../../../../../lib/core/geotech'
+import { findVeins, VEIN_CLASSES } from '../../../../../lib/core/downhole'
 import { rateOf } from '../../../../../lib/core/drill-link'
 import { Page, PageHead, Card, Btn, Grid, Tile, Status, Empty, Note, Split, T, tint } from '../../../../components/kit'
 import { TrayPhoto, CoreLegend, pct, dep, depthAtX, xAtDepth, Swatch, type Sel, DemoPhotos } from '../../../../components/core-ui'
@@ -27,7 +28,7 @@ export default function TrayCheck() {
   const h = useHole(hole)
   const [sel, setSel] = useState<Sel>(null)
   const [adding, setAdding] = useState<'natural' | 'handling' | null>(null)
-  const [show, setShow] = useState({ rows: true, breaks: true, gaps: true })
+  const [show, setShow] = useState({ rows: true, breaks: true, gaps: true, classes: true, veins: true })
   // opened from Rock classes with ?at=<depth>: that 5 cm slice is pointed out
   const [at, setAt] = useState<number | null>(null)
   useEffect(() => { const v = new URLSearchParams(window.location.search).get('at'); setAt(v != null && v !== '' && !isNaN(+v) ? +v : null) }, [trayId])
@@ -81,7 +82,9 @@ export default function TrayCheck() {
   const g = sel?.kind === 'gap' ? tray.spans.find(s => s.kind !== 'core' && gapId(tray.id, s.row, s.x0) === sel.id) : undefined
   const a = sel?.kind === 'added' ? review.added.find(x => x.id === sel.id) : undefined
   const bv = b ? (review.breaks[b.id] ?? b.kind) : undefined
-  const gv = g ? (review.gaps[gapId(tray.id, g.row, g.x0)] ?? 'lost') : undefined
+  const gDefault = g ? gapDefault(tray, g) : undefined
+  const gv = g ? (review.gaps[gapId(tray.id, g.row, g.x0)] ?? gDefault) : undefined
+  const paleToCheck = tray.spans.filter(s => paleGap(tray, s) && !review.gaps[gapId(tray.id, s.row, s.x0)]).length
 
   const add = (row: number, x: number) => {
     if (!adding) return
@@ -99,6 +102,10 @@ export default function TrayCheck() {
   const mark = p0 && p1 && p0.row === p1.row ? { row: p0.row, x0: p0.x, x1: p1.x } : undefined
   const classes = core.index?.classes ?? []
   const hexOf = (id: number) => classes.find(c => c.id === id)?.hex ?? '#888'
+  // rock classes and veins in this tray, read from the same photo
+  const inTray = classes.map(c => ({ c, m: tray.bins.filter(x => x.cls === c.id).reduce((s, x) => s + (x.to - x.from) * x.core, 0) })).filter(x => x.m > 0.005).sort((p, q) => q.m - p.m)
+  const veins = h.data && h.flat ? findVeins({ data: h.data, rows: h.rows, flat: h.flat, trays: h.trays }).filter(v => v.tray === tray.id) : []
+  const veinMarks = veins.map(v => ({ from: v.from, to: v.to, hex: VEIN_CLASSES[v.cls].hex === '#e8e4d8' ? '#F5E9B8' : VEIN_CLASSES[v.cls].hex, letter: VEIN_CLASSES[v.cls].letter }))
 
   const choice = (label: string, on: boolean, onClick: () => void, key?: string) => (
     <button onClick={onClick} style={{
@@ -117,7 +124,7 @@ export default function TrayCheck() {
         tone={checked ? 'good' : 'warn'}
         answer={checked
           ? <>Checked by {checked.by} on {checked.at.replace('T', ' ')}. Recovery {pct(stats.t.recovery)}, RQD {pct(stats.t.rqd)}.</>
-          : <>Suggested by the photo step, not yet checked. {unsure ? <b>{unsure} {unsure === 1 ? 'break it is unsure of is' : 'breaks it is unsure of are'} marked with a dot.</b> : 'No unsure breaks.'} Click a line or a shaded gap to correct it.</>}
+          : <>Suggested by the photo step, not yet checked. {unsure ? <b>{unsure} {unsure === 1 ? 'break it is unsure of is' : 'breaks it is unsure of are'} marked with a dot.</b> : 'No unsure breaks.'}{paleToCheck ? <> <b>{paleToCheck} very pale {paleToCheck === 1 ? 'patch' : 'patches'}</b> in a dashed box: core or empty tray?</> : null} Click a line or a box to correct it.</>}
         right={<>
           <DemoPhotos />
           <Btn href={prev ? `/admin/geology/trays/${prev.id}` : undefined} disabled={!prev}>← Tray {prev?.no ?? ''}</Btn>
@@ -131,13 +138,13 @@ export default function TrayCheck() {
               <Btn size="sm" kind={adding === 'natural' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'natural' ? null : 'natural'); setSel(null) }}>+ Natural break</Btn>
               <Btn size="sm" kind={adding === 'handling' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'handling' ? null : 'handling'); setSel(null) }}>+ Handling break</Btn>
             </div>}>
-            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} mark={mark} />
+            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} mark={mark} classHex={hexOf} veins={veinMarks} onPickBin={f => setAt(f)} />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
               <CoreLegend />
               <div style={{ display: 'flex', gap: 12, fontSize: 12, color: T.muted }}>
-                {(['rows', 'breaks', 'gaps'] as const).map(k => (
+                {(['rows', 'breaks', 'gaps', 'classes', 'veins'] as const).map(k => (
                   <label key={k} style={{ display: 'flex', gap: 5, alignItems: 'center', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={show[k]} onChange={e => setShow({ ...show, [k]: e.target.checked })} />{k === 'rows' ? 'Row depths' : k === 'breaks' ? 'Breaks' : 'Gaps'}
+                    <input type="checkbox" checked={show[k]} onChange={e => setShow({ ...show, [k]: e.target.checked })} />{k === 'rows' ? 'Row depths' : k === 'breaks' ? 'Breaks' : k === 'gaps' ? 'Gaps' : k === 'classes' ? 'Rock class' : 'Veins'}
                   </label>
                 ))}
               </div>
@@ -150,11 +157,37 @@ export default function TrayCheck() {
             <Tile label="Natural breaks" value={stats.t.natural} note={`${stats.t.handling} in handling`} />
             <Tile label="Fractures /m" value={stats.t.ff.toFixed(1)} />
           </Grid>
+
+          <Card title="Rock and veins in this tray" subtitle="The coloured strip under the core is the rock class of every 5 cm; boxes with a letter are veins. Click the strip to check or move a slice.">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gap: 6, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Rock class</div>
+                {inTray.map(({ c, m }) => (
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <Swatch hex={c.hex} size={13} /><span style={{ flex: 1 }}>{className(review, c.id)}</span>
+                    <span style={{ fontFamily: 'var(--x-mono, monospace)', color: T.muted }}>{m.toFixed(2)} m</span>
+                  </div>
+                ))}
+                <Link href="/admin/geology/classes" style={{ fontSize: 12, color: T.muted }}>Name the classes →</Link>
+              </div>
+              <div style={{ display: 'grid', gap: 6, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Veins ({veins.length})</div>
+                {veins.length === 0 && <div style={{ fontSize: 13, color: T.muted }}>No veins seen in this tray.</div>}
+                {VEIN_CLASSES.map(vc => { const n = veins.filter(v => v.cls === vc.id); return n.length ? (
+                  <div key={vc.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <span style={{ width: 13, height: 13, border: `2px solid ${vc.hex === '#e8e4d8' ? '#C9B86A' : vc.hex}`, borderRadius: 2, display: 'inline-block' }} />
+                    <span style={{ flex: 1 }}><b>{vc.letter}</b> · {vc.name}</span>
+                    <span style={{ fontFamily: 'var(--x-mono, monospace)', color: T.muted }}>{n.length} · {(n.reduce((s, v) => s + v.length, 0) * 100).toFixed(0)} cm</span>
+                  </div>) : null })}
+                {veins.length > 0 && <Link href="/admin/geology/veins" style={{ fontSize: 12, color: T.muted }}>Vein classes →</Link>}
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           {bin && origCls != null && (
-            <Card title={`Rock class at ${dep(bin.from, bin.to)}`} subtitle="The slice you opened from Rock classes, in the orange box on the photo.">
+            <Card title={`Rock class at ${dep(bin.from, bin.to)}`} subtitle="The slice in the orange box on the photo.">
               <div style={{ display: 'grid', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
                   <Swatch hex={hexOf(bin.cls)} size={16} /><b>{className(review, bin.cls)}</b>
@@ -194,10 +227,12 @@ export default function TrayCheck() {
             )}
             {g && (
               <div style={{ display: 'grid', gap: 8 }}>
-                <div style={{ fontSize: 12.5, color: T.muted }}>{((g.to - g.from) * 100).toFixed(0)} cm of tray with no core seen.</div>
+                <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.55 }}>{paleGap(tray, g) && !review.gaps[gapId(tray.id, g.row, g.x0)]
+                  ? <>{((g.to - g.from) * 100).toFixed(0)} cm that is <b style={{ color: T.text }}>very pale</b>: the photo step is not sure if it is core or empty tray. It is not counted as lost until you decide.</>
+                  : <>{((g.to - g.from) * 100).toFixed(0)} cm of tray with no core seen.</>}</div>
                 {(['lost', 'sampled', 'core'] as const).map(v => choice(
                   v === 'lost' ? 'Core lost in drilling' : v === 'sampled' ? 'Taken for samples' : 'There is core (photo misread)', gv === v,
-                  () => core.setGap(gapId(tray.id, g.row, g.x0), tray.id, v === 'lost' ? null : v, `Gap ${dep(g.from, g.to)}: ${v === 'lost' ? 'lost' : v === 'sampled' ? 'sampled' : 'core present'}`)))}
+                  () => core.setGap(gapId(tray.id, g.row, g.x0), tray.id, v, `Gap ${dep(g.from, g.to)}: ${v === 'lost' ? 'lost' : v === 'sampled' ? 'sampled' : 'core present'}`)))}
                 <div style={{ fontSize: 11.5, color: T.faint }}>Sampled core counts as recovered and is left out of RQD.</div>
               </div>
             )}

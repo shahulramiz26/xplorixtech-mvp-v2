@@ -4,7 +4,7 @@ import { ReactNode, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import type { CoreTray, BreakVerdict, GapVerdict, AddedBreak } from '../../lib/core/model'
 import type { IntervalResult } from '../../lib/core/geotech'
-import { gapId } from '../../lib/core/geotech'
+import { gapId, paleGap } from '../../lib/core/geotech'
 import { useCore, className } from '../../lib/core/store'
 import { T, tint, mono } from './kit'
 
@@ -41,15 +41,18 @@ export function xAtDepth(t: CoreTray, at: number): { row: number; x: number } | 
 export type Sel = { kind: 'break'; id: string } | { kind: 'gap'; id: string } | { kind: 'added'; id: string } | null
 
 /* A tray photo with what the photo step found drawn over it. */
-export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: true, breaks: true, gaps: true }, compact, mark }: {
+export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: true, breaks: true, gaps: true }, compact, mark, classHex, veins, onPickBin }: {
   tray: CoreTray & { photo?: string }
   mark?: { row: number; x0: number; x1: number }   // a 5 cm slice to point out (opened from Rock classes)
   sel?: Sel
   onSelect?: (s: Sel) => void
   onAdd?: (row: number, x: number) => void
   adding?: boolean
-  show?: { rows: boolean; breaks: boolean; gaps: boolean }
+  show?: { rows: boolean; breaks: boolean; gaps: boolean; classes?: boolean; veins?: boolean }
   compact?: boolean
+  classHex?: (cls: number) => string                // rock class colours, for the class strip under the core
+  veins?: { from: number; to: number; hex: string; letter: string }[]
+  onPickBin?: (from: number) => void                // click on the class strip: that 5 cm slice
 }) {
   const { review } = useCore()
   const svg = useRef<SVGSVGElement>(null)
@@ -78,7 +81,19 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
         {show.gaps && tray.spans.filter(s => s.kind !== 'core').map(s => {
           const r = tray.rows[s.row]
           const id = gapId(tray.id, s.row, s.x0)
-          const v: GapVerdict | 'block' = s.kind === 'block' ? 'block' : (review.gaps[id] ?? 'lost')
+          const pale = paleGap(tray, s)
+          const v: GapVerdict | 'block' | 'check' = s.kind === 'block' ? 'block' : ((review.gaps[id] as GapVerdict | undefined) ?? (pale ? 'check' : 'lost'))
+          if (v === 'check') {
+            // pale core or empty tray? Not drawn on thumbnails; a dashed amber box to check on the tray screen
+            if (compact) return null
+            const on = sel?.kind === 'gap' && sel.id === id
+            return (
+              <rect key={id} x={s.x0} y={r.band[0]} width={s.x1 - s.x0} height={r.band[1] - r.band[0]} fill="none" stroke={CORE_COLOURS.unsure} strokeWidth={on ? sw * 2 : sw * 1.1} strokeDasharray={`${sw * 2.5} ${sw * 1.5}`}
+                onClick={e => { if (!adding) { e.stopPropagation(); onSelect?.({ kind: 'gap', id }) } }} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
+                <title>Very pale here: core or empty tray? Please check · {dep(s.from, s.to)}</title>
+              </rect>
+            )
+          }
           if (v === 'core') return (
             <rect key={id} x={s.x0} y={r.band[0]} width={s.x1 - s.x0} height={r.band[1] - r.band[0]} fill="none" stroke="#fff" strokeOpacity={0.6} strokeDasharray={`${sw * 2} ${sw * 2}`} strokeWidth={sw * 0.6}
               onClick={e => { if (!adding) { e.stopPropagation(); onSelect?.({ kind: 'gap', id }) } }} style={{ cursor: onSelect ? 'pointer' : 'default' }} />
@@ -128,6 +143,24 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
             </g>
           )
         })}
+        {show.classes && classHex && tray.bins.filter(bn => bn.core > 0.5 && bn.cls >= 0).map(bn => {
+          const a0 = xAtDepth(tray, bn.from + 1e-6), a1 = xAtDepth(tray, bn.to - 1e-6)
+          if (!a0 || !a1 || a0.row !== a1.row) return null
+          const r = tray.rows[a0.row], hh = Math.max(2, (r.band[1] - r.band[0]) * 0.2)
+          return <rect key={`c${bn.from}`} x={a0.x} y={r.band[1] - hh} width={Math.max(0.6, a1.x - a0.x)} height={hh} fill={classHex(bn.cls)} stroke="#000" strokeOpacity={0.35} strokeWidth={sw * 0.25}
+            onClick={e => { if (!adding && onPickBin) { e.stopPropagation(); onPickBin(bn.from) } }} style={{ cursor: onPickBin ? 'pointer' : 'default' }} />
+        })}
+        {show.veins && veins?.map(v => {
+          const a0 = xAtDepth(tray, v.from + 1e-6), a1 = xAtDepth(tray, v.to - 1e-6)
+          if (!a0 || !a1 || a0.row !== a1.row) return null
+          const r = tray.rows[a0.row]
+          return (
+            <g key={`v${v.from}`} pointerEvents="none">
+              <rect x={a0.x - sw} y={r.band[0] + sw} width={Math.max(1, a1.x - a0.x) + sw * 2} height={(r.band[1] - r.band[0]) * 0.72} fill="none" stroke={v.hex} strokeWidth={sw * 1.3} />
+              <text x={a0.x} y={r.band[0] + 5.5 * sw} fontSize={5 * sw} fontWeight={700} fill={v.hex} stroke="#000" strokeWidth={sw * 0.5} paintOrder="stroke">{v.letter}</text>
+            </g>
+          )
+        })}
         {mark && tray.rows[mark.row] && (
           <rect x={Math.min(mark.x0, mark.x1) - sw * 2} y={tray.rows[mark.row].band[0] - sw * 2} width={Math.abs(mark.x1 - mark.x0) + sw * 4}
             height={tray.rows[mark.row].band[1] - tray.rows[mark.row].band[0] + sw * 4} fill="none" stroke="#F97316" strokeWidth={sw * 2.2} rx={sw * 2} />
@@ -145,6 +178,7 @@ export function CoreLegend() {
     ['Changed by the geologist', <span key="c" style={{ width: 9, height: 9, borderRadius: 9, background: '#FFE14D', border: '1px solid #000', display: 'inline-block' }} />],
     ['No core in the tray', <span key="l" style={{ width: 14, height: 9, background: tint(CORE_COLOURS.lost, 35), border: `1px solid ${CORE_COLOURS.lost}`, display: 'inline-block' }} />],
     ['Taken for samples', <span key="s" style={{ width: 14, height: 9, background: tint(CORE_COLOURS.sampled, 35), border: `1px solid ${CORE_COLOURS.sampled}`, display: 'inline-block' }} />],
+    ['Pale: core or empty? Check', <span key="p" style={{ width: 14, height: 9, border: `1.5px dashed ${CORE_COLOURS.unsure}`, display: 'inline-block' }} />],
   ]
   return (
     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: T.muted }}>

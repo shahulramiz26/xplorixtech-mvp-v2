@@ -41,6 +41,22 @@ export interface HoleGap { id: string; tray: string; from: number; to: number; v
 
 export const gapId = (tray: string, row: number, x0: number) => `${tray}:${row}:${x0}`
 
+/* A short "no core" stretch in the middle of a row, with core on both sides.
+ * On a photo, very pale core looks like white tray plastic, and these are the
+ * places the photo step most often gets wrong. They are shown as "please check"
+ * and are not counted as lost core until a geologist says so. A long stretch,
+ * or one at the end of a row, is left as no core. */
+export const PALE_GAP_MAX_M = 0.15
+export function paleGap(t: CoreTray, s: CoreTray['spans'][number]): boolean {
+  if (s.kind !== 'empty' || s.to - s.from >= PALE_GAP_MAX_M) return false
+  const row = t.spans.filter(x => x.row === s.row)
+  const left = row.filter(x => x.x1 <= s.x0).sort((a, b) => b.x1 - a.x1)[0]
+  const right = row.filter(x => x.x0 >= s.x1).sort((a, b) => a.x0 - b.x0)[0]
+  return left?.kind === 'core' && right?.kind === 'core'
+}
+/* What a gap counts as before a geologist looks at it. */
+export const gapDefault = (t: CoreTray, s: CoreTray['spans'][number]): GapVerdict => paleGap(t, s) ? 'core' : 'lost'
+
 /* Everything along a hole, with the geologist's corrections applied. */
 export function flatten(trays: CoreTray[], ov: Overrides = NO_OVERRIDES) {
   const cover: { from: number; to: number; tray: string }[] = []
@@ -56,9 +72,9 @@ export function flatten(trays: CoreTray[], ov: Overrides = NO_OVERRIDES) {
     })
     t.spans.filter(s => s.kind === 'empty').forEach(s => {
       const id = gapId(t.id, s.row, s.x0)
-      const v = ov.gaps[id]
+      const v = ov.gaps[id] ?? gapDefault(t, s)
       if (v === 'core') return
-      gaps.push({ id, tray: t.id, from: s.from, to: s.to, verdict: v ?? 'lost', changed: !!v })
+      gaps.push({ id, tray: t.id, from: s.from, to: s.to, verdict: v, changed: !!ov.gaps[id] })
     })
     t.bins.forEach(b => bins.push({ ...b, tray: t.id }))
   })
