@@ -48,7 +48,8 @@ export default function Structures() {
   const st = data.structures.filter(s => s.hole === sel)
   const nat = h.flat.breaks.filter(b => b.kind === 'natural')
   const js = jointSets(nat.map(b => b.alpha))
-  const o = holeOrient(sel)
+  const sv = data.surveys[sel] ?? []
+  const o = sv.length ? { az: Math.round(sv[0].azimuth), dip: Math.round(sv[0].dip) } : holeOrient(sel)
   const hex = (s: typeof st[number]) => by === 'set' ? SET_HEX[s.set % SET_HEX.length] : TYPE_HEX[s.type]
   const tracks: Track[] = [
     { kind: 'band', label: 'Core colour', w: 34, items: h.rows.map(r => ({ from: r.from, to: r.to, hex: r.hex })) },
@@ -114,7 +115,9 @@ export default function Structures() {
             {[
               ['1 · Core photo', 'Each natural crack and its angle to the core (alpha). Every hole has this.'],
               ['2 · Televiewer', 'The same cracks on the hole wall, with which way round the hole they face (beta) and a compass.'],
-              ['3 · Hole survey', `${sel} was drilled toward ${o.az}° at ${Math.abs(o.dip)}°. With 1 and 2, each crack gets its true dip and dip direction.`],
+              ['3 · Hole survey', sv.length
+                ? `From the XPLORIX drilling record: ${sv.length} approved survey readings on ${sel}, ${Math.round(sv[0].azimuth)}° at ${Math.abs(Math.round(sv[0].dip))}° (${sv[0].depth} m) to ${Math.round(sv[sv.length - 1].azimuth)}° at ${Math.abs(Math.round(sv[sv.length - 1].dip))}° (${sv[sv.length - 1].depth} m). Each crack uses the direction at its own depth.`
+                : `No approved survey on the drilling record for ${sel} yet, so the planned direction (${o.az}° at ${Math.abs(o.dip)}°) is used. Add readings in Hole survey.`],
             ].map(([t, d]) => <div key={t} style={{ padding: '10px 12px', borderRadius: 10, border: `1px solid ${T.border}`, background: 'var(--x-raised)' }}><div style={{ fontWeight: 700, fontSize: 13 }}>{t}</div><div style={{ fontSize: 12.5, color: T.muted, marginTop: 4, lineHeight: 1.5 }}>{d}</div></div>)}
           </div>
           <Table>

@@ -99,6 +99,21 @@ const ORIENT: Record<string, { az: number; dip: number }> = {
 }
 export const holeOrient = (h: string) => ORIENT[h] ?? { az: 90, dip: -60 }
 
+/* A hole survey station from the drilling record (approved readings). */
+export interface Station { depth: number; azimuth: number; dip: number }
+/* The hole's direction at a depth: from the drilling record's survey when
+ * there is one (between two readings, in proportion), else the fixed demo one. */
+export function orientAt(st: Station[] | undefined, hole: string, depth: number): { az: number; dip: number } {
+  if (!st?.length) return holeOrient(hole)
+  const s = [...st].sort((a, b) => a.depth - b.depth)
+  if (depth <= s[0].depth) return { az: s[0].azimuth, dip: s[0].dip }
+  const j = s.findIndex(x => x.depth >= depth)
+  if (j < 0) { const l = s[s.length - 1]; return { az: l.azimuth, dip: l.dip } }
+  const a = s[j - 1], b = s[j], f = (depth - a.depth) / Math.max(1e-9, b.depth - a.depth)
+  const dAz = ((b.azimuth - a.azimuth + 540) % 360) - 180
+  return { az: (a.azimuth + f * dAz + 360) % 360, dip: a.dip + f * (b.dip - a.dip) }
+}
+
 /* ── one metre, every dataset ───────────────────────────────────────────── */
 
 export interface Metre {
@@ -356,7 +371,7 @@ export function trueOrientation(alpha: number, beta: number, az: number, holeDip
   return { dip: Math.round(dip), dipDir: Math.round(dipDir) }
 }
 
-export function televiewer(h: HoleView): Structure[] {
+export function televiewer(h: HoleView, stations?: Station[]): Structure[] {
   const hole = h.data.hole
   if (!hasData('televiewer', hole)) return []
   const r = rng(`atv:${hole}`)
@@ -370,7 +385,8 @@ export function televiewer(h: HoleView): Structure[] {
     if (r() > 0.72) return               // the televiewer misses some, and finds some the photo does not
     const set = sets.length ? sets.reduce((bi, s, i) => Math.abs(s.mean - b.alpha) < Math.abs(sets[bi].mean - b.alpha) ? i : bi, 0) : 0
     const beta = ((betaOf[set] ?? 90) + gauss(r) * 14 + 360) % 360
-    const t = trueOrientation(b.alpha, beta, o.az, o.dip)
+    const oo = orientAt(stations, hole, b.at)
+    const t = trueOrientation(b.alpha, beta, oo.az, oo.dip)
     const close = nat.filter(x => Math.abs(x.at - b.at) < 0.15).length
     out.push({ id: `${hole}-S${out.length + 1}`, hole, at: r2(b.at), alpha: b.alpha, beta: Math.round(beta), ...t, type: veinAt(b.at) ? 'Vein' : close >= 4 ? 'Shear' : 'Joint', set })
   })

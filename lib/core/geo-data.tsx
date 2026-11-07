@@ -4,9 +4,10 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { useAllHoles, useCore, stamp, editVeins } from './store'
 import {
   holeMetres, demoManualLog, classLithMap, checkLog, findVeins, televiewer, domains, predict,
-  type Metre, type ManualInterval, type LogCheck, type Vein, type Structure, type Domains, type FeatureSet, type Predictions, type HoleView,
+  type Metre, type Station, type ManualInterval, type LogCheck, type Vein, type Structure, type Domains, type FeatureSet, type Predictions, type HoleView,
 } from './downhole'
-import { parseTable } from '../survey'
+import { parseTable, holeSurvey, type SurveyState } from '../survey'
+import { useCostingOptional } from '../costing-store'
 
 /* ==========================================================================
  * XPLORIX CORE — everything worked out from the photos and the other data
@@ -40,6 +41,7 @@ export interface GeoData {
   checks: LogCheck[]
   veins: Vein[]
   structures: Structure[]
+  surveys: Record<string, Station[]>                 // approved hole survey readings from the drilling record
   domains: (set: FeatureSet) => Domains
   pred: Predictions | null
 }
@@ -57,7 +59,7 @@ interface Ctx {
 }
 const C = createContext<Ctx | null>(null)
 
-const EMPTY_DATA: GeoData = { ready: false, holes: [], metres: [], byHole: {}, logs: {}, map: {}, checks: [], veins: [], structures: [], domains: () => ({ set: 'all', k: 0, labels: [], names: [], xy: [], explained: [], sizes: [], profile: [] }), pred: null }
+const EMPTY_DATA: GeoData = { ready: false, holes: [], metres: [], byHole: {}, logs: {}, map: {}, checks: [], veins: [], structures: [], surveys: {}, domains: () => ({ set: 'all', k: 0, labels: [], names: [], xy: [], explained: [], sizes: [], profile: [] }), pred: null }
 
 export function GeoDataProvider({ children }: { children: ReactNode }) {
   const [edits, setEdits] = useState<GeoEdits>(EMPTY)
@@ -163,6 +165,7 @@ function readIntervals(text: string) {
 function useCompute(on: boolean, edits: GeoEdits): GeoData {
   const all = useAllHoles(on)
   const { review } = useCore()
+  const costing = useCostingOptional()
   const base = useMemo(() => {
     if (!on || !all.ready) return null
     const holes: HoleView[] = all.list.filter(h => h.flat).map(h => ({ data: h.data, rows: h.rows, flat: h.flat!, trays: h.trays }))
@@ -170,9 +173,12 @@ function useCompute(on: boolean, edits: GeoEdits): GeoData {
     holes.forEach(h => { byHole[h.data.hole] = holeMetres(h) })
     const metres = holes.flatMap(h => byHole[h.data.hole])
     const veins = editVeins(holes.flatMap(findVeins), review)
-    const structures = holes.flatMap(h => edits.tv?.[h.data.hole]?.planes ?? televiewer(h))
-    return { holes, byHole, metres, veins, structures }
-  }, [on, all.ready, all.list, review, edits.tv])
+    // the hole's direction comes from the drilling record's approved survey readings
+    const surveys: Record<string, Station[]> = {}
+    if (costing) holes.forEach(h => { const ap = holeSurvey(costing.state as unknown as SurveyState, h.data.hole).approved; if (ap.length) surveys[h.data.hole] = ap.map(r => ({ depth: r.depth, azimuth: r.azimuth, dip: r.dip })) })
+    const structures = holes.flatMap(h => edits.tv?.[h.data.hole]?.planes ?? televiewer(h, surveys[h.data.hole]))
+    return { holes, byHole, metres, veins, structures, surveys }
+  }, [on, all.ready, all.list, review, edits.tv, costing?.state.shiftLogs, costing?.state.surveys])
   const logged = useMemo(() => {
     if (!base) return null
     const logs: Record<string, ManualInterval[]> = {}
