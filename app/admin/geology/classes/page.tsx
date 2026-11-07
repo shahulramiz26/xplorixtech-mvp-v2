@@ -76,7 +76,7 @@ export default function RockClasses() {
       <PageHead question="Which rock is which?"
         answer={<>The photos split the core into {index.classes.length} classes that look alike, darkest first. {named < index.classes.length ? `Name the ${index.classes.length - named} unnamed classes once; every log and export uses your names.` : 'All classes are named.'}</>}
         right={<DemoPhotos />} />
-      <Note>Classes come from what a photo shows: colour, grain, veins and staining. Two rocks that look the same will share a class, and one rock can split across two. The name is the geologist&apos;s call. The pictures are examples of each class: a green ✓ means a geologist has checked that tray. Click a picture to open its tray: the slice is marked on the photo, and if it is in the wrong class you can move it there. Moved slices show first in their new class, marked Moved; every move is saved with your name and, in the full build, teaches the model.</Note>
+      <Note>Classes come from what a photo shows: colour, grain, veins and staining. Two rocks that look the same will share a class, and one rock can split across two. The name is the geologist&apos;s call; in the demo the names come from the sample hand logs and can be changed here. The pictures are examples of each class: a green ✓ means a geologist has checked that tray. Click a picture to open its tray: the slice is marked on the photo, and if it is in the wrong class you can move it there. Moved slices show first in their new class, marked Moved; every move is saved with your name and, in the full build, teaches the model.</Note>
 
       {view.map(({ c, metres, holes, samples }) => {
         const movedIn = Object.values(moves).filter(v => v === c.id).length

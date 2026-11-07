@@ -27,8 +27,13 @@ export interface CoreReview {
   reviewer: string
 }
 
-const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, classMoves: {}, veinEdits: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
+/* Names for the six demo rock classes, the same ones the demo's sample hand
+ * logs use, so every screen reads the same. A geologist can rename any of them. */
+export const DEMO_CLASS_NAMES: Record<number, string> = { 0: 'Basalt', 1: 'Siltstone', 2: 'Oxidised zone', 3: 'Quartz-veined sediment', 4: 'Sandstone', 5: 'Limestone' }
+
+const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
+
 
 export function stamp() {
   const d = new Date()
@@ -65,7 +70,7 @@ export function CoreProvider({ children }: { children: ReactNode }) {
   const loaded = useRef(false)
 
   useEffect(() => {
-    try { const raw = localStorage.getItem(KEY); if (raw) setReview({ ...EMPTY, ...JSON.parse(raw) }) } catch { /* private window */ }
+    try { const raw = localStorage.getItem(KEY); if (raw) { const r = JSON.parse(raw); setReview({ ...EMPTY, ...r, classNames: { ...DEMO_CLASS_NAMES, ...(r.classNames ?? {}) } }) } } catch { /* private window */ }
     loaded.current = true
     fetch('/core/index.json').then(r => r.ok ? r.json() : null).then(setIndex).catch(() => setIndex(null))
   }, [])
