@@ -88,44 +88,44 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
 /* The geologist's half of XPLORIX. Same company, same projects and holes,
  * same shift logs; a menu of its own. */
 const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
-  { title: null, items: [{ href: '/admin/geology', label: 'Geology today', icon: Layers }, { href: '/admin/geology/ask', label: 'XPLORIX AI', icon: Sparkles }] },
+  // In the order the work goes: photo in, review, see the hole, what the core shows, other data, share.
+  // Ask XPLORIX is the button at the top right, so it is not repeated here.
+  { title: null, items: [{ href: '/admin/geology', label: 'Geology today', icon: Layers }] },
   {
-    title: 'Core',
+    title: 'Capture and review',
     items: [
-      { href: '/admin/geology/holes', label: 'Hole logs', icon: Drill, also: ['/admin/geology/trays'] },
-      { href: '/admin/geology/review', label: 'Review trays', icon: ScanSearch },
       { href: '/admin/geology/photos', label: 'Add photos & archive', icon: Camera },
+      { href: '/admin/geology/review', label: 'Review trays', icon: ScanSearch, also: ['/admin/geology/trays'] },
+    ],
+  },
+  {
+    title: 'See the core',
+    items: [
+      { href: '/admin/geology/holes', label: 'Hole logs', icon: Drill },
+      { href: '/admin/geology/3d', label: 'Digital twin', icon: Box },
     ],
   },
   {
     title: 'Automated logging',
     items: [
       { href: '/admin/geology/rock-mass', label: 'Geotech: rock mass', icon: Mountain },
+      { href: '/admin/geology/structures', label: 'Geotech: structures', icon: Compass },
       { href: '/admin/geology/classes', label: 'Geology: rock classes', icon: PaletteIcon },
       { href: '/admin/geology/veins', label: 'Geology: vein classes', icon: Gem },
     ],
   },
   {
-    title: 'Data-driven',
+    title: 'Downhole data',
     items: [
       { href: '/admin/geology/data', label: 'Downhole data', icon: Database },
       { href: '/admin/geology/domains', label: 'Domains', icon: Network },
       { href: '/admin/geology/predict', label: 'Predictions', icon: BrainCircuit },
-      { href: '/admin/geology/structures', label: 'Structures', icon: Compass },
     ],
   },
   {
-    title: 'Interpretation',
+    title: 'Share',
     items: [
-      { href: '/admin/geology/3d', label: 'Digital twin', icon: Box },
       { href: '/admin/geology/export', label: 'Export', icon: Download },
-    ],
-  },
-  {
-    title: 'Shared with drilling',
-    items: [
-      { href: '/admin/projects', label: 'Projects & holes', icon: FolderOpen },
-      { href: '/admin/tasks?dept=geology', label: 'Core quality tasks', icon: CalendarDays, badge: ['geology'] },
     ],
   },
   { title: 'Help', items: [{ href: '/admin/geology/method', label: 'How it works', icon: BookOpen }] },

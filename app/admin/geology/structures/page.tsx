@@ -73,7 +73,7 @@ export default function Structures() {
     <Page>
       <PageHead question="Which way do the fractures and veins dip?"
         answer={<>{all.length.toLocaleString('en-US')} structures picked on the televiewer in {view.tvHoles.length} holes, each with true dip and dip direction. The tray photos give the angle to the core (alpha) on all {data.holes.length} holes; the televiewer adds which way each plane faces.</>}
-        right={<><DemoPhotos /><SampleBadge>Sample televiewer</SampleBadge><Btn onClick={() => download('xplorix_structures.csv', ['HOLE_ID,DEPTH,TYPE,ALPHA,BETA,DIP,DIP_DIRECTION,SET', ...all.map(s => [s.hole, s.at, s.type, s.alpha, s.beta, s.dip, s.dipDir, s.set + 1].join(','))].join('\n'))}>Download structures (CSV)</Btn></>} />
+        />
 
       <Grid min={170}>
         <Tile label="Holes with televiewer" value={`${view.tvHoles.length} of ${data.holes.length}`} note="True dip and dip direction" />
@@ -91,7 +91,7 @@ export default function Structures() {
                 <td style={td}>{p.sets.length ? <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>{p.sets.map((x, i) => <span key={i} style={{ fontFamily: 'var(--x-mono, monospace)', fontSize: 12, padding: '1px 7px', borderRadius: 5, border: `1px solid ${T.border}`, color: T.text }}>{x.mean}° ± {x.sd}° <span style={{ color: T.faint }}>n={x.n}</span></span>)}</span> : '—'}</td>
                 <td style={tdR}>{p.discs || '—'}</td>
                 <td style={tdR}>{p.jrc.toFixed(1)}</td>
-                <td style={td}>{edits.tv?.[p.hole] ? <span style={{ color: T.green, fontWeight: 600 }}>✓ {edits.tv[p.hole].file}</span> : p.tv ? <span style={{ color: T.muted }}>Sample · {p.tv} planes</span> : <span style={{ color: T.faint }}>Not yet</span>}</td>
+                <td style={td}>{edits.tv?.[p.hole] ? <span style={{ color: T.green, fontWeight: 600 }}>✓ {edits.tv[p.hole].file}</span> : p.tv ? <span style={{ color: T.muted }}>{p.tv} planes</span> : <span style={{ color: T.faint }}>Not yet</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -107,8 +107,8 @@ export default function Structures() {
         </div>
       </Card>
 
-      <Card title={`Compare on ${sel}: what the photo sees and what the televiewer adds`} subtitle={imported ? `Televiewer: ${imported.file}, imported ${imported.at.replace('T', ' ')}.` : 'Televiewer in the demo is sample data, made from the photo angles; add a real file to compare for real.'}
-        right={imported ? <Btn size="sm" onClick={() => clearImport('tv', sel)}>Remove the file</Btn> : <SampleBadge>Sample televiewer</SampleBadge>}>
+      <Card title={`Compare on ${sel}: what the photo sees and what the televiewer adds`} subtitle={imported ? `Televiewer: ${imported.file}, imported ${imported.at.replace('T', ' ')}.` : 'Add your televiewer CSV above to compare with your own file.'}
+        right={imported ? <Btn size="sm" onClick={() => clearImport('tv', sel)}>Remove the file</Btn> : undefined}>
         <div style={{ display: 'grid', gap: 16 }}>
           <HoleTabs holes={view.tvHoles} value={sel} onChange={setHole} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
@@ -168,7 +168,7 @@ export default function Structures() {
           <AlphaChart alphas={nat.map(b => b.alpha)} sets={js.sets} />
         </Card>
       </Grid>
-      <Note>Alpha comes from the real tray photos. In the demo, beta (which way round the hole each plane faces) is sample televiewer data; true dip and dip direction are worked out from alpha, beta and the hole&apos;s direction with the standard core-orientation formula, the same as with a real ATV or OTV run.</Note>
+      <Note>Alpha comes from the tray photos and beta (which way round the hole each plane faces) from the televiewer; true dip and dip direction are worked out from alpha, beta and the hole&apos;s direction with the standard core-orientation formula, the same as with a real ATV or OTV run.</Note>
     </Page>
   )
 }

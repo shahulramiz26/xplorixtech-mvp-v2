@@ -90,7 +90,7 @@ export default function HoleLog() {
 
       {tab === 'log' && (
         <>
-          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos (dashed RQD is predicted from joint density; incoherence is how broken the core is). Middle: from the shift logs. Right: the all-data domain (sample chemistry and geophysics in the demo). Move along the log to read every track at one depth; click to open that tray.">
+          <Card title="Core beside the drilling record" subtitle="Left: measured on the tray photos (dashed RQD is predicted from joint density; incoherence is how broken the core is). Middle: from the shift logs. Right: the all-data domain. Move along the log to read every track at one depth; click to open that tray.">
             <StripLog rows={h.rows} drill={view.drill} trays={h.trays} hole={hole} extra={extra} />
           </Card>
           <CoreFactors factors={view.f} note={`${hole} only. Each shift is compared with shifts in the same ground in this hole. A pattern to check, not proof of a cause.`} />

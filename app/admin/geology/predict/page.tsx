@@ -62,7 +62,7 @@ export default function Predict() {
       <PageHead question="How strong is the rock, and what is it made of, where nobody measured?"
         tone={p.ucsFit.r2 > 0.5 ? 'good' : 'warn'}
         answer={<>{p.ucsFit.n} lab strength tests on 4 holes give rock strength on every metre of all {data.holes.length}: on holes the fit did not see it explains <b>{pct(p.ucsFit.r2 * 100)}</b> of the variation (log UCS). The core scanner on 4 holes gives the main mineral on the other {unscanned}, right <b>{pct(p.mineralFit.accuracy * 100)}</b> of the time on unseen holes.</>}
-        right={<><DemoPhotos /><SampleBadge>Sample lab and scanner data</SampleBadge><Btn onClick={exportCsv}>Download predictions (CSV)</Btn></>} />
+        right={<Btn onClick={exportCsv}>Download predictions (CSV)</Btn>} />
 
       <Grid min={180}>
         <Tile label="Strength fit, unseen holes" value={pct(p.ucsFit.r2 * 100)} note={`R² on log UCS · ${p.ucsFit.n} lab tests`} tone={p.ucsFit.r2 > 0.5 ? 'good' : 'warn'} />
@@ -107,7 +107,7 @@ export default function Predict() {
           ))}</tbody>
         </Table>
       </Card>
-      <Note>Fitted in your browser with ridge regression and nearest-centre classes on this company&apos;s own measured metres; quality is reported on holes left out of the fit. More lab tests and scans make every prediction better. In the demo the lab tests and scans are sample data generated from the real photos.</Note>
+      <Note>Fitted in your browser with ridge regression and nearest-centre classes on this company&apos;s own measured metres; quality is reported on holes left out of the fit. More lab tests and scans make every prediction better.</Note>
     </Page>
   )
 }

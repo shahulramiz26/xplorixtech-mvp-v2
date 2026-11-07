@@ -108,7 +108,6 @@ export default function DownholeData() {
       </Card>
 
 
-      <Note>Demo: the photos are real; assays, geophysics, scanner readings, televiewer picks and lab tests are sample data generated from what each photographed metre shows, so they line up with the core the way real data does. Import real files and they replace it.</Note>
     </Page>
   )
 }
