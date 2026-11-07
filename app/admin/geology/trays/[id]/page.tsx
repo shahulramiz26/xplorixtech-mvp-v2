@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCosting } from '../../../../../lib/costing-store'
-import { useCore, useHole, overridesOf, holeOfTray } from '../../../../../lib/core/store'
+import { useCore, useHole, overridesOf, holeOfTray, className } from '../../../../../lib/core/store'
 import { flatten, intervals, totals, gapId } from '../../../../../lib/core/geotech'
 import { rateOf } from '../../../../../lib/core/drill-link'
 import { Page, PageHead, Card, Btn, Grid, Tile, Status, Empty, Note, Split, T, tint } from '../../../../components/kit'
-import { TrayPhoto, CoreLegend, pct, dep, depthAtX, type Sel, DemoPhotos } from '../../../../components/core-ui'
+import { TrayPhoto, CoreLegend, pct, dep, depthAtX, xAtDepth, Swatch, type Sel, DemoPhotos } from '../../../../components/core-ui'
 
 /* TRAY CHECK — the geologist's main working screen.
  *
@@ -28,6 +28,9 @@ export default function TrayCheck() {
   const [sel, setSel] = useState<Sel>(null)
   const [adding, setAdding] = useState<'natural' | 'handling' | null>(null)
   const [show, setShow] = useState({ rows: true, breaks: true, gaps: true })
+  // opened from Rock classes with ?at=<depth>: that 5 cm slice is pointed out
+  const [at, setAt] = useState<number | null>(null)
+  useEffect(() => { const v = new URLSearchParams(window.location.search).get('at'); setAt(v != null && v !== '' && !isNaN(+v) ? +v : null) }, [trayId])
 
   const i = h.trays.findIndex(t => t.id === trayId)
   const tray = i >= 0 ? h.trays[i] : undefined
@@ -88,6 +91,15 @@ export default function TrayCheck() {
     setAdding(null)
   }
 
+  // the slice opened from Rock classes, its class now, and what the photo step said
+  const bin = at != null ? tray.bins.find(x => Math.abs(x.from - at) < 1e-6) : undefined
+  const origCls = bin ? h.data.trays.find(t => t.id === tray.id)?.bins.find(x => Math.abs(x.from - bin.from) < 1e-6)?.cls : undefined
+  const movedTo = bin ? review.classMoves?.[`${tray.id}@${bin.from}`] : undefined
+  const p0 = bin ? xAtDepth(tray, bin.from + 1e-6) : null, p1 = bin ? xAtDepth(tray, bin.to - 1e-6) : null
+  const mark = p0 && p1 && p0.row === p1.row ? { row: p0.row, x0: p0.x, x1: p1.x } : undefined
+  const classes = core.index?.classes ?? []
+  const hexOf = (id: number) => classes.find(c => c.id === id)?.hex ?? '#888'
+
   const choice = (label: string, on: boolean, onClick: () => void, key?: string) => (
     <button onClick={onClick} style={{
       padding: '9px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
@@ -119,7 +131,7 @@ export default function TrayCheck() {
               <Btn size="sm" kind={adding === 'natural' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'natural' ? null : 'natural'); setSel(null) }}>+ Natural break</Btn>
               <Btn size="sm" kind={adding === 'handling' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'handling' ? null : 'handling'); setSel(null) }}>+ Handling break</Btn>
             </div>}>
-            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} />
+            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} mark={mark} />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
               <CoreLegend />
               <div style={{ display: 'flex', gap: 12, fontSize: 12, color: T.muted }}>
@@ -141,6 +153,32 @@ export default function TrayCheck() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+          {bin && origCls != null && (
+            <Card title={`Rock class at ${dep(bin.from, bin.to)}`} subtitle="The slice you opened from Rock classes, in the orange box on the photo.">
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                  <Swatch hex={hexOf(bin.cls)} size={16} /><b>{className(review, bin.cls)}</b>
+                  {movedTo != null && <span style={{ fontSize: 12, color: T.muted }}>(photo step said {className(review, origCls)})</span>}
+                </div>
+                {movedTo != null ? (
+                  <>
+                    <Status tone="good">Moved by {review.reviewer} · every log and export uses it</Status>
+                    <Btn size="sm" onClick={() => core.moveSlice(tray.id, bin.from, origCls, null)}>Undo: back to {className(review, origCls)}</Btn>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: T.muted }}>Look at the slice. If it is in the wrong class, move it:</div>
+                )}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {classes.filter(c => c.id !== bin.cls).map(c => (
+                    <Btn key={c.id} size="sm" onClick={() => core.moveSlice(tray.id, bin.from, bin.cls, c.id === origCls ? null : c.id)}>
+                      <Swatch hex={c.hex} /> {className(review, c.id)}
+                    </Btn>
+                  ))}
+                </div>
+                <Link href="/admin/geology/classes" style={{ fontSize: 12.5, color: T.muted }}>← Back to Rock classes</Link>
+              </div>
+            </Card>
+          )}
           <Card title={b ? `Break at ${b.at.toFixed(2)} m` : g ? `Gap ${dep(g.from, g.to)}` : a ? `Added break at ${a.at.toFixed(2)} m` : 'Nothing selected'}>
             {!sel && <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.6 }}>Click a coloured line (a break) or a shaded box (a gap) on the photo.<br />Orange dots: breaks the photo step is unsure of. Yellow dots: changed by a geologist.</div>}
             {b && (

@@ -41,8 +41,9 @@ export function xAtDepth(t: CoreTray, at: number): { row: number; x: number } | 
 export type Sel = { kind: 'break'; id: string } | { kind: 'gap'; id: string } | { kind: 'added'; id: string } | null
 
 /* A tray photo with what the photo step found drawn over it. */
-export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: true, breaks: true, gaps: true }, compact }: {
+export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: true, breaks: true, gaps: true }, compact, mark }: {
   tray: CoreTray & { photo?: string }
+  mark?: { row: number; x0: number; x1: number }   // a 5 cm slice to point out (opened from Rock classes)
   sel?: Sel
   onSelect?: (s: Sel) => void
   onAdd?: (row: number, x: number) => void
@@ -127,6 +128,10 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
             </g>
           )
         })}
+        {mark && tray.rows[mark.row] && (
+          <rect x={Math.min(mark.x0, mark.x1) - sw * 2} y={tray.rows[mark.row].band[0] - sw * 2} width={Math.abs(mark.x1 - mark.x0) + sw * 4}
+            height={tray.rows[mark.row].band[1] - tray.rows[mark.row].band[0] + sw * 4} fill="none" stroke="#F97316" strokeWidth={sw * 2.2} rx={sw * 2} />
+        )}
       </svg>
     </div>
   )
