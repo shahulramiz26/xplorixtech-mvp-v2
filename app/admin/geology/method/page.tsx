@@ -78,9 +78,9 @@ export default function Method() {
           <li>Rubbly core is hard to split into pieces and is undercounted.</li>
           <li>Very white core can be read as empty tray. Mark it &quot;There is core&quot; on the tray.</li>
           <li>True dip and dip direction need a televiewer run or an orientation line on the core; without either, alpha alone is given.</li>
-          <li>It does not name the rock from the photo alone. Classes are by look; names come from the geologist, or from matching the classes to the hand log.</li>
+          <li>It does not name the rock from the photo alone. Classes are by look; names come from the geologist.</li>
           <li>Minerals are measured only where the core was scanned; elsewhere they are predicted, and the screen says which.</li>
-          <li>In this demo the assays, geophysics, scanner, televiewer, lab tests, and hand logs are sample data. The tray photos and everything measured on them are real.</li>
+          <li>In this demo the assays, geophysics, scanner, televiewer, and lab tests are sample data. The tray photos and everything measured on them are real.</li>
         </ul>
       </Card>
 

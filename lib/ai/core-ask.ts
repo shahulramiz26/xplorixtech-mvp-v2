@@ -12,7 +12,7 @@ import type { Source } from './record'
  * ASK XPLORIX — GEOLOGY
  *
  * The same panel as on the drilling side, answering from the core record:
- * the tray photos and what the geologist changed, the hand logs, veins,
+ * the tray photos and what the geologist changed, veins,
  * assays, geophysics, scanner, televiewer, lab tests, the domains and the
  * predictions, and the shift logs that drilled each metre. Every answer
  * lists what it read. What it does not understand it says so.
@@ -33,20 +33,19 @@ const n0 = (v: number) => Math.round(v).toLocaleString('en-US')
 const list = (xs: string[]) => xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
 const S = {
   today: { label: 'Geology today', href: '/admin/geology' }, holes: { label: 'Hole logs', href: '/admin/geology/holes' }, review: { label: 'Review trays', href: '/admin/geology/review' },
-  check: { label: 'Check logs', href: '/admin/geology/check-logs' }, veins: { label: 'Vein classes', href: '/admin/geology/veins' }, data: { label: 'Downhole data', href: '/admin/geology/data' },
+  veins: { label: 'Vein classes', href: '/admin/geology/veins' }, data: { label: 'Downhole data', href: '/admin/geology/data' },
   domains: { label: 'Domains', href: '/admin/geology/domains' }, predict: { label: 'Predictions', href: '/admin/geology/predict' }, structures: { label: 'Structures', href: '/admin/geology/structures' },
   rock: { label: 'Rock mass', href: '/admin/geology/rock-mass' }, classes: { label: 'Rock classes', href: '/admin/geology/classes' }, export: { label: 'Export', href: '/admin/geology/export' },
 } satisfies Record<string, Source>
 const hole = (h: string): Source => ({ label: `${h} log`, href: `/admin/geology/holes/${h}` })
 
 export function coreSuggestions(path: string): string[] {
-  if (path.includes('/check-logs')) return ['Where does the geologist\'s log disagree with the core?', 'Is logged RQD too high?', 'Which hole should be relogged first?']
   if (path.includes('/veins')) return ['Which vein class carries the gold?', 'How many veins are in DH-131?', 'Where are the unsure veins?']
   if (path.includes('/data') || path.includes('/domains')) return ['What goes with gold?', 'Explain the domains', 'Best gold intervals?']
   if (path.includes('/predict')) return ['Where is the weak ground?', 'How good are the strength predictions?', 'What minerals are in DH-101?']
   if (path.includes('/structures')) return ['What are the joint sets?', 'Which way do the fractures dip in DH-961?', 'Where is the weak ground?']
   if (path.includes('/holes/')) { const h = path.split('/').pop(); return [`Tell me about ${h}`, `Best gold intervals in ${h}?`, `Draft a note to the driller about core loss on ${h}`] }
-  return ['Give me the geology brief', 'Which shifts lost core, and why?', 'Best gold intervals?', 'Where does the geologist\'s log disagree with the core?']
+  return ['Give me the geology brief', 'Which shifts lost core, and why?', 'Best gold intervals?', 'Which trays should I check first?']
 }
 
 export function askCore(question: string, c: CoreAiCtx): Answer {
@@ -60,7 +59,6 @@ export function askCore(question: string, c: CoreAiCtx): Answer {
     if (has(q, 'compare') && dh.length >= 2) return compare(dh, c)
     if (has(q, 'gold', ' au', 'au ', 'grade', 'mineralis', 'mineraliz', 'ore', 'intercept', 'assay')) return has(q, 'vein') ? veins(c, dh[0]) : gold(c, dh[0], has(q, 'goes with', 'correlat', 'related', 'predict gold'))
     if (has(q, 'vein')) return veins(c, dh[0])
-    if (has(q, 'log disagree', 'disagree', 'relog', 're-log', 'manual log', "geologist's log", 'logged', 'agree', 'logging check', 'check the log')) return logCheck(c, dh[0], has(q, 'rqd'))
     if (has(q, 'domain', 'cluster', 'group')) return domains(c)
     if (has(q, 'weak', 'strength', 'ucs', 'hard', 'support', 'strong')) return strength(c, dh[0], has(q, 'good', 'accura', 'trust', 'r2', 'r²'))
     if (has(q, 'mineral', 'hyperspectral', 'clay', 'quartz', 'carbonate', 'chlorite', 'mica', 'scanner')) return minerals(c, dh[0])
@@ -112,8 +110,6 @@ function brief(c: CoreAiCtx): Answer {
   const checked = c.data.holes.reduce((s, h) => s + h.trays.filter(x => c.review.checked[x.id]).length, 0)
   const sc = c.data.holes.flatMap(h => shiftCore(c.logs, h.data.hole, h.flat))
   const low = sc.filter(s => s.core.recovery < 85)
-  const n = c.data.checks.reduce((s, x) => s + x.metres, 0)
-  const agree = n ? c.data.checks.reduce((s, x) => s + x.agree * x.metres, 0) / n : 0
   const ints = c.data.holes.flatMap(h => intercepts(c.data.byHole[h.data.hole]))
   const top = ints[0]
   const weak = c.data.pred ? c.data.metres.filter((_, i) => c.data.pred!.ucs[i] < 25).length : 0
@@ -124,12 +120,11 @@ function brief(c: CoreAiCtx): Answer {
       `${n0(t.metres)} m of core photographed on ${c.data.holes.length} holes: recovery **${pct(t.recovery)}**, RQD **${pct(t.recovery ? t.rqd : 0)}** (${rqdClass(t.rqd).toLowerCase()}), ${t.ff.toFixed(1)} natural fractures a metre.`,
       `${trays - checked} of ${trays} trays still wait for a geologist's check, with ${n0(t.unsure)} breaks the photo step is unsure of.`,
       low.length ? `${low.length} ${low.length === 1 ? 'shift' : 'shifts'} brought up under 85% of ${low.length === 1 ? 'its' : 'their'} core; the worst is ${low.sort((a, b) => a.core.recovery - b.core.recovery)[0].log.holeNumber} ${low[0].log.meterStart}–${low[0].log.meterEnd} m at ${pct(low[0].core.recovery)}.` : 'No shift brought up under 85% of its core.',
-      `The geologist's log agrees with the photos on ${pct(agree * 100)} of metres; ${c.data.checks.reduce((s, x) => s + x.disagreements.length, 0)} stretches need a second look.`,
       top ? `Best intercept: **${top.hole} ${top.from}–${top.to} m, ${(top.to - top.from).toFixed(0)} m at ${top.au.toFixed(2)} g/t Au**. ${c.data.veins.length} veins found on the photos.` : `${c.data.veins.length} veins found on the photos.`,
       weak ? `${n0(weak)} m are predicted weaker than 25 MPa: plan support there.` : '',
     ].filter(Boolean),
-    sources: [S.today, S.review, S.check, S.data],
-    followups: ['Which shifts lost core, and why?', 'Best gold intervals?', 'Where does the geologist\'s log disagree with the core?'],
+    sources: [S.today, S.review, S.data],
+    followups: ['Which shifts lost core, and why?', 'Best gold intervals?', 'Which trays should I check first?'],
   }
 }
 
@@ -138,7 +133,6 @@ function holeAnswer(h: string, c: CoreAiCtx): Answer {
   const t = totals(x.rows)
   const ms = c.data.byHole[h]
   const ints = intercepts(ms)
-  const chk = c.data.checks.find(k => k.hole === h)
   const vs = c.data.veins.filter(v => v.hole === h)
   const clsShare: Record<number, number> = {}
   x.rows.forEach(r => { if (r.cls >= 0) clsShare[r.cls] = (clsShare[r.cls] ?? 0) + r.length })
@@ -150,10 +144,10 @@ function holeAnswer(h: string, c: CoreAiCtx): Answer {
       `**${h}** (${x.data.project}, ${x.data.rig}): ${n0(t.metres)} m photographed of ${n0(x.data.drilled)} m drilled. Recovery ${pct(t.recovery)}, RQD ${pct(t.rqd)} (${rqdClass(t.rqd).toLowerCase()}), GSI ${Math.round(t.gsi)} (${gsiClass(t.gsi).toLowerCase()}), ${t.ff.toFixed(1)} fractures a metre, weathering ${WEATHERING[Math.round(t.weathering)]?.toLowerCase()}.`,
       `Rock: ${list(topCls)}. Poorest metre ${worst.from}–${worst.to} m, RQD ${pct(worst.rqd)}.`,
       ints.length ? `Gold: ${list(ints.slice(0, 3).map(i => `${i.from}–${i.to} m at ${i.au.toFixed(2)} g/t`))}.` : 'No interval of 3 m or more averages 0.5 g/t Au.',
-      `${vs.length} veins on the photos${vs.length ? `, mostly Class ${VEIN_CLASSES[mode(vs.map(v => v.cls))].letter}` : ''}. ${chk ? `The geologist's log agrees with the photos on ${pct(chk.agree * 100)} of metres.` : ''}`,
+      `${vs.length} veins on the photos${vs.length ? `, mostly Class ${VEIN_CLASSES[mode(vs.map(v => v.cls))].letter}` : ''}.`,
     ],
-    sources: [hole(h), S.check, S.data],
-    followups: [`Best gold intervals in ${h}?`, shiftCore(c.logs, h, x.flat).some(s => s.core.recovery < 85) ? `Draft a note to the driller about core loss on ${h}` : `Draft a note to the geologist to relog ${h}`, `Which way do the fractures dip in ${h}?`],
+    sources: [hole(h), S.data],
+    followups: [`Best gold intervals in ${h}?`, shiftCore(c.logs, h, x.flat).some(s => s.core.recovery < 85) ? `Draft a note to the driller about core loss on ${h}` : `Which trays in ${h} still need a check?`, `Which way do the fractures dip in ${h}?`],
   }
 }
 const mode = (xs: number[]) => { const m: Record<number, number> = {}; xs.forEach(x => { m[x] = (m[x] ?? 0) + 1 }); return +Object.entries(m).sort((a, b) => b[1] - a[1])[0][0] }
@@ -198,27 +192,6 @@ function veins(c: CoreAiCtx, h?: string): Answer {
   }
 }
 
-function logCheck(c: CoreAiCtx, h: string | undefined, rqd: boolean): Answer {
-  const ks = h ? c.data.checks.filter(k => k.hole === h) : c.data.checks
-  const worst = ks.slice().sort((a, b) => a.agree - b.agree)[0]
-  const rq = ks.flatMap(k => k.rqd)
-  if (rqd) {
-    const bias = mean(rq.map(r => r.diff)), far = rq.filter(r => Math.abs(r.diff) > 15)
-    return {
-      understood: true,
-      text: rq.length ? [`On ${new Set(ks.filter(k => k.rqd.length).map(k => k.hole)).size} holes with a hand geotech log, logged RQD reads **${bias >= 0 ? '+' : ''}${bias.toFixed(0)} points** against the photos on average; ${far.length} of ${rq.length} intervals are more than 15 points apart.`, bias > 5 ? 'Logged high is the usual miss in broken ground: handling breaks get counted as whole core, or short pieces are guessed.' : 'That is within normal logging scatter.'] : ['No hand geotech log on these holes. The photos give RQD on every hole anyway.'],
-      table: far.length ? { cols: ['Hole', 'Interval', 'Logged', 'Photos'], rows: ks.flatMap(k => k.rqd.filter(r => Math.abs(r.diff) > 15).map(r => [k.hole, `${r.from}–${r.to} m`, `${r.logged}%`, `${r.photo}%`])).slice(0, 8) } : undefined,
-      sources: [S.check], followups: ['Which hole should be relogged first?', 'Where is the weak ground?'],
-    }
-  }
-  const dis = ks.flatMap(k => k.disagreements.map(d => ({ ...d, hole: k.hole }))).sort((a, b) => (b.to - b.from) - (a.to - a.from)).slice(0, 8)
-  return {
-    understood: true,
-    text: [`The geologist's log and the photos agree on ${pct(mean(ks.map(k => k.agree)) * 100)} of metres${h ? ` in ${h}` : ''}. Relog **${worst.hole}** first: ${pct(worst.agree * 100)} agreement, ${worst.disagreements.length} stretches that differ.`, 'Longest stretches where the logged rock is not what the photo class usually is:'],
-    table: { cols: ['Hole', 'Depth', 'Logged', 'Photo says'], rows: dis.map(d => [d.hole, `${d.from}–${d.to} m`, d.logged, d.photo]) },
-    sources: [S.check], followups: ['Is logged RQD too high?', `Tell me about ${worst.hole}`],
-  }
-}
 
 function domains(c: CoreAiCtx): Answer {
   const d = c.data.domains('all')
@@ -226,7 +199,7 @@ function domains(c: CoreAiCtx): Answer {
     understood: true,
     text: [`Every metre grouped by its photo, chemistry and geophysics together gives ${d.k} domains. Each is named by what sets it apart:`],
     table: { cols: ['Domain', 'Metres', 'Au g/t'], rows: d.names.map((n, k) => [`${k + 1}. ${n}`, String(d.sizes[k]), mean(c.data.metres.filter((_, i) => d.labels[i] === k).map(m => m.assay.Au)).toFixed(2)]) },
-    sources: [S.domains], followups: ['What goes with gold?', 'Where does the geologist\'s log disagree with the core?'],
+    sources: [S.domains], followups: ['What goes with gold?', 'Which trays should I check first?'],
   }
 }
 
@@ -299,8 +272,8 @@ function trays(c: CoreAiCtx): Answer {
 }
 
 function classes(c: CoreAiCtx): Answer {
-  const rows = (c.index?.classes ?? []).map(k => [c.className(k.id), pct(k.share * 100), c.data.map[k.id]?.lith ?? '—'])
-  return { understood: true, text: ['The photos split the core into classes that look alike. Here they are with what the geologists most often logged them as:'], table: { cols: ['Class', 'Share of core', 'Logged as'], rows }, sources: [S.classes, S.check], followups: ['Explain the domains', 'Where does the geologist\'s log disagree with the core?'] }
+  const rows = (c.index?.classes ?? []).map(k => [c.className(k.id), pct(k.share * 100)])
+  return { understood: true, text: ['The photos split the core into classes that look alike; the geologist names each class once:'], table: { cols: ['Class', 'Share of core'], rows }, sources: [S.classes], followups: ['Explain the domains', 'Which trays should I check first?'] }
 }
 
 function rockMass(c: CoreAiCtx, h?: string): Answer {
@@ -315,19 +288,9 @@ function exportAns(): Answer {
 }
 
 function draft(q: string, c: CoreAiCtx, h?: string): Answer {
-  if (has(q, 'relog', 'geologist', 'logger', 'log')) {
-    const k = (h ? c.data.checks.filter(x => x.hole === h) : c.data.checks).slice().sort((a, b) => a.agree - b.agree)[0]
-    const by = c.data.logs[k.hole]?.[0]?.by ?? 'the logging geologist'
-    const dis = k.disagreements.slice(0, 5)
-    return {
-      understood: true, text: [`A note to ${by} asking for a second look at ${k.hole}:`], sources: [S.check],
-      draft: { kind: 'email', to: by, via: 'Email', subject: `${k.hole}: stretches to look at again`, body: `Hi,\n\nXPLORIX checked the ${k.hole} log against the tray photos. They agree on ${pct(k.agree * 100)} of metres. Could you look again at these stretches, where the logged rock is not what the core usually looks like?\n\n${dis.map(d => `• ${d.from}–${d.to} m: logged ${d.logged}, photo suggests ${d.photo}`).join('\n')}\n\nThe trays are linked in Check logs.\n\nThanks`, approve: 'Approve', done: 'Note sent' },
-      followups: [],
-    }
-  }
   const hs = h ? [h] : c.data.holes.map(x => x.data.hole)
   const sc = hs.flatMap(hl => shiftCore(c.logs, hl, hv(c, hl).flat)).filter(s => s.core.recovery < 85).sort((a, b) => a.core.recovery - b.core.recovery).slice(0, 5)
-  if (!sc.length) return { understood: true, text: [`No shift${h ? ` on ${h}` : ''} lost more than 15% of its core on the photos, so there is nothing to raise with the driller.`], sources: [S.today], followups: [`Draft a note to the geologist to relog ${h ?? 'the worst hole'}`, 'Which shifts lost core, and why?'] }
+  if (!sc.length) return { understood: true, text: [`No shift${h ? ` on ${h}` : ''} lost more than 15% of its core on the photos, so there is nothing to raise with the driller.`], sources: [S.today], followups: ['Which shifts lost core, and why?'] }
   const d = sc[0].log.driller ?? 'the driller'
   return {
     understood: true, text: [`A note to ${d} and the site supervisor about the core lost${h ? ` on ${h}` : ''}:`], sources: [S.today, ...(h ? [hole(h)] : [])],

@@ -12,7 +12,7 @@ import { Bar, recColour, rqdColour, pct, DemoPhotos } from '../../components/cor
 import { CoreFactors } from '../../components/core-factors'
 import { useGeo } from '../../../lib/core/geo-data'
 import { useGeoEngine, useAsk, Md } from '../../components/ai'
-import { Sparkles, Camera, FileCheck2, Gem, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
+import { Sparkles, Camera, Gem, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
 
 /* GEOLOGY TODAY — the geologist's first screen.
  *
@@ -128,14 +128,11 @@ export default function GeologyToday() {
 /* Everything XPLORIX Core logs, with a live number each: the map of the
  * geology side for someone seeing it for the first time. */
 function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data']; trays: number; waiting: number }) {
-  const n = geo.checks.reduce((s, c) => s + c.metres, 0)
-  const agree = n ? geo.checks.reduce((s, c) => s + c.agree * c.metres, 0) / n : 0
   const items: { icon: React.ElementType; title: string; what: string; value: string; href: string }[] = [
     { icon: Camera, title: 'Core photos', what: 'Rows, core, gaps and every break found on each tray photo', value: `${trays} trays · ${waiting} to check`, href: '/admin/geology/review' },
     { icon: Mountain, title: 'Geotech logging', what: 'Recovery, RQD, fractures, joint density, GSI, weathering, discing', value: geo.ready ? `${geo.holes.length} holes logged` : '…', href: '/admin/geology/rock-mass' },
     { icon: Palette, title: 'Geology logging', what: 'Rock classes from colour, grain, veins and staining', value: 'Named by the geologist', href: '/admin/geology/classes' },
     { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-US')} veins` : '…', href: '/admin/geology/veins' },
-    { icon: FileCheck2, title: 'Check logs', what: "The geologist's log checked against the core, metre by metre", value: geo.ready ? `${Math.round(agree * 100)}% agree` : '…', href: '/admin/geology/check-logs' },
     { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-US')} metres joined` : '…', href: '/admin/geology/data' },
     { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },
     { icon: BrainCircuit, title: 'Predictions', what: 'Rock strength, minerals and recovery where nobody measured', value: geo.pred ? `Strength R² ${Math.round(geo.pred.ucsFit.r2 * 100)}%` : '…', href: '/admin/geology/predict' },
