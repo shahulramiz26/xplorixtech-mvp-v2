@@ -41,18 +41,15 @@ export default function VeinClasses() {
 
   const view = useMemo(() => {
     if (!data.ready) return null
-    const auOf = (v: Vein) => data.byHole[v.hole]?.find(m => v.from >= m.from - 0.01 && v.from < m.to)?.assay.Au
     const veinMetres = new Set(data.veins.map(v => `${v.hole}:${Math.floor(v.from)}`))
-    const barren = data.metres.filter(m => !veinMetres.has(`${m.hole}:${Math.floor(m.from)}`)).map(m => m.assay.Au)
     const classes = VEIN_CLASSES.map(c => {
       const vs = data.veins.filter(v => v.cls === c.id)
-      const au = vs.map(auOf).filter((x): x is number => x != null)
       const step = Math.max(1, Math.floor(vs.length / 6))
       const samples = vs.filter(v => v.confidence !== 'low').sort((a, b) => b.length - a.length).filter((_, i) => i % step === 0).slice(0, 6)
-      return { c, vs, metres: vs.reduce((s, v) => s + v.length, 0), holes: new Set(vs.map(v => v.hole)).size, au: au.length ? mean(au) : 0, samples }
+      return { c, vs, metres: vs.reduce((s, v) => s + v.length, 0), holes: new Set(vs.map(v => v.hole)).size, samples }
     })
     const metresTotal = data.holes.reduce((s, h) => s + h.rows.reduce((t, r) => t + r.length, 0), 0)
-    return { classes, barrenAu: mean(barren), metresTotal, veinMetres: data.veins.reduce((s, v) => s + v.length, 0) }
+    return { classes, metresTotal, veinMetres: data.veins.reduce((s, v) => s + v.length, 0) }
   }, [data])
 
   if (!data.ready || !view) return <Page><Card><Empty>Finding veins on the photos…</Empty></Card></Page>
@@ -62,7 +59,6 @@ export default function VeinClasses() {
   const vs = data.veins.filter(v => v.hole === sel)
   const name = (id: number) => edits.veinNames[id]?.name ?? VEIN_CLASSES[id].name
   const desc = (id: number) => edits.veinNames[id]?.description ?? VEIN_CLASSES[id].description
-  const top = view.classes.slice().sort((a, b) => b.au - a.au)[0]
   const trayOf = (v: Vein) => data.holes.find(x => x.data.hole === v.hole)?.trays.find(t => t.id === v.tray)
 
   const tracks: Track[] = [
@@ -70,18 +66,17 @@ export default function VeinClasses() {
     { kind: 'ticks', label: 'Veins by class', w: 70, items: vs.map(v => ({ at: (v.from + v.to) / 2, hex: VEIN_CLASSES[v.cls].hex === '#e8e4d8' ? '#d6c9a0' : VEIN_CLASSES[v.cls].hex, title: `${v.from}–${v.to} m · Class ${VEIN_CLASSES[v.cls].letter}` })) },
     { kind: 'curve', label: 'Vein % of core', w: 100, max: 30, color: '#3E7BFA', items: h.rows.map(r => ({ from: r.from, to: r.to, v: r.vein * 100 })) },
     { kind: 'curve', label: 'Veins per metre', w: 90, max: 6, color: '#8E4EC6', items: h.rows.map(r => ({ from: r.from, to: r.to, v: vs.filter(v => v.from >= r.from && v.from < r.to).length })) },
-    { kind: 'curve', label: 'Au g/t (log)', w: 100, min: 0.005, max: 10, log: true, color: '#C99A00', items: ms.map(m => ({ from: m.from, to: m.to, v: m.assay.Au })) },
   ]
 
   return (
     <Page>
       <PageHead question="What veins are in the core, and what kind are they?"
-        answer={<>{data.veins.length.toLocaleString('en-US')} veins found on the photos of {data.holes.length} holes: {view.veinMetres.toFixed(0)} m of vein in {Math.round(view.metresTotal).toLocaleString('en-US')} m of core. {top && top.au > view.barrenAu * 2 ? <>Metres with <b>Class {top.c.letter}</b> veins average <b>{top.au.toFixed(2)} g/t Au</b>, against {view.barrenAu.toFixed(2)} g/t in metres with no vein.</> : null}</>}
-        right={<DemoPhotos />} />
+        answer={<>{data.veins.length.toLocaleString('en-US')} veins found on the photos of {data.holes.length} holes: {view.veinMetres.toFixed(0)} m of vein in {Math.round(view.metresTotal).toLocaleString('en-US')} m of core.</>}
+        />
 
       <Grid min={180}>
         {view.classes.map(x => (
-          <Tile key={x.c.id} label={`Class ${x.c.letter} · ${name(x.c.id)}`} value={x.vs.length} note={`${x.metres.toFixed(1)} m · ${x.holes} holes · Au ${x.au.toFixed(2)} g/t`} />
+          <Tile key={x.c.id} label={`Class ${x.c.letter} · ${name(x.c.id)}`} value={x.vs.length} note={`${x.metres.toFixed(1)} m · ${x.holes} holes`} />
         ))}
       </Grid>
 
@@ -110,12 +105,12 @@ export default function VeinClasses() {
         })}
       </Grid>
 
-      <Card title="Vein volume down the hole" subtitle="Vein cover on every 1 m, each vein ticked by class, beside the assays. Measured on every photographed hole, not only the ones logged by hand.">
+      <Card title="Vein volume down the hole" subtitle="Vein cover on every 1 m, each vein ticked by class, on every 1 m. Measured on every photographed hole, not only the ones logged by hand.">
         <div style={{ display: 'grid', gap: 12 }}>
           <HoleTabs holes={data.holes.map(x => x.data.hole)} value={sel} onChange={setHole} />
           <KeyRow items={VEIN_CLASSES.map(c => ({ hex: c.hex, label: `Class ${c.letter}: ${name(c.id)}` }))} />
           <DepthTracks top={Math.floor(h.rows[0]?.from ?? 0)} bottom={Math.ceil(h.rows[h.rows.length - 1]?.to ?? 10)} pxPerM={3.2} tracks={tracks}
-            read={d => { const r = h.rows.find(x => d >= x.from && d < x.to), m = ms.find(x => d >= x.from && d < x.to); const here = vs.filter(v => v.to > Math.floor(d) && v.from < Math.floor(d) + 1); return <><b style={{ color: T.text }}>{sel} · {d.toFixed(1)} m</b><br />Vein cover {r ? pct(r.vein * 100) : '—'} · {here.length} veins in this metre<br />{here.map(v => `Class ${VEIN_CLASSES[v.cls].letter}`).join(', ') || 'No vein'}<br />Au {m?.assay.Au.toFixed(3) ?? '—'} g/t</> }} />
+            read={d => { const r = h.rows.find(x => d >= x.from && d < x.to), m = ms.find(x => d >= x.from && d < x.to); const here = vs.filter(v => v.to > Math.floor(d) && v.from < Math.floor(d) + 1); return <><b style={{ color: T.text }}>{sel} · {d.toFixed(1)} m</b><br />Vein cover {r ? pct(r.vein * 100) : '—'} · {here.length} veins in this metre<br />{here.map(v => `Class ${VEIN_CLASSES[v.cls].letter}`).join(', ') || 'No vein'}</> }} />
         </div>
       </Card>
 

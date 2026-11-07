@@ -40,12 +40,12 @@ const S = {
 const hole = (h: string): Source => ({ label: `${h} log`, href: `/admin/geology/holes/${h}` })
 
 export function coreSuggestions(path: string): string[] {
-  if (path.includes('/veins')) return ['Which vein class carries the gold?', 'How many veins are in DH-131?', 'Where are the unsure veins?']
-  if (path.includes('/data') || path.includes('/domains')) return ['What goes with gold?', 'Explain the domains', 'Best gold intervals?']
+  if (path.includes('/veins')) return ['How many veins are in DH-131?', 'Where are the unsure veins?', 'Give me the geology brief']
+  if (path.includes('/data') || path.includes('/domains')) return ['Explain the domains', 'Where is the weak ground?', 'Give me the geology brief']
   if (path.includes('/predict')) return ['Where is the weak ground?', 'How good are the strength predictions?', 'What minerals are in DH-101?']
   if (path.includes('/structures')) return ['What are the joint sets?', 'Which way do the fractures dip in DH-961?', 'Where is the weak ground?']
-  if (path.includes('/holes/')) { const h = path.split('/').pop(); return [`Tell me about ${h}`, `Best gold intervals in ${h}?`, `Draft a note to the driller about core loss on ${h}`] }
-  return ['Give me the geology brief', 'Which shifts lost core, and why?', 'Best gold intervals?', 'Which trays should I check first?']
+  if (path.includes('/holes/')) { const h = path.split('/').pop(); return [`Tell me about ${h}`, `Where is the weak ground in ${h}?`, `Draft a note to the driller about core loss on ${h}`] }
+  return ['Give me the geology brief', 'Which shifts lost core, and why?', 'Where is the weak ground?', 'Which trays should I check first?']
 }
 
 export function askCore(question: string, c: CoreAiCtx): Answer {
@@ -57,7 +57,7 @@ export function askCore(question: string, c: CoreAiCtx): Answer {
     if (has(q, 'draft', 'write', 'note to', 'message', 'email')) return draft(q, c, dh[0])
     if (has(q, 'brief', 'summary', 'summarise', 'summarize', 'overview', 'how are we', 'how is the core')) return brief(c)
     if (has(q, 'compare') && dh.length >= 2) return compare(dh, c)
-    if (has(q, 'gold', ' au', 'au ', 'grade', 'mineralis', 'mineraliz', 'ore', 'intercept', 'assay')) return has(q, 'vein') ? veins(c, dh[0]) : gold(c, dh[0], has(q, 'goes with', 'correlat', 'related', 'predict gold'))
+    if (has(q, 'gold', ' au', 'au ', 'grade', 'mineralis', 'mineraliz', 'ore', 'intercept', 'assay')) return noAssays()
     if (has(q, 'vein')) return veins(c, dh[0])
     if (has(q, 'domain', 'cluster', 'group')) return domains(c)
     if (has(q, 'weak', 'strength', 'ucs', 'hard', 'support', 'strong')) return strength(c, dh[0], has(q, 'good', 'accura', 'trust', 'r2', 'r²'))
@@ -72,8 +72,8 @@ export function askCore(question: string, c: CoreAiCtx): Answer {
   } catch { /* fall through */ }
   return {
     understood: false,
-    text: ['I could not match that to the core record. On the geology side I answer about holes, recovery and RQD, the shifts that lost core, gold and assays, veins, the geologist\'s log, domains, rock strength, minerals, joint sets and trays to check, and I can draft notes.'],
-    sources: [], followups: ['Give me the geology brief', 'Best gold intervals?', 'Which shifts lost core, and why?', 'Where is the weak ground?'],
+    text: ['I could not match that to the core record. On the geology side I answer about holes, recovery and RQD, the shifts that lost core, veins, the geologist\'s log, domains, rock strength, minerals, joint sets and trays to check, and I can draft notes.'],
+    sources: [], followups: ['Give me the geology brief', 'Which shifts lost core, and why?', 'Where is the weak ground?'],
   }
 }
 
@@ -82,27 +82,6 @@ export function askCore(question: string, c: CoreAiCtx): Answer {
 const hv = (c: CoreAiCtx, h: string) => c.data.holes.find(x => x.data.hole === h)!
 const allTotals = (c: CoreAiCtx) => totals(c.data.holes.flatMap(h => h.rows))
 
-/* Best runs of at least 3 m averaging 0.5 g/t or more: the "intercepts". */
-export function intercepts(ms: Metre[], cut = 0.5, min = 3, waste = 2) {
-  // Runs that start and end above the cut-off, with at most `waste` metres
-  // below it inside, and that average the cut-off or better.
-  const out: { hole: string; from: number; to: number; au: number }[] = []
-  let run: Metre[] = [], below = 0
-  const flush = () => {
-    while (run.length && run[run.length - 1].assay.Au < cut) run.pop()
-    if (run.length && run[run.length - 1].to - run[0].from >= min && mean(run.map(m => m.assay.Au)) >= cut) out.push({ hole: run[0].hole, from: run[0].from, to: run[run.length - 1].to, au: mean(run.map(m => m.assay.Au)) })
-    run = []; below = 0
-  }
-  ms.forEach(m => {
-    const last = run[run.length - 1]
-    if (last && Math.abs(last.to - m.from) > 0.01) flush()
-    if (m.assay.Au >= cut) { run.push(m); below = 0 }
-    else if (run.length && below < waste) { run.push(m); below++ }
-    else flush()
-  })
-  flush()
-  return out.sort((a, b) => b.au * (b.to - b.from) - a.au * (a.to - a.from))
-}
 
 function brief(c: CoreAiCtx): Answer {
   const t = allTotals(c)
@@ -110,8 +89,7 @@ function brief(c: CoreAiCtx): Answer {
   const checked = c.data.holes.reduce((s, h) => s + h.trays.filter(x => c.review.checked[x.id]).length, 0)
   const sc = c.data.holes.flatMap(h => shiftCore(c.logs, h.data.hole, h.flat))
   const low = sc.filter(s => s.core.recovery < 85)
-  const ints = c.data.holes.flatMap(h => intercepts(c.data.byHole[h.data.hole]))
-  const top = ints[0]
+
   const weak = c.data.pred ? c.data.metres.filter((_, i) => c.data.pred!.ucs[i] < 25).length : 0
   return {
     understood: true,
@@ -120,11 +98,11 @@ function brief(c: CoreAiCtx): Answer {
       `${n0(t.metres)} m of core photographed on ${c.data.holes.length} holes: recovery **${pct(t.recovery)}**, RQD **${pct(t.recovery ? t.rqd : 0)}** (${rqdClass(t.rqd).toLowerCase()}), ${t.ff.toFixed(1)} natural fractures a metre.`,
       `${trays - checked} of ${trays} trays still wait for a geologist's check, with ${n0(t.unsure)} breaks the photo step is unsure of.`,
       low.length ? `${low.length} ${low.length === 1 ? 'shift' : 'shifts'} brought up under 85% of ${low.length === 1 ? 'its' : 'their'} core; the worst is ${low.sort((a, b) => a.core.recovery - b.core.recovery)[0].log.holeNumber} ${low[0].log.meterStart}–${low[0].log.meterEnd} m at ${pct(low[0].core.recovery)}.` : 'No shift brought up under 85% of its core.',
-      top ? `Best intercept: **${top.hole} ${top.from}–${top.to} m, ${(top.to - top.from).toFixed(0)} m at ${top.au.toFixed(2)} g/t Au**. ${c.data.veins.length} veins found on the photos.` : `${c.data.veins.length} veins found on the photos.`,
+      `${c.data.veins.length} veins found on the photos.`,
       weak ? `${n0(weak)} m are predicted weaker than 25 MPa: plan support there.` : '',
     ].filter(Boolean),
     sources: [S.today, S.review, S.data],
-    followups: ['Which shifts lost core, and why?', 'Best gold intervals?', 'Which trays should I check first?'],
+    followups: ['Which shifts lost core, and why?', 'Where is the weak ground?', 'Which trays should I check first?'],
   }
 }
 
@@ -132,7 +110,6 @@ function holeAnswer(h: string, c: CoreAiCtx): Answer {
   const x = hv(c, h)
   const t = totals(x.rows)
   const ms = c.data.byHole[h]
-  const ints = intercepts(ms)
   const vs = c.data.veins.filter(v => v.hole === h)
   const clsShare: Record<number, number> = {}
   x.rows.forEach(r => { if (r.cls >= 0) clsShare[r.cls] = (clsShare[r.cls] ?? 0) + r.length })
@@ -143,52 +120,33 @@ function holeAnswer(h: string, c: CoreAiCtx): Answer {
     text: [
       `**${h}** (${x.data.project}, ${x.data.rig}): ${n0(t.metres)} m photographed of ${n0(x.data.drilled)} m drilled. Recovery ${pct(t.recovery)}, RQD ${pct(t.rqd)} (${rqdClass(t.rqd).toLowerCase()}), GSI ${Math.round(t.gsi)} (${gsiClass(t.gsi).toLowerCase()}), ${t.ff.toFixed(1)} fractures a metre, weathering ${WEATHERING[Math.round(t.weathering)]?.toLowerCase()}.`,
       `Rock: ${list(topCls)}. Poorest metre ${worst.from}–${worst.to} m, RQD ${pct(worst.rqd)}.`,
-      ints.length ? `Gold: ${list(ints.slice(0, 3).map(i => `${i.from}–${i.to} m at ${i.au.toFixed(2)} g/t`))}.` : 'No interval of 3 m or more averages 0.5 g/t Au.',
       `${vs.length} veins on the photos${vs.length ? `, mostly Class ${VEIN_CLASSES[mode(vs.map(v => v.cls))].letter}` : ''}.`,
     ],
     sources: [hole(h), S.data],
-    followups: [`Best gold intervals in ${h}?`, shiftCore(c.logs, h, x.flat).some(s => s.core.recovery < 85) ? `Draft a note to the driller about core loss on ${h}` : `Which trays in ${h} still need a check?`, `Which way do the fractures dip in ${h}?`],
+    followups: [`Where is the weak ground in ${h}?`, shiftCore(c.logs, h, x.flat).some(s => s.core.recovery < 85) ? `Draft a note to the driller about core loss on ${h}` : `Which trays in ${h} still need a check?`, `Which way do the fractures dip in ${h}?`],
   }
 }
 const mode = (xs: number[]) => { const m: Record<number, number> = {}; xs.forEach(x => { m[x] = (m[x] ?? 0) + 1 }); return +Object.entries(m).sort((a, b) => b[1] - a[1])[0][0] }
 
 function compare(hs: string[], c: CoreAiCtx): Answer {
-  const rows = hs.map(h => { const x = hv(c, h); const t = totals(x.rows); const ms = c.data.byHole[h]; return [h, pct(t.recovery), pct(t.rqd), t.ff.toFixed(1), String(Math.round(t.gsi)), mean(ms.map(m => m.assay.Au)).toFixed(2), String(c.data.veins.filter(v => v.hole === h).length)] })
-  return { understood: true, text: [`${list(hs)} side by side, from the photos and the assays:`], table: { cols: ['Hole', 'Recovery', 'RQD', 'Fract./m', 'GSI', 'Au g/t', 'Veins'], rows }, sources: hs.map(hole), followups: hs.map(h => `Tell me about ${h}`) }
+  const rows = hs.map(h => { const x = hv(c, h); const t = totals(x.rows); const ms = c.data.byHole[h]; return [h, pct(t.recovery), pct(t.rqd), t.ff.toFixed(1), String(Math.round(t.gsi)), String(c.data.veins.filter(v => v.hole === h).length)] })
+  return { understood: true, text: [`${list(hs)} side by side, from the photos:`], table: { cols: ['Hole', 'Recovery', 'RQD', 'Fract./m', 'GSI', 'Veins'], rows }, sources: hs.map(hole), followups: hs.map(h => `Tell me about ${h}`) }
 }
 
-function gold(c: CoreAiCtx, h: string | undefined, why: boolean): Answer {
-  if (why) {
-    const y = c.data.metres.map(m => Math.log10(m.assay.Au)), my = mean(y), sy = Math.sqrt(mean(y.map(v => (v - my) ** 2)))
-    const r = FEATURES.filter(f => f.key !== 'Au').map(f => { const x = c.data.metres.map(f.get), mx = mean(x), sx = Math.sqrt(mean(x.map(v => (v - mx) ** 2))); return { f, r: sx && sy ? mean(x.map((v, i) => (v - mx) * (y[i] - my))) / (sx * sy) : 0 } }).sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, 5)
-    const photo = r.find(x => x.f.sets.includes('photo'))
-    return {
-      understood: true,
-      text: [`Across ${n0(c.data.metres.length)} metres, gold goes most with ${list(r.slice(0, 3).map(x => `${x.f.label.toLowerCase()} (${x.r >= 0 ? '+' : ''}${x.r.toFixed(2)})`))}.`, photo ? `**${photo.f.label}** is measured on the tray photo the day the core is boxed, weeks before the assays come back: use it to choose what to sample first.` : ''].filter(Boolean),
-      table: { cols: ['Measure', 'Correlation with Au'], rows: r.map(x => [x.f.label, `${x.r >= 0 ? '+' : ''}${x.r.toFixed(2)}`]) },
-      sources: [S.data, S.domains], followups: ['Which vein class carries the gold?', 'Best gold intervals?'],
-    }
-  }
-  const ms = h ? c.data.byHole[h] : c.data.metres
-  const ints = (h ? [h] : c.data.holes.map(x => x.data.hole)).flatMap(hl => intercepts(c.data.byHole[hl])).sort((a, b) => b.au * (b.to - b.from) - a.au * (a.to - a.from)).slice(0, 8)
-  return {
-    understood: true,
-    text: [ints.length ? `Best runs of 3 m or more averaging 0.5 g/t Au or better${h ? ` in ${h}` : ''}, by gram-metres:` : `No run of 3 m averages 0.5 g/t Au${h ? ` in ${h}` : ''}. The best metre is ${Math.max(...ms.map(m => m.assay.Au)).toFixed(2)} g/t.`],
-    table: ints.length ? { cols: ['Hole', 'From–to', 'Length', 'Au g/t', 'Gram-metres'], rows: ints.map(i => [i.hole, `${i.from}–${i.to} m`, `${(i.to - i.from).toFixed(0)} m`, i.au.toFixed(2), (i.au * (i.to - i.from)).toFixed(1)]) } : undefined,
-    sources: [S.data, ...(h ? [hole(h)] : [])], followups: ['What goes with gold?', 'Which vein class carries the gold?'],
-  }
+/* Gold and grades come from the lab's assays, which are not loaded yet. */
+function noAssays(): Answer {
+  return { understood: true, text: ['Gold and grades come from your lab assays, and none are loaded yet. Import the assay file (HOLE_ID, FROM, TO, Au …) on Downhole data and I will line it up with the photos, by depth, and answer which stretches and which rock and vein types carry the grade.'], sources: [S.data], followups: ['Give me the geology brief', 'Where is the weak ground?'] }
 }
 
 function veins(c: CoreAiCtx, h?: string): Answer {
   const vs = h ? c.data.veins.filter(v => v.hole === h) : c.data.veins
-  const auOf = (v: typeof vs[number]) => c.data.byHole[v.hole]?.find(m => v.from >= m.from - 0.01 && v.from < m.to)?.assay.Au ?? 0
-  const rows = VEIN_CLASSES.map(k => { const xs = vs.filter(v => v.cls === k.id); return { k, n: xs.length, m: xs.reduce((s, v) => s + v.length, 0), au: xs.length ? mean(xs.map(auOf)) : 0 } })
-  const best = rows.slice().sort((a, b) => b.au - a.au)[0]
+  const rows = VEIN_CLASSES.map(k => { const xs = vs.filter(v => v.cls === k.id); return { k, n: xs.length, m: xs.reduce((s, v) => s + v.length, 0) } })
+  const best = rows.slice().sort((a, b) => b.m - a.m)[0]
   return {
     understood: true,
-    text: [`${n0(vs.length)} veins found on the photos${h ? ` of ${h}` : ` of ${c.data.holes.length} holes`}. Metres with **Class ${best.k.letter} (${c.veinName(best.k.id).toLowerCase()})** veins carry the most gold, ${best.au.toFixed(2)} g/t on average.`, `${vs.filter(v => v.confidence === 'low').length} veins are unsure of their class and worth a look.`],
-    table: { cols: ['Class', 'Veins', 'Metres', 'Au g/t'], rows: rows.map(r => [`${r.k.letter} · ${c.veinName(r.k.id)}`, String(r.n), r.m.toFixed(1), r.au.toFixed(2)]) },
-    sources: [S.veins], followups: ['Best gold intervals?', 'What goes with gold?'],
+    text: [`${n0(vs.length)} veins found on the photos${h ? ` of ${h}` : ` of ${c.data.holes.length} holes`}. Most vein metres are **Class ${best.k.letter} (${c.veinName(best.k.id).toLowerCase()})**, ${best.m.toFixed(1)} m.`, `${vs.filter(v => v.confidence === 'low').length} veins are unsure of their class and worth a look.`],
+    table: { cols: ['Class', 'Veins', 'Metres'], rows: rows.map(r => [`${r.k.letter} · ${c.veinName(r.k.id)}`, String(r.n), r.m.toFixed(1)]) },
+    sources: [S.veins], followups: ['Where are the unsure veins?', 'Give me the geology brief'],
   }
 }
 
@@ -198,8 +156,8 @@ function domains(c: CoreAiCtx): Answer {
   return {
     understood: true,
     text: [`Every metre grouped by its photo, chemistry and geophysics together gives ${d.k} domains. Each is named by what sets it apart:`],
-    table: { cols: ['Domain', 'Metres', 'Au g/t'], rows: d.names.map((n, k) => [`${k + 1}. ${n}`, String(d.sizes[k]), mean(c.data.metres.filter((_, i) => d.labels[i] === k).map(m => m.assay.Au)).toFixed(2)]) },
-    sources: [S.domains], followups: ['What goes with gold?', 'Which trays should I check first?'],
+    table: { cols: ['Domain', 'Metres'], rows: d.names.map((n, k) => [`${k + 1}. ${n}`, String(d.sizes[k])]) },
+    sources: [S.domains], followups: ['Where is the weak ground?', 'Which trays should I check first?'],
   }
 }
 

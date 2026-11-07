@@ -61,7 +61,7 @@ export default function GeologyToday() {
           <div style={{ display: 'grid', gap: 7 }}>
             {brief.text.slice(1).map((p, i) => <p key={i} style={{ margin: 0, fontSize: 13.5, color: T.muted, lineHeight: 1.6 }}><Md text={p} /></p>)}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-              {['Best gold intervals?', 'Which shifts lost core, and why?', 'Where is the weak ground?'].map(q => <button key={q} type="button" onClick={() => open(q)} style={{ padding: '5px 11px', borderRadius: 99, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>{q}</button>)}
+              {['Give me the geology brief', 'Which shifts lost core, and why?', 'Where is the weak ground?'].map(q => <button key={q} type="button" onClick={() => open(q)} style={{ padding: '5px 11px', borderRadius: 99, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>{q}</button>)}
             </div>
           </div>
         )}

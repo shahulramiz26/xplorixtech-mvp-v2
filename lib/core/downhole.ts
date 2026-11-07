@@ -413,7 +413,6 @@ export const FEATURES: Feat[] = [
   { key: 'vein', label: 'Veins', get: m => m.photo.vein, sets: ['photo', 'all'], word: ['few veins', 'veined'] },
   { key: 'ox', label: 'Iron staining', get: m => m.photo.ox, sets: ['photo', 'all'], word: ['fresh', 'stained'] },
   { key: 'ff', label: 'Fractures', get: m => Math.min(20, m.photo.ff), sets: ['photo', 'all'], word: ['massive', 'fractured'] },
-  { key: 'Au', label: 'Au (log)', get: m => lg(m.assay.Au), sets: ['chem', 'all'], word: ['barren', 'Au-bearing'] },
   { key: 'Cu', label: 'Cu (log)', get: m => lg(m.assay.Cu), sets: ['chem', 'all'], word: ['low Cu', 'Cu-rich'] },
   { key: 'As', label: 'As (log)', get: m => lg(m.assay.As), sets: ['chem', 'all'], word: ['low As', 'high As'] },
   { key: 'SiO2', label: 'SiO₂', get: m => m.assay.SiO2, sets: ['chem', 'all'], word: ['low silica', 'siliceous'] },

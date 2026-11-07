@@ -240,7 +240,7 @@ export function useGeoEngine(): Engine {
   return {
     answer: q => askCore(q, ctx), start: coreSuggestions(path),
     subtitle: 'Answers from the core photos, logs, assays and the drilling record',
-    intro: 'Ask in plain words about holes, core recovery, rock quality, gold, veins, the geologist\'s log, domains, rock strength, minerals, or joint sets. Every answer shows what it read.',
+    intro: 'Ask in plain words about holes, core recovery, rock quality, veins, domains, rock strength, minerals, or joint sets. Every answer shows what it read.',
     placeholder: 'Ask about the core, assays, veins…',
   }
 }

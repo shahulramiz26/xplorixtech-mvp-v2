@@ -1,13 +1,13 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useCore, className } from '../../../../lib/core/store'
 import { useGeo } from '../../../../lib/core/geo-data'
-import { DATASETS, hasData, FEATURES, MINERALS, MINERAL_HEX, mean, type DatasetKey } from '../../../../lib/core/downhole'
+import { DATASETS, hasData, MINERALS, MINERAL_HEX, type DatasetKey } from '../../../../lib/core/downhole'
 import { download } from '../../../../lib/core/export'
-import { Page, PageHead, Grid, Tile, Card, Btn, Table, Status, Empty, Note, th, thR, td, tdStrong, rowLine, T, tint } from '../../../components/kit'
-import { classHex, pct, DemoPhotos } from '../../../components/core-ui'
-import { DepthTracks, HoleTabs, KeyRow, SampleBadge, type Track } from '../../../components/geo-ui'
+import { Page, PageHead, Grid, Tile, Card, Btn, Table, Status, Empty, Note, th, thR, td, tdStrong, rowLine, T } from '../../../components/kit'
+import { classHex, pct } from '../../../components/core-ui'
+import { DepthTracks, HoleTabs, KeyRow, type Track } from '../../../components/geo-ui'
 
 /* DOWNHOLE DATA — every dataset on every hole, on one depth scale.
  *
@@ -16,7 +16,7 @@ import { DepthTracks, HoleTabs, KeyRow, SampleBadge, type Track } from '../../..
  * has, a log of all of it together, and an import for anything else
  * (HOLE_ID, FROM, TO and number columns). */
 
-const KEYS = Object.keys(DATASETS) as DatasetKey[]
+const KEYS = (Object.keys(DATASETS) as DatasetKey[]).filter(k => !k.startsWith('manual'))   // hand logs: the XPLORIX log replaces them
 const EXTRA_HEX = ['#0E7490', '#A21CAF', '#B45309', '#15803D']
 
 export default function DownholeData() {
@@ -25,17 +25,6 @@ export default function DownholeData() {
   const [hole, setHole] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const file = useRef<HTMLInputElement>(null)
-
-  const corr = useMemo(() => {
-    if (!data.ready) return []
-    const y = data.metres.map(m => Math.log10(m.assay.Au))
-    const my = mean(y), sy = Math.sqrt(mean(y.map(v => (v - my) ** 2)))
-    return FEATURES.filter(f => f.key !== 'Au').map(f => {
-      const x = data.metres.map(f.get), mx = mean(x), sx = Math.sqrt(mean(x.map(v => (v - mx) ** 2)))
-      const r = sx && sy ? mean(x.map((v, i) => (v - mx) * (y[i] - my))) / (sx * sy) : 0
-      return { label: f.label, r, photo: f.sets.includes('photo') }
-    }).sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, 10)
-  }, [data])
 
   if (!data.ready) return <Page><Card><Empty>Joining the datasets on depth…</Empty></Card></Page>
   const sel = hole || data.holes[0].data.hole
@@ -52,7 +41,6 @@ export default function DownholeData() {
     { kind: 'band', label: 'Core colour', w: 34, items: h.rows.map(r => ({ from: r.from, to: r.to, hex: r.hex })) },
     { kind: 'band', label: 'Photo class', w: 34, items: h.rows.filter(r => r.cls >= 0).map(r => ({ from: r.from, to: r.to, hex: classHex(r.cls, index?.classes), title: className(review, r.cls) })) },
     { kind: 'curve', label: 'RQD %', w: 74, max: 100, color: '#1F9D6B', items: h.rows.map(r => ({ from: r.from, to: r.to, v: r.rqd })) },
-    curve('Au g/t (log)', m => m.assay.Au, 10, '#C99A00', { min: 0.005, log: true }),
     curve('Cu ppm (log)', m => m.assay.Cu, 5000, '#B4652E', { min: 5, log: true }),
     curve('SiO₂ %', m => m.assay.SiO2, 100, '#64748B'),
     curve('Fe₂O₃ %', m => m.assay.Fe2O3, 30, '#9A3412'),
@@ -70,17 +58,22 @@ export default function DownholeData() {
   })
 
   const onFile = async (f: File) => setMsg(importExtra(await f.text(), f.name))
-  const exportAll = () => {
-    const head = ['HOLE_ID', 'FROM', 'TO', 'AU_GPT', 'CU_PPM', 'AS_PPM', 'S_PCT', 'SIO2_PCT', 'AL2O3_PCT', 'FE2O3_PCT', 'CAO_PCT', 'MGO_PCT', 'K2O_PCT', 'DENSITY', 'MAGSUS', 'GAMMA_API', 'UCS_LAB_MPA', 'MINERAL_DOMINANT']
-    const rows = data.metres.map(m => [m.hole, m.from, m.to, m.assay.Au, m.assay.Cu, m.assay.As, m.assay.S, m.assay.SiO2, m.assay.Al2O3, m.assay.Fe2O3, m.assay.CaO, m.assay.MgO, m.assay.K2O, m.geophys.density, m.geophys.magsus, m.geophys.gamma, m.ucs ?? '', m.scanner ? MINERALS[m.scanner.dominant] : ''].join(','))
-    download('xplorix_downhole_data.csv', [head.join(','), ...rows].join('\n'))
-  }
 
   return (
     <Page>
       <PageHead question="What do we know down each hole?"
-        answer={<>{metresTotal.toLocaleString('en-US')} metres on {data.holes.length} holes, each tied to its tray photos: assays and geophysics on every hole, the core scanner on {coverage.find(c => c.k === 'scanner')!.holes}, the televiewer on {coverage.find(c => c.k === 'televiewer')!.holes}, lab strength tests on {coverage.find(c => c.k === 'lab')!.holes}. Gold goes most with <b>{corr[0]?.label.toLowerCase()}</b> {corr[0]?.photo ? '(measured on the photos)' : ''}.</>}
-        right={<><DemoPhotos /><SampleBadge /><Btn onClick={exportAll}>Download all (CSV)</Btn></>} />
+        answer={<>{metresTotal.toLocaleString('en-US')} metres on {data.holes.length} holes, each tied to its tray photos: assays and geophysics on every hole, the core scanner on {coverage.find(c => c.k === 'scanner')!.holes}, the televiewer on {coverage.find(c => c.k === 'televiewer')!.holes}, lab strength tests on {coverage.find(c => c.k === 'lab')!.holes}.</>}
+        />
+
+      <Card title="Import your downhole data" subtitle="Any interval table: HOLE_ID, FROM, TO, then number columns (assays, geophysics, pXRF, density, point load…). Each column becomes a log on the depth scale below, beside the core photos. Until your files are in, the other logs show sample data.">
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input ref={file} type="file" accept=".csv,.txt,.tsv" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
+          <Btn kind="primary" onClick={() => file.current?.click()}>Choose a file</Btn>
+          <Btn onClick={() => download('xplorix_downhole_template.csv', 'HOLE_ID,FROM,TO,PXRF_ZN_PPM,POINT_LOAD_MPA\nDH-961,3,4,120,4.2\nDH-961,4,5,95,3.8\n')}>Download a template</Btn>
+          {Object.keys(edits.extra).map(hl => <Btn key={hl} size="sm" onClick={() => clearImport('extra', hl)}>Remove import · {hl}</Btn>)}
+        </div>
+        {msg && <div style={{ marginTop: 12 }}><Note tone={msg.ok ? 'good' : 'bad'}>{msg.text}</Note></div>}
+      </Card>
 
       <Grid min={160}>
         <Tile label="Tray photos" value={`${data.holes.length} holes`} note="Real NVCL photos" />
@@ -109,35 +102,12 @@ export default function DownholeData() {
             read={d => {
               const m = ms.find(x => d >= x.from && d < x.to)
               if (!m) return null
-              return <><b style={{ color: T.text }}>{sel} · {m.from}–{m.to} m</b><br />{className(review, m.cls)} · RQD {pct(m.photo.rqd)}<br />Au {m.assay.Au} g/t · Cu {m.assay.Cu} ppm<br />SiO₂ {m.assay.SiO2}% · Fe₂O₃ {m.assay.Fe2O3}% · CaO {m.assay.CaO}%<br />{m.geophys.density} g/cm³ · mag {m.geophys.magsus} · γ {m.geophys.gamma}{m.scanner ? <><br />Mostly {MINERALS[m.scanner.dominant].toLowerCase()}</> : null}{m.ucs ? <><br />Lab UCS {m.ucs} MPa</> : null}</>
+              return <><b style={{ color: T.text }}>{sel} · {m.from}–{m.to} m</b><br />{className(review, m.cls)} · RQD {pct(m.photo.rqd)}<br />Cu {m.assay.Cu} ppm<br />SiO₂ {m.assay.SiO2}% · Fe₂O₃ {m.assay.Fe2O3}% · CaO {m.assay.CaO}%<br />{m.geophys.density} g/cm³ · mag {m.geophys.magsus} · γ {m.geophys.gamma}{m.scanner ? <><br />Mostly {MINERALS[m.scanner.dominant].toLowerCase()}</> : null}{m.ucs ? <><br />Lab UCS {m.ucs} MPa</> : null}</>
             }} />
         </div>
       </Card>
 
-      <Card title="What goes with gold" subtitle="Correlation of Au (log) with each measure, every metre on every hole. Photo measures are marked: they are available the day the core is boxed, weeks before the assays.">
-        <div style={{ display: 'grid', gap: 8, maxWidth: 640 }}>
-          {corr.map(c => (
-            <div key={c.label} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 54px', gap: 10, alignItems: 'center', fontSize: 12.5, color: T.muted }}>
-              <span style={{ color: T.text }}>{c.label}{c.photo && <span style={{ marginLeft: 6, fontSize: 10.5, color: T.orange, fontWeight: 700 }}>PHOTO</span>}</span>
-              <span style={{ position: 'relative', height: 10, background: tint(T.faint, 14), borderRadius: 5 }}>
-                <span style={{ position: 'absolute', top: 0, bottom: 0, left: c.r >= 0 ? '50%' : `${50 + c.r * 50}%`, width: `${Math.abs(c.r) * 50}%`, background: c.r >= 0 ? T.green : T.red, borderRadius: 5 }} />
-                <span style={{ position: 'absolute', left: '50%', top: -2, bottom: -2, width: 1, background: T.muted }} />
-              </span>
-              <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{c.r >= 0 ? '+' : ''}{c.r.toFixed(2)}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
 
-      <Card title="Import more downhole data" subtitle="Any interval table: HOLE_ID, FROM, TO, then number columns (assays, pXRF, LIBS, density, point load…). Each column becomes a log above.">
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input ref={file} type="file" accept=".csv,.txt,.tsv" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
-          <Btn kind="primary" onClick={() => file.current?.click()}>Choose a file</Btn>
-          <Btn onClick={() => download('xplorix_downhole_template.csv', 'HOLE_ID,FROM,TO,PXRF_ZN_PPM,POINT_LOAD_MPA\nDH-961,3,4,120,4.2\nDH-961,4,5,95,3.8\n')}>Download a template</Btn>
-          {Object.keys(edits.extra).map(hl => <Btn key={hl} size="sm" onClick={() => clearImport('extra', hl)}>Remove import · {hl}</Btn>)}
-        </div>
-        {msg && <div style={{ marginTop: 12 }}><Note tone={msg.ok ? 'good' : 'bad'}>{msg.text}</Note></div>}
-      </Card>
       <Note>Demo: the photos are real; assays, geophysics, scanner readings, televiewer picks and lab tests are sample data generated from what each photographed metre shows, so they line up with the core the way real data does. Import real files and they replace it.</Note>
     </Page>
   )

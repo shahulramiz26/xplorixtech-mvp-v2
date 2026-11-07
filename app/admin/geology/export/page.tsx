@@ -34,7 +34,6 @@ export default function ExportCore() {
       const mid = (a + b) / 2
       return {
         domain: modeOf(xs.map(x => `${d.labels[x.i] + 1}. ${d.names[d.labels[x.i]]}`)),
-        au: mean(xs.map(x => geo.metres[x.i].assay.Au)),
         ucs: geo.pred ? mean(xs.map(x => geo.pred!.ucs[x.i])) : undefined,
         mineral: geo.pred ? modeOf(xs.map(x => MINERALS[geo.pred!.mineral[x.i]])) : undefined,
         veins: geo.veins.filter(v => v.hole === hole && v.from >= a && v.from < b).length,
