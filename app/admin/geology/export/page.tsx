@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useAllHoles, useCore, className } from '../../../../lib/core/store'
+import { useAllHoles, useCore, geoNoteFor, className } from '../../../../lib/core/store'
 import { intervals } from '../../../../lib/core/geotech'
 import { EXPORT_COLUMNS, toCsv, download, type ExportRow } from '../../../../lib/core/export'
 import { Page, PageHead, Card, Btn, Seg, Empty, Note, Table, th, td, rowLine, T } from '../../../components/kit'
@@ -33,7 +33,6 @@ export default function ExportCore() {
       const modeOf = (v: string[]) => { const c: Record<string, number> = {}; v.forEach(x => { c[x] = (c[x] ?? 0) + 1 }); return Object.entries(c).sort((p, q) => q[1] - p[1])[0]?.[0] }
       const mid = (a + b) / 2
       return {
-        lith: geo.logs[hole]?.find(x => mid >= x.from && mid < x.to)?.lith,
         domain: modeOf(xs.map(x => `${d.labels[x.i] + 1}. ${d.names[d.labels[x.i]]}`)),
         au: mean(xs.map(x => geo.metres[x.i].assay.Au)),
         ucs: geo.pred ? mean(xs.map(x => geo.pred!.ucs[x.i])) : undefined,
@@ -48,6 +47,7 @@ export default function ExportCore() {
     const rs = step === '1' ? h.rows : intervals(h.flat, +step)
     return rs.map(r => ({
       ...r, hole: h.data.hole, className: className(review, r.cls), ...(joined?.(h.data.hole, r.from, r.to) ?? {}),
+      ...(() => { const n = geoNoteFor(review, h.data.hole, r.from, r.to); return n ? { alteration: n.alteration && n.alteration !== 'None' ? `${n.alteration}${n.intensity ? ` (${n.intensity.toLowerCase()})` : ''}` : n.alteration, minerals: n.minerals.map(m => `${m.name} ${m.pct}%`).join('; '), infill: n.infill, geolNote: n.note } : {} })(),
       checked: h.trays.filter(t => t.from < r.to && t.usedTo > r.from).every(t => !!review.checked[t.id]),
     }))
   }).filter(r => !onlyChecked || r.checked), [chosen, step, review, onlyChecked, joined])

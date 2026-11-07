@@ -14,6 +14,19 @@ import { flatten, intervals, totals, type Overrides } from './geotech'
  * when. In the demo it lives in the browser; with a database it is a table.
  * ========================================================================== */
 
+/* What only the geologist's eye can add to a stretch of core: alteration,
+ * minerals and sulphides, what fills the cracks, and a note. */
+export interface GeoNote {
+  id: string; tray: string; from: number; to: number
+  alteration?: string; intensity?: 'Weak' | 'Moderate' | 'Strong'
+  minerals: { name: string; pct: number }[]
+  infill?: string; note?: string
+  by: string; at: string
+}
+export const ALTERATIONS = ['None', 'Chlorite', 'Silica', 'Sericite', 'Clay (argillic)', 'Carbonate', 'Potassic', 'Epidote', 'Iron oxide']
+export const SULPHIDES = ['Pyrite', 'Chalcopyrite', 'Arsenopyrite', 'Pyrrhotite', 'Galena', 'Sphalerite', 'Magnetite', 'Visible gold']
+export const INFILLS = ['None (clean)', 'Clay', 'Calcite', 'Quartz', 'Chlorite', 'Iron oxide', 'Gouge']
+
 export interface CoreReview {
   breaks: Record<string, BreakVerdict>
   gaps: Record<string, GapVerdict>
@@ -22,7 +35,8 @@ export interface CoreReview {
   classNames: Record<number, string>
   classMoves: Record<string, number>
   veinEdits: Record<string, number>
-  rockMass: Record<string, { weathering?: number; gsi?: number }>   // per tray: the geologist's weathering grade (1–5) and GSI              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
+  rockMass: Record<string, { weathering?: number; gsi?: number }>
+  geoNotes: GeoNote[]   // per tray: the geologist's weathering grade (1–5) and GSI              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
   changes: (Change & { tray?: string })[]
   uploads: (CoreTray & { photo: string })[]      // photos added in the browser, with the photo as a data URL
   reviewer: string
@@ -32,7 +46,7 @@ export interface CoreReview {
  * logs use, so every screen reads the same. A geologist can rename any of them. */
 export const DEMO_CLASS_NAMES: Record<number, string> = { 0: 'Basalt', 1: 'Siltstone', 2: 'Oxidised zone', 3: 'Quartz-veined sediment', 4: 'Sandstone', 5: 'Limestone' }
 
-const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, rockMass: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
+const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, rockMass: {}, geoNotes: [], changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
 
 
@@ -56,6 +70,8 @@ interface Ctx {
   nameClass: (id: number, name: string) => void
   moveSlice: (tray: string, from: number, fromCls: number, toCls: number | null) => void
   setVein: (tray: string, from: number, cls: number | null, label: string) => void
+  saveGeoNote: (n: Omit<GeoNote, 'by' | 'at'>) => void
+  removeGeoNote: (id: string) => void
   setRockMass: (tray: string, patch: { weathering?: number | null; gsi?: number | null }, label: string) => void
   addUpload: (t: CoreTray & { photo: string }) => boolean
   removeUpload: (id: string) => void
@@ -127,6 +143,17 @@ export function CoreProvider({ children }: { children: ReactNode }) {
       const key = `${tray}@${from}`
       if (cls == null) delete veinEdits[key]; else veinEdits[key] = cls
       return { ...s, veinEdits, changes: log(s, label, tray) }
+    }),
+    saveGeoNote: n => save(s => {
+      const list = s.geoNotes ?? []
+      const had = list.some(x => x.id === n.id)
+      const full: GeoNote = { ...n, by: s.reviewer, at: stamp() }
+      const what = [n.alteration && n.alteration !== 'None' ? `${n.alteration}${n.intensity ? ` (${n.intensity.toLowerCase()})` : ''}` : '', n.minerals.map(m => `${m.name} ${m.pct}%`).join(', '), n.infill ? `infill ${n.infill.toLowerCase()}` : ''].filter(Boolean).join(' · ')
+      return { ...s, geoNotes: had ? list.map(x => x.id === n.id ? full : x) : [...list, full], changes: log(s, `${had ? 'Changed' : 'Added'} geology ${n.from.toFixed(2)}–${n.to.toFixed(2)} m${what ? `: ${what}` : ''}`, n.tray) }
+    }),
+    removeGeoNote: id => save(s => {
+      const n = (s.geoNotes ?? []).find(x => x.id === id)
+      return { ...s, geoNotes: (s.geoNotes ?? []).filter(x => x.id !== id), changes: log(s, `Removed geology ${n?.from.toFixed(2)}–${n?.to.toFixed(2)} m`, n?.tray) }
     }),
     setRockMass: (tray, patch, label) => save(s => {
       const cur = { ...((s.rockMass ?? {})[tray] ?? {}) } as { weathering?: number; gsi?: number }
@@ -235,4 +262,10 @@ export function editVeins<V extends { tray: string; from: number; cls: number; c
     if (e < 0) return []
     return [{ ...v, cls: e, confidence: 'high', edited: true }]
   })
+}
+
+/* The geologist's notes that cover the most of an interval of a hole. */
+export function geoNoteFor(r: CoreReview, hole: string, a: number, b: number): GeoNote | undefined {
+  const ov = (n: GeoNote) => Math.max(0, Math.min(b, n.to) - Math.max(a, n.from))
+  return (r.geoNotes ?? []).filter(n => holeOfTray(n.tray) === hole && ov(n) > 1e-6).sort((p, q) => ov(q) - ov(p))[0]
 }

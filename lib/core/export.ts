@@ -13,6 +13,7 @@ import { rqdClass, WEATHERING } from './geotech'
 export interface ExportRow extends IntervalResult {
   hole: string; className: string; checked: boolean
   // from the other data, where it has been joined (Geology → Export)
+  alteration?: string; minerals?: string; infill?: string; geolNote?: string
   lith?: string; domain?: string; au?: number; ucs?: number; mineral?: string; veins?: number
 }
 
@@ -37,7 +38,10 @@ export const EXPORT_COLUMNS: { key: string; label: string; get: (r: ExportRow) =
   { key: 'ROCK_CLASS', label: 'Rock class', get: r => r.className },
   { key: 'COLOUR_HEX', label: 'Colour', get: r => r.hex },
   { key: 'VEIN_COUNT', label: 'Veins found on the photos', get: r => r.veins ?? '' },
-  { key: 'LITH_LOGGED', label: "Geologist's logged rock", get: r => r.lith ?? '' },
+  { key: 'ALTERATION', label: 'Alteration (geologist)', get: r => r.alteration ?? '' },
+  { key: 'MINERALISATION', label: 'Minerals and sulphides (geologist)', get: r => r.minerals ?? '' },
+  { key: 'CRACK_INFILL', label: 'Crack infill (geologist)', get: r => r.infill ?? '' },
+  { key: 'GEOL_NOTES', label: 'Geologist notes', get: r => r.geolNote ?? '' },
   { key: 'DOMAIN', label: 'Domain (photo + chemistry + geophysics)', get: r => r.domain ?? '' },
   { key: 'AU_GPT', label: 'Au g/t (assay)', get: r => r.au != null ? r.au.toFixed(3) : '' },
   { key: 'UCS_PRED_MPA', label: 'Rock strength, predicted (MPa)', get: r => r.ucs != null ? Math.round(r.ucs) : '' },

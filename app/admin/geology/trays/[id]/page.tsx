@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useCosting } from '../../../../../lib/costing-store'
 import { useCore, useHole, overridesOf, holeOfTray, className, classLetter, editVeins } from '../../../../../lib/core/store'
 import { flatten, intervals, totals, gapId, paleGap, gapDefault, gsiProxy, gsiClass, roughnessRating, weatheringRating, ASSUMED_JCOND, WEATHERING } from '../../../../../lib/core/geotech'
+import { GeologistAdds } from '../../../../components/geologist-adds'
 import { findVeins, VEIN_CLASSES } from '../../../../../lib/core/downhole'
 import { colourName } from '../../../../../lib/core/engine'
 import { rateOf } from '../../../../../lib/core/drill-link'
@@ -177,7 +178,7 @@ export default function TrayCheck() {
             <Tile label="Fractures /m" value={stats.t.ff.toFixed(1)} />
           </Grid>
 
-          <Card title="Rock mass, rock class and veins: check them here" subtitle="Weathering is the thin strip at the top of each row, rock class the strip under the core, veins the boxes with a letter. Fix anything that is wrong, then Mark checked finalises the whole tray.">
+          <Card title="Check and complete the log for this tray" subtitle="Weathering is the thin strip at the top of each row, rock class the strip under the core, veins the boxes with a letter. Fix anything that is wrong, add what only your eye can see, then Mark checked finalises the whole tray.">
             {/* ROCK MASS: weathering and GSI for this tray */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, paddingBottom: 18, marginBottom: 18, borderBottom: '1px solid var(--x-border)' }}>
               <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
@@ -272,6 +273,7 @@ export default function TrayCheck() {
                 </details>
               </div>
             </div>
+            <GeologistAdds tray={tray} at={at} />
           </Card>
         </div>
 
@@ -357,7 +359,7 @@ export default function TrayCheck() {
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 <Btn kind="primary" onClick={() => { core.check(tray.id); if (nextToCheck) router.push(`/admin/geology/trays/${nextToCheck.id}`) }}>Mark checked{nextToCheck ? ', next tray' : ''}</Btn>
-                <div style={{ fontSize: 11.5, color: T.faint }}>Finalises the whole tray: breaks, gaps, weathering, GSI, rock class and veins. A checked tray shows as CHECKED in the logs and exports; until then every number is shown as suggested.</div>
+                <div style={{ fontSize: 11.5, color: T.faint }}>Finalises the whole tray: breaks, gaps, weathering, GSI, rock class, veins and what you added. A checked tray shows as CHECKED in the logs and exports; until then every number is shown as suggested.</div>
               </div>
             )}
           </Card>
