@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useAllHoles, useCore, className, classLetter } from '../../../../lib/core/store'
+import { useAllHoles, useCore, className, classLetter, moveKey } from '../../../../lib/core/store'
 import { colourName } from '../../../../lib/core/engine'
 import { Page, PageHead, Card, Btn, Empty, Note, inputStyle, T } from '../../../components/kit'
 import { photoSrc, xAtDepth, pct, DemoPhotos, Swatch } from '../../../components/core-ui'
@@ -14,23 +14,47 @@ import type { CoreTray } from '../../../../lib/core/model'
 
 const K = 3   // display scale for the crops
 
-function Crop({ tray, at }: { tray: CoreTray; at: number }) {
+/* The photo is fetched only when the crop scrolls into view: a class card shows
+ * eight crops from eight different trays, and the whole page would otherwise
+ * fetch 48 full tray photos before anything below the first card is seen. */
+function useSeen<E extends Element>() {
+  const ref = useRef<E | null>(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || seen) return
+    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { setSeen(true); io.disconnect() } }, { rootMargin: '200px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [seen])
+  return [ref, seen] as const
+}
+
+function Crop({ tray, at, checked }: { tray: CoreTray; at: number; checked?: boolean }) {
+  const [ref, seen] = useSeen<HTMLAnchorElement>()
   const p = xAtDepth(tray, at)
   if (!p) return null
   const r = tray.rows[p.row]
   const win = 46, hgt = (r.band[1] - r.band[0]) * K
   return (
-    <Link href={`/admin/geology/trays/${tray.id}`} title={`${tray.hole} ${at.toFixed(2)} m`}
-      style={{ display: 'block', width: win * 2, height: hgt, borderRadius: 6, border: `1px solid ${T.border}`, flex: '0 0 auto',
-        backgroundImage: `url(${photoSrc(tray, true)})`, backgroundSize: `${tray.w * K}px ${tray.h * K}px`,
-        backgroundPosition: `${-(p.x * K - win)}px ${-(r.band[0] * K)}px`, backgroundRepeat: 'no-repeat' }} />
+    <Link ref={ref} href={`/admin/geology/trays/${tray.id}`} title={`${tray.hole} ${at.toFixed(2)} m`}
+      style={{ position: 'relative', display: 'block', width: win * 2, height: hgt, borderRadius: 6, border: `1px solid ${checked ? 'var(--x-green)' : T.border}`, flex: '0 0 auto',
+        backgroundColor: 'var(--x-raised)', backgroundImage: seen ? `url(${photoSrc(tray, true)})` : 'none', backgroundSize: `${tray.w * K}px ${tray.h * K}px`,
+        backgroundPosition: `${-(p.x * K - win)}px ${-(r.band[0] * K)}px`, backgroundRepeat: 'no-repeat' }}>
+      {checked && <span title="A geologist checked this tray" style={{ position: 'absolute', top: 3, right: 3, fontSize: 11, fontWeight: 700, lineHeight: 1, padding: '3px 5px', borderRadius: 4, background: 'var(--x-green)', color: '#fff' }}>✓</span>}
+    </Link>
   )
 }
 
 export default function RockClasses() {
   const all = useAllHoles()
-  const { index, review, nameClass } = useCore()
+  const { index, review, nameClass, moveSlice } = useCore()
   const [draft, setDraft] = useState<Record<number, string>>({})
+  // the sample the geologist says is in the wrong class, and the last move (for Undo)
+  const [picking, setPicking] = useState<{ tray: string; from: number; cls: number; label: string } | null>(null)
+  const [last, setLast] = useState<{ tray: string; from: number; cls: number; to: number; label: string } | null>(null)
+  const moves = review.classMoves ?? {}
 
   const view = useMemo(() => {
     if (!index) return []
@@ -53,14 +77,47 @@ export default function RockClasses() {
       <PageHead question="Which rock is which?"
         answer={<>The photos split the core into {index.classes.length} classes that look alike, darkest first. {named < index.classes.length ? `Name the ${index.classes.length - named} unnamed classes once; every log and export uses your names.` : 'All classes are named.'}</>}
         right={<DemoPhotos />} />
-      <Note>Classes come from what a photo shows: colour, grain, veins and staining. Two rocks that look the same will share a class, and one rock can split across two. The name is the geologist&apos;s call.</Note>
+      <Note>Classes come from what a photo shows: colour, grain, veins and staining. Two rocks that look the same will share a class, and one rock can split across two. The name is the geologist&apos;s call. The pictures are examples of each class: a green ✓ means a geologist has checked that tray. If a picture is in the wrong class, press <b>Wrong class?</b> and move it; every move is saved with your name and, in the full build, teaches the model.</Note>
 
-      {view.map(({ c, metres, holes, samples }) => (
-        <Card key={c.id} title={`${className(review, c.id)}`} subtitle={`${review.classNames[c.id] ? `Class ${classLetter(c.id)} · ` : ''}${colourName(c.L, c.a, c.b)} · ${pct(c.share * 100)} of the core · ${Math.round(metres)} m in ${holes.length} holes`}
-          right={<Swatch hex={c.hex} size={22} />}>
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6 }}>
-            {samples.map(s => <Crop key={`${s.t.id}-${s.b.from}`} tray={s.t} at={(s.b.from + s.b.to) / 2} />)}
+      {last && (
+        <div role="status" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', fontSize: 13, padding: '10px 14px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--x-green) 40%, transparent)', background: 'color-mix(in srgb, var(--x-green) 10%, transparent)' }}>
+          <span>✓ Moved {last.label} from {className(review, last.cls)} to <b>{className(review, last.to)}</b>. Saved with your name; every log and export now uses it.</span>
+          <Btn size="sm" onClick={() => { moveSlice(last.tray, last.from, last.to, null); setLast(null) }}>Undo</Btn>
+        </div>
+      )}
+
+      {view.map(({ c, metres, holes, samples }) => {
+        const movedIn = Object.values(moves).filter(v => v === c.id).length
+        return (
+        <Card key={c.id} title={`${className(review, c.id)}`} subtitle={`${review.classNames[c.id] ? `Class ${classLetter(c.id)} · ` : ''}${colourName(c.L, c.a, c.b)} · ${pct(c.share * 100)} of the core · ${Math.round(metres)} m in ${holes.length} holes${movedIn ? ` · ${movedIn} slice${movedIn === 1 ? '' : 's'} moved here by a geologist` : ''}`}
+          right={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted }}>Colour on logs <Swatch hex={c.hex} size={18} /></span>}>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
+            {samples.map(s => {
+              const label = `${s.hole} ${((s.b.from + s.b.to) / 2).toFixed(2)} m`
+              const on = picking?.tray === s.t.id && picking.from === s.b.from
+              return (
+                <div key={`${s.t.id}-${s.b.from}`} style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 auto', width: 92 }}>
+                  <Crop tray={s.t} at={(s.b.from + s.b.to) / 2} checked={!!review.checked[s.t.id]} />
+                  <span style={{ fontSize: 11, color: T.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={label}>{label}</span>
+                  <button onClick={() => setPicking(on ? null : { tray: s.t.id, from: s.b.from, cls: c.id, label })} aria-pressed={on}
+                    style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 6px', minHeight: 28, borderRadius: 6, cursor: 'pointer', border: `1px solid ${on ? T.orange : 'var(--x-border3)'}`, background: on ? 'color-mix(in srgb, var(--x-orange) 12%, transparent)' : T.card, color: T.text }}>
+                    Wrong class?
+                  </button>
+                </div>
+              )
+            })}
           </div>
+          {picking && picking.cls === c.id && (
+            <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, border: `1px solid ${T.orange}`, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
+              <span>Move <b>{picking.label}</b> to:</span>
+              {index.classes.filter(o => o.id !== c.id).map(o => (
+                <Btn key={o.id} size="sm" onClick={() => { moveSlice(picking.tray, picking.from, c.id, o.id); setLast({ ...picking, to: o.id }); setPicking(null) }}>
+                  <Swatch hex={o.hex} /> {className(review, o.id)}
+                </Btn>
+              ))}
+              <Btn size="sm" onClick={() => setPicking(null)}>Cancel</Btn>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, fontSize: 12, color: T.muted }}>
             <span>Brightness {Math.round(c.L)}</span><span>Grain {c.tex.toFixed(1)}</span><span>Veins {(c.vein * 100).toFixed(1)}%</span><span>Iron staining {(c.ox * 100).toFixed(1)}%</span>
           </div>
@@ -72,7 +129,8 @@ export default function RockClasses() {
               onClick={() => { nameClass(c.id, draft[c.id].trim()); setDraft(d => { const n = { ...d }; delete n[c.id]; return n }) }}>Save name</Btn>
           </div>
         </Card>
-      ))}
+        )
+      })}
     </Page>
   )
 }

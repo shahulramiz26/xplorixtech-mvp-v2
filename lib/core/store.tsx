@@ -20,12 +20,13 @@ export interface CoreReview {
   added: AddedBreak[]
   checked: Record<string, { by: string; at: string }>
   classNames: Record<number, string>
+  classMoves: Record<string, number>             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
   changes: (Change & { tray?: string })[]
   uploads: (CoreTray & { photo: string })[]      // photos added in the browser, with the photo as a data URL
   reviewer: string
 }
 
-const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
+const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, classMoves: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
 
 export function stamp() {
@@ -46,6 +47,7 @@ interface Ctx {
   check: (tray: string) => void
   uncheck: (tray: string) => void
   nameClass: (id: number, name: string) => void
+  moveSlice: (tray: string, from: number, fromCls: number, toCls: number | null) => void
   addUpload: (t: CoreTray & { photo: string }) => boolean
   removeUpload: (id: string) => void
   reset: () => void
@@ -104,6 +106,13 @@ export function CoreProvider({ children }: { children: ReactNode }) {
     check: tray => save(s => ({ ...s, checked: { ...s.checked, [tray]: { by: s.reviewer, at: stamp() } }, changes: log(s, 'Marked the tray checked', tray) })),
     uncheck: tray => save(s => { const checked = { ...s.checked }; delete checked[tray]; return { ...s, checked, changes: log(s, 'Opened the tray again', tray) } }),
     nameClass: (id, name) => save(s => ({ ...s, classNames: { ...s.classNames, [id]: name }, changes: log(s, `Named rock class ${classLetter(id)} "${name}"`) })),
+    moveSlice: (tray, from, fromCls, toCls) => save(s => {
+      const classMoves = { ...s.classMoves }
+      const key = `${tray}@${from}`
+      if (toCls == null) delete classMoves[key]; else classMoves[key] = toCls
+      const what = toCls == null ? `Undid the class move at ${from.toFixed(2)} m` : `Moved the slice at ${from.toFixed(2)} m from ${className(s, fromCls)} to ${className(s, toCls)}`
+      return { ...s, classMoves, changes: log(s, what, tray) }
+    }),
     addUpload: t => {
       // Photos are kept in the browser in the demo, which holds only a few MB:
       // say so when it is full instead of losing the photo quietly.
@@ -131,6 +140,17 @@ export function className(review: CoreReview, id: number) {
   return review.classNames[id] ? review.classNames[id] : `Class ${classLetter(id)}`
 }
 
+/* The geologist's class moves, applied to the slices before anything is worked
+ * out, so every log, export and 3D view uses the corrected class. */
+export const moveKey = (tray: string, from: number) => `${tray}@${from}`
+function withMoves(trays: CoreTray[], r: CoreReview): CoreTray[] {
+  const moves = r.classMoves ?? {}
+  if (!Object.keys(moves).length) return trays
+  return trays.map(t => t.bins.some(b => moves[moveKey(t.id, b.from)] != null)
+    ? { ...t, bins: t.bins.map(b => { const m = moves[moveKey(t.id, b.from)]; return m != null ? { ...b, cls: m } : b }) }
+    : t)
+}
+
 export function overridesOf(r: CoreReview): Overrides {
   return { breaks: r.breaks, gaps: r.gaps, added: r.added }
 }
@@ -144,7 +164,7 @@ export function useHole(hole: string | undefined) {
   return useMemo(() => {
     if (!data) return { data: undefined, trays: [] as CoreTray[], flat: undefined, rows: [], total: undefined }
     const ups = review.uploads.filter(u => u.hole === data.hole)
-    const trays = [...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from)
+    const trays = withMoves([...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from), review)
     const flat = flatten(trays, overridesOf(review))
     const rows = intervals(flat, 1)
     return { data, trays, flat, rows, total: totals(rows) }
@@ -163,7 +183,7 @@ export function useAllHoles(enabled = true) {
 }
 function oneHole(data: CoreHole, review: CoreReview) {
   const ups = review.uploads.filter(u => u.hole === data.hole)
-  const trays = [...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from)
+  const trays = withMoves([...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from), review)
   const flat = flatten(trays, overridesOf(review))
   const rows = intervals(flat, 1)
   return { data, trays, flat, rows, total: totals(rows), checked: trays.filter(t => review.checked[t.id]).length }
