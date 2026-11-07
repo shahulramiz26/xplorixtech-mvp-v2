@@ -256,21 +256,7 @@ export default function RockMass() {
         </details>
       </Card>
 
-      <Card title="Structure by hole" subtitle="Joint sets found from the angle of each natural break to the core axis." pad={false}>
-        <Table>
-          <thead><tr><th style={th}>Hole</th><th style={th}>Joint sets (angle to core axis)</th><th style={thR}>Discing zones</th><th style={thR}>JRC proxy</th></tr></thead>
-          <tbody>
-            {view.per.map(p => (
-              <tr key={p.h.data.hole} style={{ borderBottom: rowLine }}>
-                <td style={tdStrong}>{p.h.data.hole}</td>
-                <td style={td}>{p.sets.length ? <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>{p.sets.map((s, i) => <span key={i} style={{ ...num, fontSize: 12, padding: '1px 7px', borderRadius: 5, border: `1px solid ${T.border}`, color: T.text }}>{s.mean}° ± {s.sd}° <span style={{ color: T.faint }}>n={s.n}</span></span>)}</span> : '—'}</td>
-                <td style={tdR}>{p.discs || '—'}</td>
-                <td style={tdR}>{p.h.total!.jrc.toFixed(1)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Card>
+      <p style={{ margin: 0, fontSize: 13, color: T.muted }}>Joint sets and discing by hole are on <Link href="/admin/geology/structures" style={{ color: T.text, fontWeight: 600 }}>Structures</Link>, beside the televiewer comparison.</p>
       <p style={{ margin: 0, fontSize: 12, color: T.faint, fontFamily: display }}><span style={{ ...eyebrow }}>Method</span> RQD, fractures and weathering are measured on the tray photos; see How it works for what the photo step can and cannot see.</p>
     </Page>
   )

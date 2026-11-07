@@ -25,8 +25,9 @@ export interface GeoEdits {
   extra: Record<string, ExtraData>                  // imported downhole columns, by hole
   veinNames: Record<number, { name: string; description: string }>
   chipNames: Record<number, string>
+  tv: Record<string, { file: string; at: string; planes: Structure[] }>   // imported televiewer picks, by hole
 }
-const EMPTY: GeoEdits = { manual: {}, extra: {}, veinNames: {}, chipNames: {} }
+const EMPTY: GeoEdits = { manual: {}, extra: {}, veinNames: {}, chipNames: {}, tv: {} }
 const KEY = 'xplorix_core_data_v1'
 
 export interface GeoData {
@@ -49,7 +50,8 @@ interface Ctx {
   data: GeoData
   importManual: (text: string, file: string) => { ok: boolean; text: string }
   importExtra: (text: string, file: string) => { ok: boolean; text: string }
-  clearImport: (kind: 'manual' | 'extra', hole: string) => void
+  clearImport: (kind: 'manual' | 'extra' | 'tv', hole: string) => void
+  importTv: (text: string, file: string) => { ok: boolean; text: string }
   nameVein: (id: number, name: string, description: string) => void
   nameChip: (id: number, name: string) => void
 }
@@ -107,7 +109,35 @@ export function GeoDataProvider({ children }: { children: ReactNode }) {
       save(s => ({ ...s, extra: { ...s.extra, ...by } }))
       return { ok: true, text: `Imported ${cols.length} columns (${cols.slice(0, 5).join(', ')}${cols.length > 5 ? '…' : ''}) for ${holes.join(', ')}.` }
     },
-    clearImport: (kind, hole) => save(s => { const m = { ...s[kind] }; delete m[hole]; return { ...s, [kind]: m } }),
+    clearImport: (kind, hole) => save(s => { const m = { ...(s[kind] ?? {}) }; delete m[hole]; return { ...s, [kind]: m } }),
+    importTv: (text, file) => {
+      // A televiewer pick list: HOLE_ID, DEPTH, DIP, DIP_DIRECTION; ALPHA, BETA and TYPE when the contractor gives them.
+      const rows = parseTable(text)
+      const hi = rows.findIndex(r => r.some(c => /^(hole|hole_?id|bhid|holeid)$/i.test(c)) && r.some(c => /^(depth|at|md|depth_?m)$/i.test(c)))
+      if (hi < 0) return { ok: false, text: 'No header with HOLE_ID and DEPTH found. The file needs HOLE_ID, DEPTH, DIP and DIP_DIRECTION.' }
+      const head = rows[hi], col = (re: RegExp) => head.findIndex(c => re.test(c))
+      const ci = { h: col(/^(hole|hole_?id|bhid|holeid)$/i), d: col(/^(depth|at|md|depth_?m)$/i), dip: col(/^(dip|true_?dip)$/i), dd: col(/^(dip_?dir(ection)?|dipdir|azimuth|dip_?az)$/i), a: col(/^alpha$/i), b: col(/^beta$/i), t: col(/^(type|structure|feature)$/i) }
+      if (ci.dip < 0 || ci.dd < 0) return { ok: false, text: 'No DIP and DIP_DIRECTION columns found.' }
+      const by: Record<string, Structure[]> = {}
+      rows.slice(hi + 1).forEach(r => {
+        const hole = r[ci.h], at = Number(r[ci.d]), dip = Number(r[ci.dip]), dd = Number(r[ci.dd])
+        if (!hole || !known.has(hole) || ![at, dip, dd].every(Number.isFinite)) return
+        const tp = (r[ci.t] ?? '').toLowerCase()
+        const list = (by[hole] = by[hole] ?? [])
+        list.push({ id: `${hole}-T${list.length + 1}`, hole, at: +at.toFixed(2), alpha: ci.a >= 0 && Number.isFinite(Number(r[ci.a])) ? Math.round(Number(r[ci.a])) : NaN, beta: ci.b >= 0 && Number.isFinite(Number(r[ci.b])) ? Math.round(Number(r[ci.b])) : NaN,
+          dip: Math.round(dip), dipDir: Math.round(((dd % 360) + 360) % 360), type: tp.startsWith('v') ? 'Vein' : tp.startsWith('s') || tp.startsWith('f') ? 'Shear' : 'Joint', set: 0 })
+      })
+      const holes = Object.keys(by)
+      if (!holes.length) return { ok: false, text: `None of the HOLE_IDs match a hole with core photos (${Array.from(known).slice(0, 4).join(', ')}…).` }
+      // sets: group planes that face the same way (dip direction, then dip)
+      Object.values(by).forEach(list => {
+        const keys = list.map(p => Math.round(p.dipDir / 45) % 8)
+        const order = Array.from(new Set(keys)).sort((x, y) => keys.filter(k => k === y).length - keys.filter(k => k === x).length)
+        list.forEach((p, i) => { p.set = Math.min(3, order.indexOf(keys[i])) })
+      })
+      save(s => ({ ...s, tv: { ...(s.tv ?? {}), ...Object.fromEntries(holes.map(h => [h, { file, at: stamp(), planes: by[h] }])) } }))
+      return { ok: true, text: `Imported ${holes.reduce((n, h) => n + by[h].length, 0)} televiewer planes for ${holes.join(', ')} from ${file}. The comparison below now uses your file.` }
+    },
     nameVein: (id, name, description) => save(s => ({ ...s, veinNames: { ...s.veinNames, [id]: { name, description } } })),
     nameChip: (id, name) => save(s => ({ ...s, chipNames: { ...s.chipNames, [id]: name } })),
   }
@@ -140,9 +170,9 @@ function useCompute(on: boolean, edits: GeoEdits): GeoData {
     holes.forEach(h => { byHole[h.data.hole] = holeMetres(h) })
     const metres = holes.flatMap(h => byHole[h.data.hole])
     const veins = editVeins(holes.flatMap(findVeins), review)
-    const structures = holes.flatMap(televiewer)
+    const structures = holes.flatMap(h => edits.tv?.[h.data.hole]?.planes ?? televiewer(h))
     return { holes, byHole, metres, veins, structures }
-  }, [on, all.ready, all.list, review])
+  }, [on, all.ready, all.list, review, edits.tv])
   const logged = useMemo(() => {
     if (!base) return null
     const logs: Record<string, ManualInterval[]> = {}
