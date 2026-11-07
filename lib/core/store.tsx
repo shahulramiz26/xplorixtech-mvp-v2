@@ -21,7 +21,8 @@ export interface CoreReview {
   checked: Record<string, { by: string; at: string }>
   classNames: Record<number, string>
   classMoves: Record<string, number>
-  veinEdits: Record<string, number>              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
+  veinEdits: Record<string, number>
+  rockMass: Record<string, { weathering?: number; gsi?: number }>   // per tray: the geologist's weathering grade (1–5) and GSI              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
   changes: (Change & { tray?: string })[]
   uploads: (CoreTray & { photo: string })[]      // photos added in the browser, with the photo as a data URL
   reviewer: string
@@ -31,7 +32,7 @@ export interface CoreReview {
  * logs use, so every screen reads the same. A geologist can rename any of them. */
 export const DEMO_CLASS_NAMES: Record<number, string> = { 0: 'Basalt', 1: 'Siltstone', 2: 'Oxidised zone', 3: 'Quartz-veined sediment', 4: 'Sandstone', 5: 'Limestone' }
 
-const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
+const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, rockMass: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
 
 
@@ -55,6 +56,7 @@ interface Ctx {
   nameClass: (id: number, name: string) => void
   moveSlice: (tray: string, from: number, fromCls: number, toCls: number | null) => void
   setVein: (tray: string, from: number, cls: number | null, label: string) => void
+  setRockMass: (tray: string, patch: { weathering?: number | null; gsi?: number | null }, label: string) => void
   addUpload: (t: CoreTray & { photo: string }) => boolean
   removeUpload: (id: string) => void
   reset: () => void
@@ -126,6 +128,14 @@ export function CoreProvider({ children }: { children: ReactNode }) {
       if (cls == null) delete veinEdits[key]; else veinEdits[key] = cls
       return { ...s, veinEdits, changes: log(s, label, tray) }
     }),
+    setRockMass: (tray, patch, label) => save(s => {
+      const cur = { ...((s.rockMass ?? {})[tray] ?? {}) } as { weathering?: number; gsi?: number }
+      if ('weathering' in patch) { if (patch.weathering == null) delete cur.weathering; else cur.weathering = patch.weathering }
+      if ('gsi' in patch) { if (patch.gsi == null) delete cur.gsi; else cur.gsi = patch.gsi }
+      const rockMass = { ...(s.rockMass ?? {}) }
+      if (cur.weathering == null && cur.gsi == null) delete rockMass[tray]; else rockMass[tray] = cur
+      return { ...s, rockMass, changes: log(s, label, tray) }
+    }),
     addUpload: t => {
       // Photos are kept in the browser in the demo, which holds only a few MB:
       // say so when it is full instead of losing the photo quietly.
@@ -168,6 +178,19 @@ export function overridesOf(r: CoreReview): Overrides {
   return { breaks: r.breaks, gaps: r.gaps, added: r.added }
 }
 
+/* The geologist's weathering grade and GSI for a tray replace the photo's on
+ * every metre of that tray, so the logs, Rock mass and exports use them. */
+function withRockMass<R extends { from: number; to: number; weathering: number; gsi: number }>(rows: R[], trays: CoreTray[], r: CoreReview): R[] {
+  const rm = r.rockMass ?? {}
+  if (!Object.keys(rm).length) return rows
+  return rows.map(x => {
+    const mid = (x.from + x.to) / 2
+    const t = trays.find(t => mid >= t.from && mid < t.usedTo)
+    const e = t ? rm[t.id] : undefined
+    return e ? { ...x, weathering: e.weathering ?? x.weathering, gsi: e.gsi ?? x.gsi } : x
+  })
+}
+
 /* One hole, loaded, with the photos added in the browser and the geologist's
  * corrections applied. */
 export function useHole(hole: string | undefined) {
@@ -179,7 +202,7 @@ export function useHole(hole: string | undefined) {
     const ups = review.uploads.filter(u => u.hole === data.hole)
     const trays = withMoves([...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from), review)
     const flat = flatten(trays, overridesOf(review))
-    const rows = intervals(flat, 1)
+    const rows = withRockMass(intervals(flat, 1), trays, review)
     return { data, trays, flat, rows, total: totals(rows) }
   }, [data, review])
 }
@@ -198,7 +221,7 @@ function oneHole(data: CoreHole, review: CoreReview) {
   const ups = review.uploads.filter(u => u.hole === data.hole)
   const trays = withMoves([...data.trays.filter(t => !ups.some(u => Math.abs(u.from - t.from) < 0.01)), ...ups].sort((a, b) => a.from - b.from), review)
   const flat = flatten(trays, overridesOf(review))
-  const rows = intervals(flat, 1)
+  const rows = withRockMass(intervals(flat, 1), trays, review)
   return { data, trays, flat, rows, total: totals(rows), checked: trays.filter(t => review.checked[t.id]).length }
 }
 

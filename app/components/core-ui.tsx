@@ -4,7 +4,10 @@ import { ReactNode, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import type { CoreTray, BreakVerdict, GapVerdict, AddedBreak } from '../../lib/core/model'
 import type { IntervalResult } from '../../lib/core/geotech'
-import { gapId, paleGap } from '../../lib/core/geotech'
+import { gapId, paleGap, weatheringGrade } from '../../lib/core/geotech'
+
+/* ISRM weathering grades I–V, fresh blue to completely weathered red (as on Rock mass). */
+export const WEATHER_HEX = ['', '#3F6FB0', '#8DBBD9', '#E9C46A', '#EE8A5A', '#C8372D']
 import { useCore, className } from '../../lib/core/store'
 import { T, tint, mono } from './kit'
 
@@ -48,7 +51,7 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
   onSelect?: (s: Sel) => void
   onAdd?: (row: number, x: number) => void
   adding?: boolean
-  show?: { rows: boolean; breaks: boolean; gaps: boolean; classes?: boolean; veins?: boolean }
+  show?: { rows: boolean; breaks: boolean; gaps: boolean; classes?: boolean; veins?: boolean; weathering?: boolean }
   compact?: boolean
   classHex?: (cls: number) => string                // rock class colours, for the class strip under the core
   veins?: { from: number; to: number; hex: string; letter: string }[]
@@ -142,6 +145,12 @@ export function TrayPhoto({ tray, sel, onSelect, onAdd, adding, show = { rows: t
               <title>Added by the geologist · {a.at.toFixed(2)} m</title>
             </g>
           )
+        })}
+        {show.weathering && tray.bins.filter(bn => bn.core > 0.5).map(bn => {
+          const a0 = xAtDepth(tray, bn.from + 1e-6), a1 = xAtDepth(tray, bn.to - 1e-6)
+          if (!a0 || !a1 || a0.row !== a1.row) return null
+          const r = tray.rows[a0.row], hh = Math.max(1.5, (r.band[1] - r.band[0]) * 0.12)
+          return <rect key={`w${bn.from}`} x={a0.x} y={r.band[0]} width={Math.max(0.6, a1.x - a0.x)} height={hh} fill={WEATHER_HEX[weatheringGrade(bn.ox)]} pointerEvents="none" />
         })}
         {show.classes && classHex && tray.bins.filter(bn => bn.core > 0.5 && bn.cls >= 0).map(bn => {
           const a0 = xAtDepth(tray, bn.from + 1e-6), a1 = xAtDepth(tray, bn.to - 1e-6)

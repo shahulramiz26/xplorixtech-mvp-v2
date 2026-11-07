@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCosting } from '../../../../../lib/costing-store'
 import { useCore, useHole, overridesOf, holeOfTray, className, classLetter, editVeins } from '../../../../../lib/core/store'
-import { flatten, intervals, totals, gapId, paleGap, gapDefault } from '../../../../../lib/core/geotech'
+import { flatten, intervals, totals, gapId, paleGap, gapDefault, gsiProxy, gsiClass, roughnessRating, weatheringRating, ASSUMED_JCOND, WEATHERING } from '../../../../../lib/core/geotech'
 import { findVeins, VEIN_CLASSES } from '../../../../../lib/core/downhole'
 import { colourName } from '../../../../../lib/core/engine'
 import { rateOf } from '../../../../../lib/core/drill-link'
 import { Page, PageHead, Card, Btn, Grid, Tile, Status, Empty, Note, Split, T, tint } from '../../../../components/kit'
-import { TrayPhoto, CoreLegend, pct, dep, depthAtX, xAtDepth, Swatch, type Sel, DemoPhotos } from '../../../../components/core-ui'
+import { TrayPhoto, CoreLegend, pct, dep, depthAtX, xAtDepth, Swatch, WEATHER_HEX, type Sel, DemoPhotos } from '../../../../components/core-ui'
 
 /* TRAY CHECK — the geologist's main working screen.
  *
@@ -29,7 +29,8 @@ export default function TrayCheck() {
   const h = useHole(hole)
   const [sel, setSel] = useState<Sel>(null)
   const [adding, setAdding] = useState<'natural' | 'handling' | null>(null)
-  const [show, setShow] = useState({ rows: true, breaks: true, gaps: true, classes: true, veins: true })
+  const [show, setShow] = useState({ rows: true, breaks: true, gaps: true, classes: true, veins: true, weathering: true })
+  const [gsiDraft, setGsiDraft] = useState<string | null>(null)
   // opened from Rock classes with ?at=<depth>: that 5 cm slice is pointed out
   const [at, setAt] = useState<number | null>(null)
   const [veinAt, setVeinAt] = useState<number | null>(null)
@@ -106,6 +107,13 @@ export default function TrayCheck() {
   const movedTo = bin ? review.classMoves?.[`${tray.id}@${bin.from}`] : undefined
   const p0 = bin ? xAtDepth(tray, bin.from + 1e-6) : null, p1 = bin ? xAtDepth(tray, bin.to - 1e-6) : null
   const classes = core.index?.classes ?? []
+  // rock mass: what the photo says, and what the geologist decided
+  const rm = review.rockMass?.[tray.id] ?? {}
+  const photoGrade = Math.min(5, Math.max(1, Math.round(stats.t.weathering))) as 1 | 2 | 3 | 4 | 5
+  const grade = rm.weathering ?? photoGrade
+  const gsiEst = gsiProxy(stats.t.rqd, stats.t.jrc, grade)
+  const gsi = rm.gsi ?? gsiEst
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']
   const hexOf = (id: number) => classes.find(c => c.id === id)?.hex ?? '#888'
   // rock classes and veins in this tray, read from the same photo
   const inTray = classes.map(c => ({ c, m: tray.bins.filter(x => x.cls === c.id).reduce((s, x) => s + (x.to - x.from) * x.core, 0) })).filter(x => x.m > 0.005).sort((p, q) => q.m - p.m)
@@ -153,9 +161,9 @@ export default function TrayCheck() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
               <CoreLegend />
               <div style={{ display: 'flex', gap: 12, fontSize: 12, color: T.muted }}>
-                {(['rows', 'breaks', 'gaps', 'classes', 'veins'] as const).map(k => (
+                {(['rows', 'breaks', 'gaps', 'classes', 'veins', 'weathering'] as const).map(k => (
                   <label key={k} style={{ display: 'flex', gap: 5, alignItems: 'center', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={show[k]} onChange={e => setShow({ ...show, [k]: e.target.checked })} />{k === 'rows' ? 'Row depths' : k === 'breaks' ? 'Breaks' : k === 'gaps' ? 'Gaps' : k === 'classes' ? 'Rock class' : 'Veins'}
+                    <input type="checkbox" checked={show[k]} onChange={e => setShow({ ...show, [k]: e.target.checked })} />{k === 'rows' ? 'Row depths' : k === 'breaks' ? 'Breaks' : k === 'gaps' ? 'Gaps' : k === 'classes' ? 'Rock class' : k === 'veins' ? 'Veins' : 'Weathering'}
                   </label>
                 ))}
               </div>
@@ -169,7 +177,40 @@ export default function TrayCheck() {
             <Tile label="Fractures /m" value={stats.t.ff.toFixed(1)} />
           </Grid>
 
-          <Card title="Rock class and veins: check them here" subtitle="The strip under the core is the rock class of every 5 cm; boxes with a letter are veins. Fix anything that is wrong, then Mark checked finalises the whole tray.">
+          <Card title="Rock mass, rock class and veins: check them here" subtitle="Weathering is the thin strip at the top of each row, rock class the strip under the core, veins the boxes with a letter. Fix anything that is wrong, then Mark checked finalises the whole tray.">
+            {/* ROCK MASS: weathering and GSI for this tray */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, paddingBottom: 18, marginBottom: 18, borderBottom: '1px solid var(--x-border)' }}>
+              <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Weathering</div>
+                <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>From the rust colour on every 5 cm (the thin strip at the top of each row). Photo says <b style={{ color: T.text }}>{ROMAN[photoGrade]} · {WEATHERING[photoGrade].toLowerCase()}</b> (rust {(tray.bins.reduce((x, b) => x + b.ox * b.core, 0) / Math.max(1e-9, tray.bins.reduce((x, b) => x + b.core, 0)) * 100).toFixed(0)}% on average). Confirm or change it:</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[1, 2, 3, 4, 5].map(g => (
+                    <button key={g} title={WEATHERING[g]} onClick={() => core.setRockMass(tray.id, { weathering: g === photoGrade ? null : g }, `Weathering: grade ${ROMAN[g]} (${WEATHERING[g].toLowerCase()})`)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 34, padding: '0 10px', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: 700, border: `1px solid ${grade === g ? T.orange : 'var(--x-border3)'}`, background: grade === g ? 'color-mix(in srgb, var(--x-orange) 14%, transparent)' : T.card, color: T.text }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: WEATHER_HEX[g] }} />{ROMAN[g]}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: rm.weathering != null ? '#B7791F' : T.faint, fontWeight: rm.weathering != null ? 700 : 400 }}>{rm.weathering != null ? `Changed by the geologist: ${WEATHERING[rm.weathering].toLowerCase()}` : `${WEATHERING[grade]}: the photo's grade, not yet changed`}</div>
+              </div>
+              <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>GSI (rock strength score, 0–100)</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{ fontFamily: 'var(--x-mono, monospace)', fontSize: 26, fontWeight: 700 }}>{gsi}</span>
+                  <span style={{ fontSize: 13, color: T.muted }}>{gsiClass(gsi)}{rm.gsi != null ? <b style={{ color: '#B7791F' }}> · set by the geologist (estimate {gsiEst})</b> : ' · estimate from the photo'}</span>
+                </div>
+                <div style={{ fontSize: 12, color: T.muted, lineHeight: 1.6 }}>
+                  RQD {pct(stats.t.rqd)} → <b>{Math.round(stats.t.rqd / 2)}</b> · crack roughness → <b>{Math.round(1.5 * roughnessRating(stats.t.jrc))}</b> · weathering {ROMAN[grade]} → <b>{Math.round(1.5 * weatheringRating(grade))}</b> · assumed → <b>{Math.round(1.5 * ASSUMED_JCOND)}</b> <span style={{ color: T.faint }}>(a photo cannot show how open the cracks are, their infill or how far they run)</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input aria-label="GSI for this tray" inputMode="numeric" value={gsiDraft ?? String(gsi)} onChange={e => setGsiDraft(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+                    style={{ width: 70, minHeight: 34, fontSize: 14, fontWeight: 700, padding: '0 8px', borderRadius: 7, border: `1px solid ${gsiDraft != null ? T.orange : 'var(--x-border3)'}`, background: T.card, color: T.text, fontFamily: 'var(--x-mono, monospace)' }} />
+                  <Btn size="sm" kind="primary" disabled={gsiDraft == null || gsiDraft === '' || +gsiDraft > 100 || +gsiDraft === gsi}
+                    onClick={() => { const v = Math.min(100, +(gsiDraft ?? gsi)); core.setRockMass(tray.id, { gsi: v === gsiEst ? null : v }, `GSI set to ${v}`); setGsiDraft(null) }}>Save GSI</Btn>
+                  {rm.gsi != null && <Btn size="sm" onClick={() => { core.setRockMass(tray.id, { gsi: null }, `GSI back to the photo estimate (${gsiEst})`); setGsiDraft(null) }}>Use the estimate</Btn>}
+                </div>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
               {/* ROCK CLASSES: what each class is, name it, how much is in this tray */}
               <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
@@ -316,7 +357,7 @@ export default function TrayCheck() {
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 <Btn kind="primary" onClick={() => { core.check(tray.id); if (nextToCheck) router.push(`/admin/geology/trays/${nextToCheck.id}`) }}>Mark checked{nextToCheck ? ', next tray' : ''}</Btn>
-                <div style={{ fontSize: 11.5, color: T.faint }}>Finalises the whole tray: breaks, gaps, rock class and veins. A checked tray shows as CHECKED in the logs and exports; until then every number is shown as suggested.</div>
+                <div style={{ fontSize: 11.5, color: T.faint }}>Finalises the whole tray: breaks, gaps, weathering, GSI, rock class and veins. A checked tray shows as CHECKED in the logs and exports; until then every number is shown as suggested.</div>
               </div>
             )}
           </Card>
