@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCosting } from '../../../../../lib/costing-store'
-import { useCore, useHole, overridesOf, holeOfTray, className } from '../../../../../lib/core/store'
+import { useCore, useHole, overridesOf, holeOfTray, className, classLetter, editVeins } from '../../../../../lib/core/store'
 import { flatten, intervals, totals, gapId, paleGap, gapDefault } from '../../../../../lib/core/geotech'
 import { findVeins, VEIN_CLASSES } from '../../../../../lib/core/downhole'
+import { colourName } from '../../../../../lib/core/engine'
 import { rateOf } from '../../../../../lib/core/drill-link'
 import { Page, PageHead, Card, Btn, Grid, Tile, Status, Empty, Note, Split, T, tint } from '../../../../components/kit'
 import { TrayPhoto, CoreLegend, pct, dep, depthAtX, xAtDepth, Swatch, type Sel, DemoPhotos } from '../../../../components/core-ui'
@@ -31,6 +32,8 @@ export default function TrayCheck() {
   const [show, setShow] = useState({ rows: true, breaks: true, gaps: true, classes: true, veins: true })
   // opened from Rock classes with ?at=<depth>: that 5 cm slice is pointed out
   const [at, setAt] = useState<number | null>(null)
+  const [veinAt, setVeinAt] = useState<number | null>(null)
+  const [names, setNames] = useState<Record<number, string>>({})
   useEffect(() => { const v = new URLSearchParams(window.location.search).get('at'); setAt(v != null && v !== '' && !isNaN(+v) ? +v : null) }, [trayId])
 
   const i = h.trays.findIndex(t => t.id === trayId)
@@ -99,13 +102,18 @@ export default function TrayCheck() {
   const origCls = bin ? h.data.trays.find(t => t.id === tray.id)?.bins.find(x => Math.abs(x.from - bin.from) < 1e-6)?.cls : undefined
   const movedTo = bin ? review.classMoves?.[`${tray.id}@${bin.from}`] : undefined
   const p0 = bin ? xAtDepth(tray, bin.from + 1e-6) : null, p1 = bin ? xAtDepth(tray, bin.to - 1e-6) : null
-  const mark = p0 && p1 && p0.row === p1.row ? { row: p0.row, x0: p0.x, x1: p1.x } : undefined
   const classes = core.index?.classes ?? []
   const hexOf = (id: number) => classes.find(c => c.id === id)?.hex ?? '#888'
   // rock classes and veins in this tray, read from the same photo
   const inTray = classes.map(c => ({ c, m: tray.bins.filter(x => x.cls === c.id).reduce((s, x) => s + (x.to - x.from) * x.core, 0) })).filter(x => x.m > 0.005).sort((p, q) => q.m - p.m)
-  const veins = h.data && h.flat ? findVeins({ data: h.data, rows: h.rows, flat: h.flat, trays: h.trays }).filter(v => v.tray === tray.id) : []
+  const rawVeins = h.data && h.flat ? findVeins({ data: h.data, rows: h.rows, flat: h.flat, trays: h.trays }).filter(v => v.tray === tray.id) : []
+  const veins = editVeins(rawVeins, review)
+  const veinEdit = (v: { from: number }) => review.veinEdits?.[`${tray.id}@${v.from}`]
+  const veinHex = (cls: number) => VEIN_CLASSES[cls].hex === '#e8e4d8' ? '#C9B86A' : VEIN_CLASSES[cls].hex
+  const selVein = veinAt != null ? rawVeins.find(v => v.from === veinAt) : undefined
   const veinMarks = veins.map(v => ({ from: v.from, to: v.to, hex: VEIN_CLASSES[v.cls].hex === '#e8e4d8' ? '#F5E9B8' : VEIN_CLASSES[v.cls].hex, letter: VEIN_CLASSES[v.cls].letter }))
+  const v0 = selVein ? xAtDepth(tray, selVein.from + 1e-6) : null, v1 = selVein ? xAtDepth(tray, selVein.to - 1e-6) : null
+  const mark = v0 && v1 && v0.row === v1.row ? { row: v0.row, x0: v0.x, x1: v1.x } : p0 && p1 && p0.row === p1.row ? { row: p0.row, x0: p0.x, x1: p1.x } : undefined
 
   const choice = (label: string, on: boolean, onClick: () => void, key?: string) => (
     <button onClick={onClick} style={{
@@ -138,7 +146,7 @@ export default function TrayCheck() {
               <Btn size="sm" kind={adding === 'natural' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'natural' ? null : 'natural'); setSel(null) }}>+ Natural break</Btn>
               <Btn size="sm" kind={adding === 'handling' ? 'primary' : 'ghost'} onClick={() => { setAdding(adding === 'handling' ? null : 'handling'); setSel(null) }}>+ Handling break</Btn>
             </div>}>
-            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} mark={mark} classHex={hexOf} veins={veinMarks} onPickBin={f => setAt(f)} />
+            <TrayPhoto tray={tray} sel={sel} onSelect={setSel} onAdd={add} adding={!!adding} show={show} mark={mark} classHex={hexOf} veins={veinMarks} onPickBin={f => { setAt(f); setVeinAt(null) }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
               <CoreLegend />
               <div style={{ display: 'flex', gap: 12, fontSize: 12, color: T.muted }}>
@@ -158,28 +166,66 @@ export default function TrayCheck() {
             <Tile label="Fractures /m" value={stats.t.ff.toFixed(1)} />
           </Grid>
 
-          <Card title="Rock and veins in this tray" subtitle="The coloured strip under the core is the rock class of every 5 cm; boxes with a letter are veins. Click the strip to check or move a slice.">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-              <div style={{ display: 'grid', gap: 6, alignContent: 'start' }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Rock class</div>
-                {inTray.map(({ c, m }) => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <Swatch hex={c.hex} size={13} /><span style={{ flex: 1 }}>{className(review, c.id)}</span>
-                    <span style={{ fontFamily: 'var(--x-mono, monospace)', color: T.muted }}>{m.toFixed(2)} m</span>
-                  </div>
-                ))}
-                <Link href="/admin/geology/classes" style={{ fontSize: 12, color: T.muted }}>Name the classes →</Link>
+          <Card title="Rock class and veins: check them here" subtitle="The strip under the core is the rock class of every 5 cm; boxes with a letter are veins. Fix anything that is wrong, then Mark checked finalises the whole tray.">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+              {/* ROCK CLASSES: what each class is, name it, how much is in this tray */}
+              <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Rock classes</div>
+                <div style={{ fontSize: 12, color: T.muted, lineHeight: 1.5 }}>Groups of core that look alike in every hole. Name a class once and every log uses it. Wrong class on a slice? Click the strip under the core.</div>
+                {classes.map(c => {
+                  const m = inTray.find(x => x.c.id === c.id)?.m ?? 0
+                  const draft = names[c.id]
+                  return (
+                    <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '16px 1fr auto', gap: 8, alignItems: 'center', padding: '6px 8px', borderRadius: 8, background: m > 0 ? 'var(--x-raised)' : 'transparent', opacity: m > 0 ? 1 : 0.6 }}>
+                      <Swatch hex={c.hex} size={14} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <input aria-label={`Name for class ${classLetter(c.id)}`} value={draft ?? review.classNames[c.id] ?? ''} placeholder={`Class ${classLetter(c.id)}: type a name`}
+                            onChange={e => setNames({ ...names, [c.id]: e.target.value })}
+                            onKeyDown={e => { if (e.key === 'Enter' && draft?.trim()) { core.nameClass(c.id, draft.trim()); setNames(n => { const x = { ...n }; delete x[c.id]; return x }) } }}
+                            style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, padding: '4px 6px', borderRadius: 6, border: `1px solid ${draft != null ? T.orange : 'transparent'}`, background: 'transparent', color: T.text }} />
+                          {draft != null && draft.trim() && draft.trim() !== review.classNames[c.id] && <Btn size="sm" kind="primary" onClick={() => { core.nameClass(c.id, draft.trim()); setNames(n => { const x = { ...n }; delete x[c.id]; return x }) }}>Save</Btn>}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: T.faint, paddingLeft: 6 }}>{review.classNames[c.id] ? `Class ${classLetter(c.id)} · ` : ''}{colourName(c.L, c.a, c.b)} · veins {(c.vein * 100).toFixed(0)}% · rust {(c.ox * 100).toFixed(0)}%</div>
+                      </div>
+                      <span style={{ fontFamily: 'var(--x-mono, monospace)', fontSize: 12.5, color: m > 0 ? T.text : T.faint }}>{m > 0 ? `${m.toFixed(2)} m` : '—'}</span>
+                    </div>
+                  )
+                })}
               </div>
-              <div style={{ display: 'grid', gap: 6, alignContent: 'start' }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Veins ({veins.length})</div>
-                {veins.length === 0 && <div style={{ fontSize: 13, color: T.muted }}>No veins seen in this tray.</div>}
-                {VEIN_CLASSES.map(vc => { const n = veins.filter(v => v.cls === vc.id); return n.length ? (
-                  <div key={vc.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <span style={{ width: 13, height: 13, border: `2px solid ${vc.hex === '#e8e4d8' ? '#C9B86A' : vc.hex}`, borderRadius: 2, display: 'inline-block' }} />
-                    <span style={{ flex: 1 }}><b>{vc.letter}</b> · {vc.name}</span>
-                    <span style={{ fontFamily: 'var(--x-mono, monospace)', color: T.muted }}>{n.length} · {(n.reduce((s, v) => s + v.length, 0) * 100).toFixed(0)} cm</span>
-                  </div>) : null })}
-                {veins.length > 0 && <Link href="/admin/geology/veins" style={{ fontSize: 12, color: T.muted }}>Vein classes →</Link>}
+
+              {/* VEINS: every vein in this tray, its class, change it or say it is not a vein */}
+              <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: T.faint }}>Veins in this tray ({veins.length})</div>
+                {rawVeins.length === 0 && <div style={{ fontSize: 13, color: T.muted }}>No veins seen in this tray.</div>}
+                {rawVeins.map(v => {
+                  const e = veinEdit(v), cls = e != null && e >= 0 ? e : v.cls, gone = e === -1, on = veinAt === v.from
+                  return (
+                    <div key={v.from} style={{ display: 'grid', gap: 6, padding: '8px 10px', borderRadius: 8, border: `1px solid ${on ? T.orange : 'var(--x-border)'}`, opacity: gone ? 0.6 : 1 }}>
+                      <button onClick={() => { setVeinAt(on ? null : v.from); setAt(null) }} style={{ all: 'unset', cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
+                        <span style={{ width: 12, height: 12, border: `2px solid ${veinHex(cls)}`, borderRadius: 2, display: 'inline-block' }} />
+                        <b style={{ fontFamily: 'var(--x-mono, monospace)' }}>{dep(v.from, v.to)}</b>
+                        <span style={{ color: T.muted }}>{gone ? 'not a vein' : `${VEIN_CLASSES[cls].letter} · ${VEIN_CLASSES[cls].name}`}</span>
+                        {e != null ? <span style={{ fontSize: 11, color: '#B7791F', fontWeight: 700 }}>changed</span> : v.confidence === 'low' ? <span style={{ fontSize: 11, color: T.amber, fontWeight: 700 }}>unsure</span> : null}
+                        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: T.faint }}>{on ? 'shown on photo' : 'show'}</span>
+                      </button>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {VEIN_CLASSES.map(vc => (
+                          <button key={vc.id} title={vc.name} onClick={() => core.setVein(tray.id, v.from, vc.id === v.cls ? null : vc.id, `Vein at ${dep(v.from, v.to)}: Class ${vc.letter}`)}
+                            style={{ minWidth: 34, minHeight: 30, borderRadius: 6, cursor: 'pointer', fontSize: 12.5, fontWeight: 700, border: `1px solid ${!gone && cls === vc.id ? T.orange : 'var(--x-border3)'}`, background: !gone && cls === vc.id ? 'color-mix(in srgb, var(--x-orange) 14%, transparent)' : T.card, color: T.text }}>{vc.letter}</button>
+                        ))}
+                        <button onClick={() => core.setVein(tray.id, v.from, gone ? null : -1, `Vein at ${dep(v.from, v.to)}: ${gone ? 'a vein again' : 'not a vein'}`)}
+                          style={{ minHeight: 30, padding: '0 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, border: `1px solid ${gone ? T.orange : 'var(--x-border3)'}`, background: gone ? 'color-mix(in srgb, var(--x-orange) 14%, transparent)' : T.card, color: T.text }}>Not a vein</button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <details style={{ fontSize: 12.5, color: T.muted }}>
+                  <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '4px 0' }}>What the vein classes mean</summary>
+                  <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+                    {VEIN_CLASSES.map(vc => <div key={vc.id} style={{ display: 'grid', gridTemplateColumns: '14px 1fr', gap: 8 }}><span style={{ width: 12, height: 12, marginTop: 3, border: `2px solid ${veinHex(vc.id)}`, borderRadius: 2 }} /><span><b style={{ color: T.text }}>{vc.letter} · {vc.name}.</b> {vc.description}</span></div>)}
+                  </div>
+                </details>
               </div>
             </div>
           </Card>
@@ -253,7 +299,7 @@ export default function TrayCheck() {
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 <Btn kind="primary" onClick={() => { core.check(tray.id); if (nextToCheck) router.push(`/admin/geology/trays/${nextToCheck.id}`) }}>Mark checked{nextToCheck ? ', next tray' : ''}</Btn>
-                <div style={{ fontSize: 11.5, color: T.faint }}>A checked tray shows as CHECKED in the logs and exports. Until then every number is shown as suggested.</div>
+                <div style={{ fontSize: 11.5, color: T.faint }}>Finalises the whole tray: breaks, gaps, rock class and veins. A checked tray shows as CHECKED in the logs and exports; until then every number is shown as suggested.</div>
               </div>
             )}
           </Card>

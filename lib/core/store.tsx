@@ -20,13 +20,14 @@ export interface CoreReview {
   added: AddedBreak[]
   checked: Record<string, { by: string; at: string }>
   classNames: Record<number, string>
-  classMoves: Record<string, number>             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
+  classMoves: Record<string, number>
+  veinEdits: Record<string, number>              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
   changes: (Change & { tray?: string })[]
   uploads: (CoreTray & { photo: string })[]      // photos added in the browser, with the photo as a data URL
   reviewer: string
 }
 
-const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, classMoves: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
+const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: {}, classMoves: {}, veinEdits: {}, changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
 
 export function stamp() {
@@ -48,6 +49,7 @@ interface Ctx {
   uncheck: (tray: string) => void
   nameClass: (id: number, name: string) => void
   moveSlice: (tray: string, from: number, fromCls: number, toCls: number | null) => void
+  setVein: (tray: string, from: number, cls: number | null, label: string) => void
   addUpload: (t: CoreTray & { photo: string }) => boolean
   removeUpload: (id: string) => void
   reset: () => void
@@ -112,6 +114,12 @@ export function CoreProvider({ children }: { children: ReactNode }) {
       if (toCls == null) delete classMoves[key]; else classMoves[key] = toCls
       const what = toCls == null ? `Undid the class move at ${from.toFixed(2)} m` : `Moved the slice at ${from.toFixed(2)} m from ${className(s, fromCls)} to ${className(s, toCls)}`
       return { ...s, classMoves, changes: log(s, what, tray) }
+    }),
+    setVein: (tray, from, cls, label) => save(s => {
+      const veinEdits = { ...(s.veinEdits ?? {}) }
+      const key = `${tray}@${from}`
+      if (cls == null) delete veinEdits[key]; else veinEdits[key] = cls
+      return { ...s, veinEdits, changes: log(s, label, tray) }
     }),
     addUpload: t => {
       // Photos are kept in the browser in the demo, which holds only a few MB:
@@ -187,4 +195,16 @@ function oneHole(data: CoreHole, review: CoreReview) {
   const flat = flatten(trays, overridesOf(review))
   const rows = intervals(flat, 1)
   return { data, trays, flat, rows, total: totals(rows), checked: trays.filter(t => review.checked[t.id]).length }
+}
+
+/* Veins with the geologist's corrections: a new class, or dropped as not a vein. */
+export function editVeins<V extends { tray: string; from: number; cls: number; confidence: string }>(veins: V[], r: CoreReview): (V & { edited?: boolean })[] {
+  const ed = r.veinEdits ?? {}
+  if (!Object.keys(ed).length) return veins
+  return veins.flatMap(v => {
+    const e = ed[`${v.tray}@${v.from}`]
+    if (e == null) return [v]
+    if (e < 0) return []
+    return [{ ...v, cls: e, confidence: 'high', edited: true }]
+  })
 }

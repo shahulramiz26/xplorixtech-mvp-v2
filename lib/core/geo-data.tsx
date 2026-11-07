@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useAllHoles, useCore, stamp } from './store'
+import { useAllHoles, useCore, stamp, editVeins } from './store'
 import {
   holeMetres, demoManualLog, classLithMap, checkLog, findVeins, televiewer, domains, predict,
   type Metre, type ManualInterval, type LogCheck, type Vein, type Structure, type Domains, type FeatureSet, type Predictions, type HoleView,
@@ -132,16 +132,17 @@ function readIntervals(text: string) {
 
 function useCompute(on: boolean, edits: GeoEdits): GeoData {
   const all = useAllHoles(on)
+  const { review } = useCore()
   const base = useMemo(() => {
     if (!on || !all.ready) return null
     const holes: HoleView[] = all.list.filter(h => h.flat).map(h => ({ data: h.data, rows: h.rows, flat: h.flat!, trays: h.trays }))
     const byHole: Record<string, Metre[]> = {}
     holes.forEach(h => { byHole[h.data.hole] = holeMetres(h) })
     const metres = holes.flatMap(h => byHole[h.data.hole])
-    const veins = holes.flatMap(findVeins)
+    const veins = editVeins(holes.flatMap(findVeins), review)
     const structures = holes.flatMap(televiewer)
     return { holes, byHole, metres, veins, structures }
-  }, [on, all.ready, all.list])
+  }, [on, all.ready, all.list, review])
   const logged = useMemo(() => {
     if (!base) return null
     const logs: Record<string, ManualInterval[]> = {}
