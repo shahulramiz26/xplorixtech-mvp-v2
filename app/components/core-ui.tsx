@@ -233,8 +233,10 @@ export function Swatch({ hex, size = 12 }: { hex: string; size?: number }) {
   return <span aria-hidden style={{ display: 'inline-block', width: size, height: size, borderRadius: 3, background: hex, border: `1px solid ${T.border}`, verticalAlign: 'middle' }} />
 }
 
+/* The demo-photo badge was taken off the screens; the photo credit (NVCL,
+ * CC BY 4.0) stays on the Geology home and How it works pages. */
 export function DemoPhotos() {
-  return <span title="Real tray photos from Australia's National Virtual Core Library (CC BY 4.0), shown on demo holes" style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 5, background: tint(T.amber, 16), color: T.text, border: `1px solid ${tint(T.amber, 40)}`, whiteSpace: 'nowrap' }}>Demo: real NVCL photos on demo holes</span>
+  return null
 }
 
 export type { BreakVerdict, GapVerdict, AddedBreak }

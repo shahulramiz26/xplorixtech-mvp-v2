@@ -33,6 +33,9 @@ export default function TrayCheck() {
   // opened from Rock classes with ?at=<depth>: that 5 cm slice is pointed out
   const [at, setAt] = useState<number | null>(null)
   const [veinAt, setVeinAt] = useState<number | null>(null)
+  // a short confirmation after a slice is moved, with Undo
+  const [moved, setMoved] = useState<{ text: string; undo: () => void } | null>(null)
+  useEffect(() => { if (!moved) return; const id = window.setTimeout(() => setMoved(null), 8000); return () => window.clearTimeout(id) }, [moved])
   const [names, setNames] = useState<Record<number, string>>({})
   useEffect(() => { const v = new URLSearchParams(window.location.search).get('at'); setAt(v != null && v !== '' && !isNaN(+v) ? +v : null) }, [trayId])
 
@@ -48,7 +51,7 @@ export default function TrayCheck() {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return
       if (e.key === 'ArrowRight' && next) router.push(`/admin/geology/trays/${next.id}`)
       if (e.key === 'ArrowLeft' && prev) router.push(`/admin/geology/trays/${prev.id}`)
-      if (e.key === 'Escape') { setSel(null); setAdding(null) }
+      if (e.key === 'Escape') { setSel(null); setAdding(null); setAt(null); setVeinAt(null) }
       if (!tray || sel?.kind !== 'break') return
       const b = tray.breaks.find(x => x.id === sel.id)
       if (!b) return
@@ -232,6 +235,12 @@ export default function TrayCheck() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+          {moved && (
+            <div role="status" style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 13, padding: '10px 12px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--x-green) 45%, transparent)', background: 'color-mix(in srgb, var(--x-green) 12%, transparent)' }}>
+              <span style={{ flex: 1 }}>✓ {moved.text}. Saved with your name.</span>
+              <Btn size="sm" onClick={moved.undo}>Undo</Btn>
+            </div>
+          )}
           {bin && origCls != null && (
             <Card title={`Rock class at ${dep(bin.from, bin.to)}`} subtitle="The slice in the orange box on the photo.">
               <div style={{ display: 'grid', gap: 8 }}>
@@ -249,12 +258,20 @@ export default function TrayCheck() {
                 )}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {classes.filter(c => c.id !== bin.cls).map(c => (
-                    <Btn key={c.id} size="sm" onClick={() => core.moveSlice(tray.id, bin.from, bin.cls, c.id === origCls ? null : c.id)}>
+                    <Btn key={c.id} size="sm" onClick={() => {
+                      const from = bin.from, was = bin.cls, prev = movedTo
+                      core.moveSlice(tray.id, from, was, c.id === origCls ? null : c.id)
+                      setAt(null)
+                      setMoved({ text: `${dep(bin.from, bin.to)} moved to ${className(review, c.id)}`, undo: () => { core.moveSlice(tray.id, from, c.id, prev ?? null); setMoved(null) } })
+                    }}>
                       <Swatch hex={c.hex} /> {className(review, c.id)}
                     </Btn>
                   ))}
                 </div>
-                <Link href="/admin/geology/classes" style={{ fontSize: 12.5, color: T.muted }}>← Back to Rock classes</Link>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  <Link href="/admin/geology/classes" style={{ fontSize: 12.5, color: T.muted }}>← Back to Rock classes</Link>
+                  <Btn size="sm" onClick={() => setAt(null)}>Close (Esc)</Btn>
+                </div>
               </div>
             </Card>
           )}
