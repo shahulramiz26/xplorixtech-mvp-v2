@@ -33,7 +33,6 @@ const MEASURES: [string, string][] = [
 
 const MORE: [string, string][] = [
   ['Vein classes', 'A vein is a run of 5 cm bins where pale, unstained quartz-like pixels cover a fifth of the core or more. Each is put in a class by fixed rules: thick and mostly vein (A), thin ribbons in dark rock (B), iron-stained (C), thin veinlets (D). The geologist names and describes the classes.'],
-  ['RC chips', 'Each compartment of a chip tray is one metre. Chips are found against the tray colour; each is measured for area, perimeter, eccentricity (how long and thin) and shape complexity (perimeter² ÷ 4π·area), and its colour. Metres that look alike are grouped across every RC hole.'],
   ["Checking the geologist's log", 'Each photo class is matched to the rock name the geologists most often gave it. Every logged metre is then checked against that, and logged RQD against photo RQD. A check shows where to look again; it does not say who is right.'],
   ['Downhole data', 'Assays, downhole geophysics, the core scanner (XRF, hyperspectral), the televiewer and lab tests are joined to the photos metre by metre on depth. Any interval CSV (HOLE_ID, FROM, TO) can be imported.'],
   ['Domains', 'Every metre is described by its photo measures, chemistry and geophysics, scaled, and grouped with k-means. A flat map (the first two principal components) puts alike metres together. Domains are a starting point; the geologist sets the boundaries.'],
@@ -81,7 +80,7 @@ export default function Method() {
           <li>True dip and dip direction need a televiewer run or an orientation line on the core; without either, alpha alone is given.</li>
           <li>It does not name the rock from the photo alone. Classes are by look; names come from the geologist, or from matching the classes to the hand log.</li>
           <li>Minerals are measured only where the core was scanned; elsewhere they are predicted, and the screen says which.</li>
-          <li>In this demo the assays, geophysics, scanner, televiewer, lab tests, hand logs and RC holes are sample data. The tray photos and everything measured on them are real.</li>
+          <li>In this demo the assays, geophysics, scanner, televiewer, lab tests, and hand logs are sample data. The tray photos and everything measured on them are real.</li>
         </ul>
       </Card>
 

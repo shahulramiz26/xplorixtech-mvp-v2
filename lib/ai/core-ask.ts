@@ -5,7 +5,6 @@ import type { GeoData } from '../core/geo-data'
 import { totals, rqdClass, gsiClass, WEATHERING } from '../core/geotech'
 import { shiftCore, factors } from '../core/drill-link'
 import { VEIN_CLASSES, MINERALS, strengthGrade, hasData, mean, FEATURES, type Metre } from '../core/downhole'
-import { RC_HOLES, CHIP_LITHS } from '../core/chips'
 import type { Answer } from './ask'
 import type { Source } from './record'
 
@@ -36,14 +35,13 @@ const S = {
   today: { label: 'Geology today', href: '/admin/geology' }, holes: { label: 'Hole logs', href: '/admin/geology/holes' }, review: { label: 'Review trays', href: '/admin/geology/review' },
   check: { label: 'Check logs', href: '/admin/geology/check-logs' }, veins: { label: 'Vein classes', href: '/admin/geology/veins' }, data: { label: 'Downhole data', href: '/admin/geology/data' },
   domains: { label: 'Domains', href: '/admin/geology/domains' }, predict: { label: 'Predictions', href: '/admin/geology/predict' }, structures: { label: 'Structures', href: '/admin/geology/structures' },
-  chips: { label: 'Chips (RC)', href: '/admin/geology/chips' }, rock: { label: 'Rock mass', href: '/admin/geology/rock-mass' }, classes: { label: 'Rock classes', href: '/admin/geology/classes' }, export: { label: 'Export', href: '/admin/geology/export' },
+  rock: { label: 'Rock mass', href: '/admin/geology/rock-mass' }, classes: { label: 'Rock classes', href: '/admin/geology/classes' }, export: { label: 'Export', href: '/admin/geology/export' },
 } satisfies Record<string, Source>
 const hole = (h: string): Source => ({ label: `${h} log`, href: `/admin/geology/holes/${h}` })
 
 export function coreSuggestions(path: string): string[] {
   if (path.includes('/check-logs')) return ['Where does the geologist\'s log disagree with the core?', 'Is logged RQD too high?', 'Which hole should be relogged first?']
   if (path.includes('/veins')) return ['Which vein class carries the gold?', 'How many veins are in DH-131?', 'Where are the unsure veins?']
-  if (path.includes('/chips')) return ['What do the RC chips show?', 'Where does the oxide end in the RC holes?', 'Give me the geology brief']
   if (path.includes('/data') || path.includes('/domains')) return ['What goes with gold?', 'Explain the domains', 'Best gold intervals?']
   if (path.includes('/predict')) return ['Where is the weak ground?', 'How good are the strength predictions?', 'What minerals are in DH-101?']
   if (path.includes('/structures')) return ['What are the joint sets?', 'Which way do the fractures dip in DH-961?', 'Where is the weak ground?']
@@ -54,13 +52,11 @@ export function coreSuggestions(path: string): string[] {
 export function askCore(question: string, c: CoreAiCtx): Answer {
   const q = question.toLowerCase().replace(/[’']/g, "'").trim()
   if (!c.data.ready) return { understood: true, text: ['Still reading the core photos and the downhole data. Ask again in a moment.'], sources: [], followups: [] }
-  const holes = (question.toUpperCase().match(/\b(?:DH|RC)-?\d{3}\b/g) ?? []).map(x => x.replace(/^(DH|RC)-?/, '$1-'))
+  const holes = (question.toUpperCase().match(/\bDH-?\d{3}\b/g) ?? []).map(x => x.replace(/^DH-?/, 'DH-'))
   const dh = holes.filter(h => c.data.holes.some(x => x.data.hole === h))
-  const rc = holes.filter(h => RC_HOLES.some(x => x.hole === h))
   try {
     if (has(q, 'draft', 'write', 'note to', 'message', 'email')) return draft(q, c, dh[0])
     if (has(q, 'brief', 'summary', 'summarise', 'summarize', 'overview', 'how are we', 'how is the core')) return brief(c)
-    if (rc.length || has(q, 'chip', ' rc', 'rc ', 'reverse circ')) return chips(q, rc[0])
     if (has(q, 'compare') && dh.length >= 2) return compare(dh, c)
     if (has(q, 'gold', ' au', 'au ', 'grade', 'mineralis', 'mineraliz', 'ore', 'intercept', 'assay')) return has(q, 'vein') ? veins(c, dh[0]) : gold(c, dh[0], has(q, 'goes with', 'correlat', 'related', 'predict gold'))
     if (has(q, 'vein')) return veins(c, dh[0])
@@ -78,7 +74,7 @@ export function askCore(question: string, c: CoreAiCtx): Answer {
   } catch { /* fall through */ }
   return {
     understood: false,
-    text: ['I could not match that to the core record. On the geology side I answer about holes, recovery and RQD, the shifts that lost core, gold and assays, veins, the geologist\'s log, domains, rock strength, minerals, joint sets, RC chips and trays to check, and I can draft notes.'],
+    text: ['I could not match that to the core record. On the geology side I answer about holes, recovery and RQD, the shifts that lost core, gold and assays, veins, the geologist\'s log, domains, rock strength, minerals, joint sets and trays to check, and I can draft notes.'],
     sources: [], followups: ['Give me the geology brief', 'Best gold intervals?', 'Which shifts lost core, and why?', 'Where is the weak ground?'],
   }
 }
@@ -313,15 +309,6 @@ function rockMass(c: CoreAiCtx, h?: string): Answer {
   return { understood: true, text: [`Rock quality by hole, poorest first. Overall RQD ${pct(allTotals(c).rqd)}.`], table: { cols: ['Hole', 'RQD', 'Fract./m', 'GSI'], rows: rows.map(r => [r.h, pct(r.t.rqd), r.t.ff.toFixed(1), String(Math.round(r.t.gsi))]) }, sources: [S.rock], followups: ['Where is the weak ground?', 'What are the joint sets?'] }
 }
 
-function chips(q: string, h?: string): Answer {
-  const hs = h ? RC_HOLES.filter(x => x.hole === h) : RC_HOLES
-  const oxide = hs.map(x => { const next = x.units.find(u => u[1] !== 'OXD'); return `${x.hole} ${next ? next[0] : x.depth} m` })
-  return {
-    understood: true,
-    text: [`${hs.length} RC hole${hs.length > 1 ? 's' : ''} (sample data), ${hs.map(x => x.depth as number).reduce((a, b) => a + b, 0)} m of chips read from the chip-tray photos: every chip measured for colour, size, eccentricity and shape.`, has(q, 'oxide') || !h ? `The oxide clay ends at ${list(oxide)}: below it the chips get bigger and fresher.` : '', `Units down ${h ?? 'the holes'}: ${list(hs[0].units.map(u => `${CHIP_LITHS.find(l => l.code === u[1])!.name.toLowerCase()} from ${u[0]} m`))}.`].filter(Boolean),
-    sources: [S.chips], followups: ['Give me the geology brief'],
-  }
-}
 
 function exportAns(): Answer {
   return { understood: true, text: ['Export gives an interval table with HOLE_ID, FROM, TO first, so Leapfrog, Micromine, Datamine and acQuire read it directly: every photo measure, the rock class, the domain and the predictions, at 0.5, 1, 2 or 3 m. Domains, predictions, structures and downhole data each have their own CSV on their screens.'], sources: [S.export], followups: [] }

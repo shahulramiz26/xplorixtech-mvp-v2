@@ -14,7 +14,7 @@ import { Page, PageHead, Card, Empty, T, tint } from '../../../components/kit'
 const READS: [string, string][] = [
   ['Tray photos', '/admin/geology/holes'], ["Geologist's logs", '/admin/geology/check-logs'], ['Veins', '/admin/geology/veins'],
   ['Assays and geophysics', '/admin/geology/data'], ['Domains', '/admin/geology/domains'], ['Predictions', '/admin/geology/predict'],
-  ['Televiewer', '/admin/geology/structures'], ['RC chips', '/admin/geology/chips'], ['Shift logs that drilled each metre', '/admin/logs/drill'],
+  ['Televiewer', '/admin/geology/structures'], ['Shift logs that drilled each metre', '/admin/logs/drill'],
 ]
 
 export default function GeologyAi() {

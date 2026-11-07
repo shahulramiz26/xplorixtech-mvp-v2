@@ -12,8 +12,7 @@ import { Bar, recColour, rqdColour, pct, DemoPhotos } from '../../components/cor
 import { CoreFactors } from '../../components/core-factors'
 import { useGeo } from '../../../lib/core/geo-data'
 import { useGeoEngine, useAsk, Md } from '../../components/ai'
-import { RC_HOLES } from '../../../lib/core/chips'
-import { Sparkles, Camera, FileCheck2, Gem, Grip, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
+import { Sparkles, Camera, FileCheck2, Gem, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
 
 /* GEOLOGY TODAY — the geologist's first screen.
  *
@@ -136,7 +135,6 @@ function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data
     { icon: Mountain, title: 'Geotech logging', what: 'Recovery, RQD, fractures, joint density, GSI, weathering, discing', value: geo.ready ? `${geo.holes.length} holes logged` : '…', href: '/admin/geology/rock-mass' },
     { icon: Palette, title: 'Geology logging', what: 'Rock classes from colour, grain, veins and staining', value: 'Named by the geologist', href: '/admin/geology/classes' },
     { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-US')} veins` : '…', href: '/admin/geology/veins' },
-    { icon: Grip, title: 'RC chips', what: 'Chip colour, size, shape and groups from chip-tray photos', value: `${RC_HOLES.length} RC holes`, href: '/admin/geology/chips' },
     { icon: FileCheck2, title: 'Check logs', what: "The geologist's log checked against the core, metre by metre", value: geo.ready ? `${Math.round(agree * 100)}% agree` : '…', href: '/admin/geology/check-logs' },
     { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-US')} metres joined` : '…', href: '/admin/geology/data' },
     { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },

@@ -8,7 +8,7 @@ import {
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, Banknote, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
   Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill, PanelLeftClose, PanelLeftOpen, Radio,
-  FileCheck2, Gem, Grip, Database, Network, Sparkles, Compass, BrainCircuit,
+  FileCheck2, Gem, Database, Network, Sparkles, Compass, BrainCircuit,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'
 import { GeoDataProvider } from '../../lib/core/geo-data'
@@ -103,7 +103,6 @@ const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
       { href: '/admin/geology/rock-mass', label: 'Geotech: rock mass', icon: Mountain },
       { href: '/admin/geology/classes', label: 'Geology: rock classes', icon: PaletteIcon },
       { href: '/admin/geology/veins', label: 'Geology: vein classes', icon: Gem },
-      { href: '/admin/geology/chips', label: 'Chips (RC)', icon: Grip },
       { href: '/admin/geology/check-logs', label: 'Check logs', icon: FileCheck2 },
     ],
   },
