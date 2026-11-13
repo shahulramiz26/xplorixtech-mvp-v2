@@ -3,6 +3,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { AddedBreak, BreakVerdict, Change, CoreHole, CoreIndex, CoreTray, GapVerdict } from './model'
 import { flatten, intervals, totals, type Overrides } from './geotech'
+import { IS_DEMO } from '../company'
 
 /* ==========================================================================
  * XPLORIX CORE — the store
@@ -39,7 +40,8 @@ export interface CoreReview {
   geoNotes: GeoNote[]   // per tray: the geologist's weathering grade (1–5) and GSI              // a vein the geologist corrected: `${tray}@${from}` → vein class, or -1 for not a vein             // a 5 cm slice the geologist moved to another rock class: `${tray}@${from}` → class
   changes: (Change & { tray?: string })[]
   uploads: (CoreTray & { photo: string })[]      // photos added in the browser, with the photo as a data URL
-  reviewer: string
+  reviewer: string      // who is signed in and doing the work: every check and correction carries this name
+  teamSeed?: number     // the demo's geologists' work has been laid in (lib: public/core/demo-team.json)
 }
 
 /* Names for the six demo rock classes, the same ones the demo's sample hand
@@ -48,6 +50,22 @@ export const DEMO_CLASS_NAMES: Record<number, string> = { 0: 'Basalt', 1: 'Silts
 
 const EMPTY: CoreReview = { breaks: {}, gaps: {}, added: [], checked: {}, classNames: { ...DEMO_CLASS_NAMES }, classMoves: {}, veinEdits: {}, rockMass: {}, geoNotes: [], changes: [], uploads: [], reviewer: 'Priya Nair (geologist)' }
 const KEY = 'xplorix_core_v2_oct'
+const LOG_CAP = 3000
+
+/* The demo's geologists at work: laid into a demo browser once, without
+ * undoing anything a person did there. */
+type TeamSeed = Pick<CoreReview, 'checked' | 'breaks' | 'geoNotes' | 'changes'>
+function withTeam(r: CoreReview, t: TeamSeed): CoreReview {
+  if (r.teamSeed) return r
+  const notes = r.geoNotes ?? []
+  return {
+    ...r, teamSeed: 1,
+    checked: { ...t.checked, ...r.checked },
+    breaks: { ...t.breaks, ...r.breaks },
+    geoNotes: [...notes, ...t.geoNotes.filter(n => !notes.some(x => x.id === n.id))],
+    changes: [...r.changes, ...t.changes].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, LOG_CAP),
+  }
+}
 
 
 export function stamp() {
@@ -73,6 +91,13 @@ interface Ctx {
   saveGeoNote: (n: Omit<GeoNote, 'by' | 'at'>) => void
   removeGeoNote: (id: string) => void
   setRockMass: (tray: string, patch: { weathering?: number | null; gsi?: number | null }, label: string) => void
+  /* Who is signed in: their name goes on every check and correction from now on. */
+  setActor: (name: string) => void
+  /* The projects the signed-in login may see (a geologist's), or null for all. */
+  scope: string[] | null
+  setScope: (projects: string[] | null) => void
+  /* Every hole, whatever the scope: for the Company Admin's team screens. */
+  fullIndex: CoreIndex | null
   addUpload: (t: CoreTray & { photo: string }) => boolean
   removeUpload: (id: string) => void
   reset: () => void
@@ -85,11 +110,19 @@ export function CoreProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState<CoreIndex | null>(null)
   const [review, setReview] = useState<CoreReview>(EMPTY)
   const [holes, setHoles] = useState<Record<string, CoreHole>>({})
+  const [scope, setScopeState] = useState<string[] | null>(null)
   const loaded = useRef(false)
 
   useEffect(() => {
-    try { const raw = localStorage.getItem(KEY); if (raw) { const r = JSON.parse(raw); setReview({ ...EMPTY, ...r, classNames: { ...DEMO_CLASS_NAMES, ...(r.classNames ?? {}) } }) } } catch { /* private window */ }
+    let start: CoreReview = EMPTY
+    try { const raw = localStorage.getItem(KEY); if (raw) { const r = JSON.parse(raw); start = { ...EMPTY, ...r, classNames: { ...DEMO_CLASS_NAMES, ...(r.classNames ?? {}) } }; setReview(start) } } catch { /* private window */ }
     loaded.current = true
+    if (IS_DEMO && !start.teamSeed) {
+      fetch('/core/demo-team.json').then(r => r.ok ? r.json() as Promise<TeamSeed> : null).then(t => {
+        if (!t) return
+        setReview(s => { const n = withTeam(s, t); try { localStorage.setItem(KEY, JSON.stringify(n)) } catch { /* kept for this visit */ } return n })
+      }).catch(() => { /* the demo works without it */ })
+    }
     fetch('/core/index.json').then(r => r.ok ? r.json() : null).then(setIndex).catch(() => setIndex(null))
   }, [])
 
@@ -109,10 +142,14 @@ export function CoreProvider({ children }: { children: ReactNode }) {
     return cache[hole]
   }, [])
 
-  const log = (s: CoreReview, what: string, tray?: string) => [{ at: stamp(), by: s.reviewer, what, tray }, ...s.changes].slice(0, 500)
+  const log = (s: CoreReview, what: string, tray?: string) => [{ at: stamp(), by: s.reviewer, what, tray }, ...s.changes].slice(0, LOG_CAP)
+
+  const shown = useMemo(() => !index || !scope ? index : { ...index, holes: index.holes.filter(h => scope.includes(h.project)) }, [index, scope])
 
   const ctx: Ctx = {
-    index, review, holes, load,
+    index: shown, fullIndex: index, review, holes, load, scope,
+    setScope: p => setScopeState(cur => JSON.stringify(cur) === JSON.stringify(p) ? cur : p),
+    setActor: name => { if (name && name !== review.reviewer) save(s => ({ ...s, reviewer: name })) },
     setBreak: (id, tray, v, label) => save(s => {
       const breaks = { ...s.breaks }
       if (v) breaks[id] = v; else delete breaks[id]
@@ -221,9 +258,11 @@ function withRockMass<R extends { from: number; to: number; weathering: number; 
 /* One hole, loaded, with the photos added in the browser and the geologist's
  * corrections applied. */
 export function useHole(hole: string | undefined) {
-  const { holes, load, review } = useCore()
+  const { holes, load, review, scope } = useCore()
   useEffect(() => { if (hole) void load(hole) }, [hole, load])
-  const data = hole ? holes[hole] : undefined
+  // A hole outside a geologist's projects is not theirs to open, even by its address.
+  const raw = hole ? holes[hole] : undefined
+  const data = raw && scope && !scope.includes(raw.project) ? undefined : raw
   return useMemo(() => {
     if (!data) return { data: undefined, trays: [] as CoreTray[], flat: undefined, rows: [], total: undefined }
     const ups = review.uploads.filter(u => u.hole === data.hole)

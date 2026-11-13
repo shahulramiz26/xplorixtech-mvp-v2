@@ -14,7 +14,7 @@
 
 export type StoreName = 'costing' | 'inventory'
 export type Shape = 'list' | 'map' | 'value'
-export type Role = 'admin' | 'supervisor' | 'contractor' | 'client'
+export type Role = 'admin' | 'supervisor' | 'contractor' | 'client' | 'geologist'
 
 export const SPEC: Record<StoreName, Record<string, Shape>> = {
   costing: {
@@ -36,6 +36,8 @@ export const MAY_SEND: Record<Role, Partial<Record<StoreName, string[] | 'all'>>
   supervisor: { costing: ['shiftLogs', 'maintenance', 'users'] },
   contractor: { costing: ['contractorReports', 'contractorBills', 'maintenance', 'users'] },
   client: { costing: ['holeStatus', 'invoices', 'rateProposals', 'holePlans', 'projectEvents', 'users'] },
+  // A geologist's work on the core is kept by XPLORIX Core; here only his first sign-in.
+  geologist: { costing: ['users'] },
 }
 
 /* One record as it travels. `data: null` is a removal. `c` is the order the

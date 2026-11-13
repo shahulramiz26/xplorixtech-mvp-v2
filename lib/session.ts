@@ -49,16 +49,16 @@ export function useSignedIn(role: UserRole) {
 
 /* Mounted once by each shell: reads ?as= and marks a new login as opened the
  * first time its owner arrives. */
-export function useArrival(role: UserRole) {
+export function useArrival(role: UserRole, enabled = true) {
   const { user, saveUser } = useSignedIn(role)
   const session = useSession()
   useEffect(() => {
     const as = new URLSearchParams(window.location.search).get('as')
-    if (as) signInAs(role, as)
-  }, [role])
+    if (as && enabled) signInAs(role, as)
+  }, [role, enabled])
   useEffect(() => {
     // Only the login's own owner opening it counts, not the admin looking in.
-    if (user && !user.opened && !(session.status === 'in' && session.user.role === 'admin')) saveUser({ ...user, opened: true })
+    if (enabled && user && !user.opened && !(session.status === 'in' && session.user.role === 'admin')) saveUser({ ...user, opened: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, enabled])
 }

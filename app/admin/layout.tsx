@@ -8,7 +8,7 @@ import {
   DollarSign, X, Boxes, FileText, Store, HardHat, Target, Bell, CornerDownLeft, Handshake,
   Activity, Wrench, GitCompare, ListChecks, ClipboardCheck, Banknote, Calculator, Flag, CalendarRange, ShieldAlert, Building2, Gauge, CalendarDays,
   Layers, Camera, Mountain, Box, Palette as PaletteIcon, Download, BookOpen, ScanSearch, Drill, PanelLeftClose, PanelLeftOpen, Radio,
-  Gem, Database, Network, Sparkles, Compass, BrainCircuit,
+  Gem, Database, Network, Sparkles, Compass, BrainCircuit, Trophy,
 } from 'lucide-react'
 import { CoreProvider, useCore } from '../../lib/core/store'
 import { GeoDataProvider } from '../../lib/core/geo-data'
@@ -23,6 +23,7 @@ import { T, display, mono, toneColor } from '../components/kit'
 import { ThemeScope, ThemeToggle } from '../components/theme'
 import { Guard, SavedState } from '../components/guard'
 import { useSession, signOut } from '../../lib/backend'
+import { useSignedIn, useArrival, signInAs } from '../../lib/session'
 import { IS_DEMO, COMPANY_NAME } from '../../lib/company'
 
 /* ==========================================================================
@@ -131,6 +132,11 @@ const GEO_NAV: { title: string | null; items: NavItem[] }[] = [
   { title: 'Help', items: [{ href: '/admin/geology/method', label: 'How it works', icon: BookOpen }] },
 ]
 
+/* The Company Admin's view of the geologists: never in a geologist's own menu. */
+const GEO_TEAM: { title: string; items: NavItem[] } = {
+  title: 'Team', items: [{ href: '/admin/geology/geologists', label: 'Geologists', icon: Trophy }],
+}
+
 /* Screens with no menu entry: still guarded, still found by search. */
 const HIDDEN: NavItem[] = [
   { href: '/admin/reports', label: 'Performance reports', icon: FileText, sample: true },
@@ -138,7 +144,7 @@ const HIDDEN: NavItem[] = [
   { href: '/admin/crew', label: 'Crew & jobs', icon: HardHat, sample: true },
   { href: '/admin/billing', label: 'Plans and billing', icon: CreditCard, sample: true },
 ]
-const ALL = [...NAV.flatMap(g => g.items), ...GEO_NAV.flatMap(g => g.items).filter(i => i.href.startsWith('/admin/geology')), ...HIDDEN]
+const ALL = [...NAV.flatMap(g => g.items), ...GEO_NAV.flatMap(g => g.items).filter(i => i.href.startsWith('/admin/geology')), ...GEO_TEAM.items, ...HIDDEN]
 /* The menu for this company and this person. */
 function menuFor(demo: boolean, owner: boolean) {
   return NAV.map(g => ({ ...g, items: g.items.filter(i => (demo || !i.sample) && (owner || !i.owner)) })).filter(g => g.items.length > 0)
@@ -212,21 +218,39 @@ function Shell({ children }: { children: React.ReactNode }) {
   const owner = session.status === 'in' && !!session.user.owner
   /* Two workspaces: Drilling (the contractor) and Geology (the geologist).
    * A geologist's login sees only Geology and what it shares with drilling. */
-  const [geoOnly, setGeoOnly] = useState(false)
+  const [geoView, setGeoView] = useState(false)
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get('view')
     try {
       if (v === 'geologist') localStorage.setItem('xplorix_view', 'geologist')
       if (v === 'admin') localStorage.removeItem('xplorix_view')
-      setGeoOnly(localStorage.getItem('xplorix_view') === 'geologist')
-    } catch { setGeoOnly(v === 'geologist') }
+      setGeoView(localStorage.getItem('xplorix_view') === 'geologist')
+    } catch { setGeoView(v === 'geologist') }
   }, [pathname])
+  // Signed in for real as a geologist: Geology only, whatever the address says.
+  const realGeo = session.status === 'in' && session.user.role === 'geologist'
+  const geoOnly = geoView || realGeo
   const geology = geoOnly || pathname.startsWith('/admin/geology')
   const core = useCore()
-  const waitingTrays = core.index ? core.index.holes.reduce((s, h) => s + h.trays, 0) + core.review.uploads.length - Object.keys(core.review.checked).length : 0
-  const menu = geology ? GEO_NAV : menuFor(demo, owner)
+  /* Who does the work on the core. A geologist's login: their name on every
+   * check and correction, and only their projects. Anyone else: their own name
+   * and every project. */
+  const geo = useSignedIn('geologist')
+  const geoUser = geoOnly ? geo.user : undefined
+  useArrival('geologist', geoOnly)
+  const actor = geoUser?.name ?? (session.status === 'in' ? session.user.name : 'Admin User')
+  const scopeKey = geoOnly ? JSON.stringify(geoUser?.projects ?? []) : ''
+  useEffect(() => { core.setActor(actor) }, [actor]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { core.setScope(geoOnly ? (JSON.parse(scopeKey) as string[]) : null) }, [geoOnly, scopeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const waitingTrays = core.index ? (() => {
+    const mine = new Set(core.index.holes.map(h => h.hole))
+    const inMine = (id: string) => mine.has(id.replace(/-(T|U)[^-]+$/, ''))
+    return core.index.holes.reduce((s, h) => s + h.trays, 0) + core.review.uploads.filter(u => inMine(u.id)).length - Object.keys(core.review.checked).filter(inMine).length
+  })() : 0
+  const menu = geology ? (geoOnly ? GEO_NAV : [...GEO_NAV.slice(0, -1), GEO_TEAM, GEO_NAV[GEO_NAV.length - 1]]) : menuFor(demo, owner)
   // A screen on sample data, opened by its address in a real company: say so instead of showing someone else's numbers.
-  const blocked = !!current && ((current.sample && !demo) || (current.owner && !owner))
+  const teamOnly = pathname.startsWith('/admin/geology/geologists')
+  const blocked = (geoOnly && teamOnly) || (!!current && ((current.sample && !demo) || (current.owner && !owner)))
 
   const actNow = inbox.open.filter(u => u.severity === 'act')
   const badge = (b: NavItem['badge'], href?: string) => href === '/admin/geology/review' ? Math.max(0, waitingTrays)
@@ -342,10 +366,10 @@ function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           )}
           <div className="xpl-userrow" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px 2px 4px' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: 'rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 12.5, color: 'var(--x-side-text)' }}>{geoOnly ? 'P' : 'A'}</div>
+            <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: 'rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 12.5, color: 'var(--x-side-text)' }}>{(geoOnly ? (geoUser?.name ?? 'G') : session.status === 'in' ? session.user.name : 'A').slice(0, 1).toUpperCase()}</div>
             <div className="xpl-label" style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--x-side-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.status === 'in' ? session.user.name : geoOnly ? core.review.reviewer.replace(/ \(geologist\)$/, '') : 'Admin User'}</div>
-              <div style={{ fontSize: 12, color: 'var(--x-side-muted)' }}>{geoOnly ? 'Geologist' : 'Company admin'}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--x-side-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{geoOnly ? (geoUser?.name ?? 'Geologist') : session.status === 'in' ? session.user.name : 'Admin User'}</div>
+              <div style={{ fontSize: 12, color: 'var(--x-side-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{geoOnly ? `Geologist${geoUser?.employer ? ` · ${geoUser.employer.replace(/ \((consultancy|client)\)$/, '')}` : ''}` : 'Company admin'}</div>
             </div>
             {session.status === 'in'
               ? <button type="button" onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className="xpl-side-hit xpl-railhide" style={{ padding: 9, color: 'var(--x-side-muted)', borderRadius: 8, display: 'flex', background: 'none', border: 'none', cursor: 'pointer' }}><LogOut size={15} /></button>
@@ -377,6 +401,15 @@ function Shell({ children }: { children: React.ReactNode }) {
               <AskButton />
               <SavedState />
               <ThemeToggle />
+              {geoOnly && geo.preview && geo.all.length > 1 && geoUser && (
+                <label className="hidden md:flex" style={{ alignItems: 'center', gap: 7, fontSize: 12, color: T.faint }}>
+                  Demo: signed in as
+                  <select value={geoUser.id} onChange={e => signInAs('geologist', e.target.value)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, color: T.text, fontSize: 12, padding: '5px 8px', fontFamily: 'inherit', cursor: 'pointer' }}>
+                    {geo.all.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
+                  <Link href="/admin/geology/geologists?view=admin" style={{ color: T.orange, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Admin view</Link>
+                </label>
+              )}
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setBell(b => !b)} aria-label={`${actNow.length} to act on now`} aria-expanded={bell} className="xpl-hit"
                   style={{ position: 'relative', padding: 8, borderRadius: 9, background: 'none', border: `1px solid ${T.border}`, color: T.muted, cursor: 'pointer', display: 'flex' }}>
@@ -420,13 +453,15 @@ function Shell({ children }: { children: React.ReactNode }) {
         <div className="flex-1 xpl-main" style={{ padding: '24px 28px' }}>
           {blocked ? (
             <div style={{ maxWidth: 620, margin: '40px auto', padding: 24, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: T.text, fontFamily: display }}>{current?.owner ? 'Not for this login' : `${current?.label} is in development`}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: T.text, fontFamily: display }}>{current?.owner || (geoOnly && teamOnly) ? 'Not for this login' : `${current?.label} is in development`}</div>
               <p style={{ fontSize: 13.5, color: T.muted, lineHeight: 1.6, margin: '8px 0 16px' }}>
-                {current?.owner
+                {geoOnly && teamOnly
+                  ? 'The team view is for the Company Admin and management.'
+                  : current?.owner
                   ? 'Only the account that set XPLORIX up can open this screen.'
                   : 'This screen still runs on sample data, so it is shown in the demo company only. It will open here when it reads your own logs.'}
               </p>
-              <Link href="/admin/dashboard" style={{ fontSize: 13.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>Back to the Dashboard</Link>
+              <Link href={geoOnly ? '/admin/geology' : '/admin/dashboard'} style={{ fontSize: 13.5, fontWeight: 600, color: T.orange, textDecoration: 'none' }}>{geoOnly ? 'Back to Geology today' : 'Back to the Dashboard'}</Link>
             </div>
           ) : <><DeptTabs />{children}</>}
         </div>
@@ -516,11 +551,14 @@ function Palette({ onClose }: { onClose: () => void }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // A geologist's login may open the Geology screens, except the team view.
+  const pathname = usePathname()
+  const geoOk = pathname.startsWith('/admin/geology') && !pathname.startsWith('/admin/geology/geologists')
   return (
     <CurrencyProvider>
       <CostingProvider>
         <ThemeScope />
-        <Guard role="admin"><CoreProvider><GeoDataProvider><InboxProvider><AskProvider><Shell>{children}</Shell></AskProvider></InboxProvider></GeoDataProvider></CoreProvider></Guard>
+        <Guard role="admin" also={geoOk ? ['geologist'] : []}><CoreProvider><GeoDataProvider><InboxProvider><AskProvider><Shell>{children}</Shell></AskProvider></InboxProvider></GeoDataProvider></CoreProvider></Guard>
       </CostingProvider>
     </CurrencyProvider>
   )

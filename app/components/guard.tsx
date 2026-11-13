@@ -27,11 +27,12 @@ function Waiting({ children }: { children: ReactNode }) {
   )
 }
 
-export function Guard({ role, children }: { role: Role; children: ReactNode }) {
+/* `also`: other logins this part of the app lets in (a geologist on the Geology screens). */
+export function Guard({ role, also = [], children }: { role: Role; also?: Role[]; children: ReactNode }) {
   const s = useSession()
   const { ready } = useCosting()
   const router = useRouter()
-  const allowed = s.status === 'in' && (s.user.role === role || s.user.role === 'admin')
+  const allowed = s.status === 'in' && (s.user.role === role || s.user.role === 'admin' || also.includes(s.user.role))
   const unseeded = s.status === 'in' && s.user.role === 'admin' && !s.user.company.seeded
 
   useEffect(() => {

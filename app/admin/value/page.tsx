@@ -10,6 +10,7 @@ import { answersOf, buildScorecard, scoreWord, type Score } from '../../../lib/s
 import { useInbox } from '../../components/inbox'
 import { WarningCard } from '../../components/outlook-charts'
 import { LearnedCard, useLearning } from '../../components/ai-learn'
+import { GeologistsCard } from '../../components/geo-team'
 import { Page, Card, Table, Empty, T, tint, display, th, thR, td, tdR, tdStrong, rowLine } from '../../components/kit'
 
 /* ==========================================================================
@@ -114,6 +115,8 @@ export default function ScorecardPage() {
           ))}
         </Card>
       </div>
+
+      <GeologistsCard />
 
       <section style={{ border: `1px dashed ${T.border}`, borderRadius: 10, padding: '12px 18px', display: 'grid', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>

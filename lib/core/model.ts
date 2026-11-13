@@ -59,5 +59,6 @@ export interface CoreIndex {
  * real build it is what the model learns from. */
 export type BreakVerdict = 'natural' | 'handling' | 'none'
 export type GapVerdict = 'lost' | 'sampled' | 'core'
-export interface Change { at: string; by: string; what: string }
+/* `n`: how many edits one line stands for (a line can sum up several breaks checked on one tray). */
+export interface Change { at: string; by: string; what: string; n?: number }
 export interface AddedBreak { id: string; tray: string; row: number; x: number; at: number; alpha: number; kind: 'natural' | 'handling' }

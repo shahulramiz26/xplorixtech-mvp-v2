@@ -25,6 +25,8 @@ import {
  *                view of his own performance.
  *   Client       the company you drill for. What is happening today, his
  *                projects, operations, holes and invoices.
+ *   Geologist    logs and checks core in XPLORIX Core, only on the projects
+ *                you assign. Ours, a consultancy's, or the client's own.
  *
  * The username is made for you and the password is generated, shown once,
  * and never stored where it can be read back.
@@ -34,11 +36,13 @@ const SEES: Record<UserRole, string> = {
   supervisor: 'Drill log and maintenance log',
   contractor: 'Drill log, maintenance log, submitted logs, own performance',
   client: 'Today, projects, operations, holes, invoices',
+  geologist: 'Geology for the projects assigned: trays, logs, 3D',
 }
 const OPEN: Record<UserRole, (u: AppUser) => string> = {
   supervisor: u => `/supervisor/today?as=${u.id}`,
   contractor: u => `/contractor?as=${u.id}`,
   client: u => `/client?as=${u.id}`,
+  geologist: u => `/admin/geology?view=geologist&as=${u.id}`,
 }
 
 function makePassword() {
@@ -53,7 +57,7 @@ function UsersScreen() {
   const users = state.users
   const [filter, setFilter] = useState<'all' | UserRole>('all')
   const [creating, setCreating] = useState<UserRole | null>(null)
-  const [form, setForm] = useState({ name: '', pick: '', email: '' })
+  const [form, setForm] = useState({ name: '', pick: '', email: '', employer: 'Our company', employerName: '', projects: [] as string[] })
   const [secret, setSecret] = useState<{ title: string; username: string; password: string; role: UserRole; error?: string } | null>(null)
   const session = useSession()
   const real = session.status === 'in'
@@ -66,12 +70,13 @@ function UsersScreen() {
     setSecret(r.ok ? { title, username: r.username, password: r.password, role: u.role } : { title, username: u.username, password: '', role: u.role, error: r.error })
   }
   const [removing, setRemoving] = useState<AppUser | null>(null)
+  const [assigning, setAssigning] = useState<AppUser | null>(null)
 
   // A link from a project or a work order opens the right form, filled in.
   useEffect(() => {
     const role = params.get('new') as UserRole | null
-    if (role && ['supervisor', 'contractor', 'client'].includes(role)) {
-      setCreating(role); setForm({ name: '', pick: params.get('for') ?? '', email: '' })
+    if (role && ['supervisor', 'contractor', 'client', 'geologist'].includes(role)) {
+      setCreating(role); setForm(f => ({ ...f, name: '', pick: params.get('for') ?? '', email: '', projects: [] }))
     }
   }, [params])
 
@@ -90,6 +95,10 @@ function UsersScreen() {
       const os = state.workOrders.filter(o => o.contractorId === u.contractorId)
       return os.length ? os.map(o => o.number).join(', ') : 'No work order yet'
     }
+    if (u.role === 'geologist') {
+      const ps = state.projects.filter(p => (u.projects ?? []).includes(p.name))
+      return `${ps.length ? ps.map(p => p.code).join(', ') : 'No project yet'}${u.employer ? ` · ${u.employer}` : ''}`
+    }
     const ps = state.projects.filter(p => p.client === u.client)
     const shown = ps.filter(p => p.shared)
     return ps.length ? `${shown.length} of ${ps.length} ${ps.length === 1 ? 'project' : 'projects'} shown` : 'No project yet'
@@ -100,14 +109,19 @@ function UsersScreen() {
   const NEW = '__new'
   const name = creating === 'supervisor' ? (form.pick && form.pick !== NEW ? form.pick : form.name.trim())
     : creating === 'contractor' ? (form.pick && form.pick !== NEW ? state.contractors.find(c => c.id === form.pick)?.name ?? '' : form.name.trim())
-    : creating === 'client' ? (form.pick && form.pick !== NEW ? form.pick : form.name.trim()) : ''
+    : creating === 'client' ? (form.pick && form.pick !== NEW ? form.pick : form.name.trim())
+    : creating === 'geologist' ? form.name.trim() : ''
   const clash = creating === 'supervisor' ? users.some(u => u.role === 'supervisor' && u.name.toLowerCase() === name.toLowerCase())
     : creating === 'client' ? !!loginOfClient(users, name)
+    : creating === 'geologist' ? users.some(u => u.role === 'geologist' && u.name.toLowerCase() === name.toLowerCase())
     : creating === 'contractor' && (!form.pick || form.pick === NEW) ? state.contractors.some(c => c.name.toLowerCase() === name.toLowerCase()) : false
   const emailOk = !form.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-  const canCreate = name.length > 1 && !clash && emailOk
+  const clients = Array.from(new Set(state.projects.map(p => p.client).filter(Boolean)))
+  const employer = form.employer === 'consultancy' ? `${form.employerName.trim()} (consultancy)` : form.employer === 'Our company' ? 'Our company' : `${form.employer} (client)`
+  const geoOk = creating !== 'geologist' || (form.projects.length > 0 && (form.employer !== 'consultancy' || form.employerName.trim().length > 1))
+  const canCreate = name.length > 1 && !clash && emailOk && geoOk
 
-  const startCreate = (role: UserRole) => { setCreating(role); setForm({ name: '', pick: '', email: '' }) }
+  const startCreate = (role: UserRole) => { setCreating(role); setForm({ name: '', pick: '', email: '', employer: 'Our company', employerName: '', projects: [] }) }
   const create = () => {
     if (!creating || !canCreate) return
     const username = nextUsername(users, creating)
@@ -117,6 +131,7 @@ function UsersScreen() {
       if (!contractorId || contractorId === NEW) { contractorId = uid('ctr'); saveContractor({ id: contractorId, name }) }
       saveUser({ ...base, contractorId })
     } else if (creating === 'client') saveUser({ ...base, client: name })
+    else if (creating === 'geologist') saveUser({ ...base, employer, projects: form.projects })
     else saveUser(base)
     void givePassword({ id: base.id, username, role: creating }, `${USER_ROLE_LABEL[creating]} login created`)
     setCreating(null)
@@ -125,8 +140,9 @@ function UsersScreen() {
   return (
     <Page>
       <Head title="Users"
-        sub="Every login is created here, by you. A supervisor logs shifts, a contractor sends his, and a client follows his projects. Each one sees only what is his."
+        sub="Every login is created here, by you. A supervisor logs shifts, a contractor sends his, a client follows his projects, and a geologist checks the core on his. Each one sees only what is his."
         right={<>
+          <Btn onClick={() => startCreate('geologist')}>Geologist login</Btn>
           <Btn onClick={() => startCreate('client')}>Client login</Btn>
           <Btn onClick={() => startCreate('contractor')}>Contractor login</Btn>
           <Btn kind="primary" onClick={() => startCreate('supervisor')}>Supervisor login</Btn>
@@ -136,12 +152,14 @@ function UsersScreen() {
         <Tile label="Supervisor logins" value={count('supervisor')} note={SEES.supervisor} />
         <Tile label="Contractor logins" value={count('contractor')} note={contractorsFree.length ? `${contractorsFree.length} contractor${contractorsFree.length === 1 ? ' has' : 's have'} no login yet` : 'Every contractor has one'} tone={contractorsFree.length ? 'warn' : undefined} />
         <Tile label="Client logins" value={count('client')} note={clientsFree.length ? `${clientsFree.length} client${clientsFree.length === 1 ? ' has' : 's have'} no login yet` : 'Every client has one'} />
+        <Tile label="Geologist logins" value={count('geologist')} note={SEES.geologist} />
         <Tile label="Switched on" value={`${users.filter(u => u.active).length} of ${users.length}`} note="A login that is off cannot sign in" />
       </Grid>
 
       <Seg<'all' | UserRole> value={filter} onChange={setFilter} options={[
         { value: 'all', label: `All · ${users.length}` }, { value: 'supervisor', label: `Supervisors · ${count('supervisor')}` },
         { value: 'contractor', label: `Contractors · ${count('contractor')}` }, { value: 'client', label: `Clients · ${count('client')}` },
+        { value: 'geologist', label: `Geologists · ${count('geologist')}` },
       ]} />
 
       <Card pad={false}>
@@ -152,7 +170,7 @@ function UsersScreen() {
               {shown.map(u => (
                 <tr key={u.id} className="xpl-row" style={{ borderBottom: rowLine }}>
                   <td style={tdStrong}>{u.name}{u.email && <div style={{ fontSize: 12, color: T.faint, fontWeight: 400 }}>{u.email}</div>}</td>
-                  <td style={td}><Status tone={u.role === 'supervisor' ? 'info' : u.role === 'contractor' ? 'warn' : 'good'}>{USER_ROLE_LABEL[u.role]}</Status></td>
+                  <td style={td}><Status tone={u.role === 'supervisor' ? 'info' : u.role === 'contractor' ? 'warn' : u.role === 'geologist' ? 'neutral' : 'good'}>{USER_ROLE_LABEL[u.role]}</Status></td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 12.5 }}>{u.username}</td>
                   <td style={td}>{projectsOf(u)}</td>
                   <td style={{ ...td, whiteSpace: 'normal', minWidth: 190 }}>{SEES[u.role]}</td>
@@ -161,6 +179,7 @@ function UsersScreen() {
                   <td style={{ ...td, textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: 6 }}>
                       {u.active && <Btn size="sm" href={OPEN[u.role](u)}>See what they see</Btn>}
+                      {u.role === 'geologist' && <Btn size="sm" onClick={() => setAssigning(u)}>Projects</Btn>}
                       <Btn size="sm" onClick={() => void givePassword(u, 'Password reset')}>Reset password</Btn>
                       <Btn size="sm" onClick={() => saveUser({ ...u, active: !u.active })}>{u.active ? 'Switch off' : 'Switch on'}</Btn>
                       <Btn size="sm" kind="danger" onClick={() => setRemoving(u)}>Remove</Btn>
@@ -175,17 +194,18 @@ function UsersScreen() {
 
       <Note>
         <b style={{ color: T.text }}>What each login can never see.</b> A supervisor does not see costs, rates or invoices. A contractor does not see your own rigs, what your client pays you, or another contractor.
-        A client does not see your costs, your margin, your stock, or what you pay a contractor.
+        A client does not see your costs, your margin, your stock, or what you pay a contractor. A geologist sees only the geology of the projects you assign, and nothing about money.
       </Note>
 
       {creating && (
         <Modal title={`Create a ${USER_ROLE_LABEL[creating].toLowerCase()} login`} width={520} onClose={() => setCreating(null)}
           subtitle={creating === 'supervisor' ? 'For your own site staff, to log shifts and maintenance.'
             : creating === 'contractor' ? 'For a company drilling for you, to send their drill log and maintenance log.'
+            : creating === 'geologist' ? 'For a geologist who checks the core in XPLORIX Core. They see only the projects you tick.'
             : 'For the company you drill for, to follow their projects.'}
           footer={<><Btn onClick={() => setCreating(null)}>Cancel</Btn><Btn kind="primary" disabled={!canCreate} onClick={create}>Create login</Btn></>}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Seg<UserRole> value={creating} onChange={r => startCreate(r)} options={[{ value: 'supervisor', label: 'Supervisor' }, { value: 'contractor', label: 'Contractor' }, { value: 'client', label: 'Client' }]} />
+            <Seg<UserRole> value={creating} onChange={r => startCreate(r)} options={[{ value: 'supervisor', label: 'Supervisor' }, { value: 'contractor', label: 'Contractor' }, { value: 'client', label: 'Client' }, { value: 'geologist', label: 'Geologist' }]} />
 
             {creating === 'supervisor' && (
               <>
@@ -226,6 +246,32 @@ function UsersScreen() {
                 <div style={{ fontSize: 12.5, color: T.faint, lineHeight: 1.55 }}>They see only the projects you choose to show them. Switch that on from each project.</div>
               </>
             )}
+            {creating === 'geologist' && (
+              <>
+                <Field label="Full name"><input autoFocus value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Faisal Al-Harbi" style={inputStyle} /></Field>
+                <Field label="Employed by" hint="Ours, a consultancy we hired, or the client's own geologist.">
+                  <select value={form.employer} onChange={e => setForm({ ...form, employer: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="Our company">Our company</option>
+                    <option value="consultancy">A consultancy…</option>
+                    {clients.map(c => <option key={c} value={c}>{c} (client)</option>)}
+                  </select>
+                </Field>
+                {form.employer === 'consultancy' && <Field label="Consultancy"><input value={form.employerName} onChange={e => setForm({ ...form, employerName: e.target.value })} placeholder="e.g. MSA Arabia" style={inputStyle} /></Field>}
+                <Field label="Projects" hint={form.projects.length ? `${form.projects.length} ticked. They see only these.` : 'Tick at least one. They see only the projects ticked here.'}>
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {state.projects.filter(p => p.status !== 'completed').map(p => {
+                      const on = form.projects.includes(p.name)
+                      return (
+                        <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: T.text, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={on} onChange={() => setForm({ ...form, projects: on ? form.projects.filter(x => x !== p.name) : [...form.projects, p.name] })} />
+                          {p.name} <span style={{ color: T.faint }}>· {p.client}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </Field>
+              </>
+            )}
             {creating !== 'supervisor' && (
               <Field label="Email (optional)" hint={!emailOk ? 'That does not look like an email address.' : 'Where to send the username. The password is shown to you once, on the next screen.'}>
                 <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="name@company.com" style={inputStyle} />
@@ -247,6 +293,23 @@ function UsersScreen() {
             <span style={{ color: T.faint }}>Username</span><span style={{ color: T.text, fontWeight: 600, fontFamily: mono }}>{secret.username}</span>
             <span style={{ color: T.faint }}>Password</span><span style={{ color: secret.error ? T.red : T.text, fontWeight: 600, letterSpacing: secret.password ? '0.04em' : undefined, fontFamily: secret.password ? mono : 'inherit' }}>{secret.password || secret.error || 'Making a password…'}</span>
             <span style={{ color: T.faint }}>Signs in as</span><span style={{ color: T.text }}>{USER_ROLE_LABEL[secret.role]}</span>
+          </div>
+        </Modal>
+      )}
+
+      {assigning && (
+        <Modal title={`${assigning.name}'s projects`} subtitle="They see the geology of the projects ticked here, and nothing else." width={480} onClose={() => setAssigning(null)}
+          footer={<><Btn onClick={() => setAssigning(null)}>Cancel</Btn><Btn kind="primary" disabled={!(assigning.projects ?? []).length} onClick={() => { const cur = users.find(x => x.id === assigning.id); if (cur) saveUser({ ...cur, projects: assigning.projects }); setAssigning(null) }}>Save</Btn></>}>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {state.projects.map(p => {
+              const on = (assigning.projects ?? []).includes(p.name)
+              return (
+                <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: T.text, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={on} onChange={() => setAssigning({ ...assigning, projects: on ? (assigning.projects ?? []).filter(x => x !== p.name) : [...(assigning.projects ?? []), p.name] })} />
+                  {p.name} <span style={{ color: T.faint }}>· {p.client}{p.status === 'completed' ? ' · completed' : ''}</span>
+                </label>
+              )
+            })}
           </div>
         </Modal>
       )}

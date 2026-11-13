@@ -40,6 +40,7 @@ function scope(who: Who, all: Rec[]) {
   let myOrders: Rec[] = []
   if (who.role === 'supervisor') mine = projects.filter(p => (p.data.supervisors ?? []).includes(me?.name))
   if (who.role === 'client') mine = projects.filter(p => p.data.shared && eq(p.data.client, me?.client))
+  if (who.role === 'geologist') mine = projects.filter(p => (me?.projects ?? []).includes(p.data.name))
   if (who.role === 'contractor') {
     myOrders = orders.filter(w => w.data.contractorId === me?.contractorId)
     const names = new Set(myOrders.map(w => w.data.project))
@@ -137,6 +138,15 @@ export function visible(who: Who, all: Rec[]): Rec[] {
     keep(s.plans, myHole)
     keep(of(all, 'holeStatus'), myHole)
     keep(s.orders, inMine, orderStub)
+  }
+
+  /* A geologist reads his projects and the shifts that drilled their holes,
+   * to join the core to who drilled it and how. Nothing about money. */
+  if (who.role === 'geologist') {
+    keep(s.projects, r => s.names.has(r.data.name), projectStub)
+    keep(s.logs, inMine, shiftForClient)
+    keep(s.plans, myHole)
+    keep(of(all, 'holeStatus'), myHole)
   }
   return out
 }

@@ -1815,12 +1815,14 @@ export const SEED_CONTRACTOR_REPORTS: ContractorReport[] = (() => {
  *   contractor   a company drilling for us: his drill log, his submitted
  *                logs, a small view of his own performance
  *   client       the company we drill for: what is happening on his projects
+ *   geologist    logs and checks core in XPLORIX Core, on the projects he is
+ *                assigned to: ours, a consultancy's, or the client's own
  *
  * A login is tied to the thing it may see. A contractor's login to his
  * contractor record, a client's login to the client named on the projects, a
  * supervisor to the projects he is assigned to by name. */
-export type UserRole = 'supervisor' | 'contractor' | 'client'
-export const USER_ROLE_LABEL: Record<UserRole, string> = { supervisor: 'Supervisor', contractor: 'Contractor', client: 'Client' }
+export type UserRole = 'supervisor' | 'contractor' | 'client' | 'geologist'
+export const USER_ROLE_LABEL: Record<UserRole, string> = { supervisor: 'Supervisor', contractor: 'Contractor', client: 'Client', geologist: 'Geologist' }
 export interface AppUser {
   id: string
   name: string
@@ -1832,12 +1834,28 @@ export interface AppUser {
   opened?: boolean            // has signed in at least once
   contractorId?: string       // role contractor
   client?: string             // role client: the client's name as written on the project
+  /* Role geologist: who employs them (our own company, a consultancy, or the
+   * client), and the projects they log core on, by name. A geologist sees
+   * only those projects. */
+  employer?: string
+  projects?: string[]
 }
 /* Who the Company Admin is, for "checked by" and "logged by". The demo's
  * admin, until someone signs in and it becomes them. */
 export let ADMIN_NAME = 'Admin User'
 export function setAdminName(name: string) { if (name) ADMIN_NAME = name }
 export { COMPANY_NAME } from './company'
+
+/* The demo's geologists: one of ours, two from a consultancy and one of the
+ * client's own. Their work on the trays is in lib/core/demo-team. */
+export const SEED_GEOLOGISTS: AppUser[] = [
+  { id: 'u_g1', name: 'Priya Nair', username: 'APX_GEO01', role: 'geologist', active: true, created: '2026-07-15', opened: true, employer: 'Our company', projects: ['Site A - North Field'], email: 'priya.nair@company.example' },
+  { id: 'u_g2', name: 'Faisal Al-Harbi', username: 'APX_GEO02', role: 'geologist', active: true, created: '2026-08-10', opened: true, employer: 'MSA Arabia (consultancy)', projects: ['Site A - North Field', 'Site B - South Ridge'], email: 'f.alharbi@msa.example' },
+  { id: 'u_g3', name: 'Omar Siddiqui', username: 'APX_GEO03', role: 'geologist', active: true, created: '2026-09-01', opened: true, employer: 'South Ridge Minerals (client)', projects: ['Site B - South Ridge'], email: 'omar@southridge.example' },
+  { id: 'u_g4', name: 'Sara Al-Qahtani', username: 'APX_GEO04', role: 'geologist', active: true, created: '2026-10-22', opened: true, employer: 'MSA Arabia (consultancy)', projects: ['Site B - South Ridge'], email: 's.alqahtani@msa.example' },
+]
+export const geologistsOn = (users: AppUser[] | undefined, project: string) =>
+  (users ?? []).filter(u => u.role === 'geologist' && u.active && (u.projects ?? []).includes(project))
 
 export const SEED_USERS: AppUser[] = [
   { id: 'u_s1', name: 'Arun Verma', username: 'APX_SUP01', role: 'supervisor', active: true, created: '2026-07-19', opened: true },
@@ -1846,6 +1864,7 @@ export const SEED_USERS: AppUser[] = [
   { id: 'u_c1', name: 'Contractor P', username: 'APX_CON01', role: 'contractor', active: true, created: '2026-09-14', opened: true, contractorId: 'ctr_p', email: 'site@contractor-p.example' },
   { id: 'u_c2', name: 'Contractor Q', username: 'APX_CON02', role: 'contractor', active: true, created: '2026-09-25', opened: true, contractorId: 'ctr_q', email: 'site@contractor-q.example' },
   { id: 'u_k1', name: 'Demo Mining Co.', username: 'APX_CLI01', role: 'client', active: true, created: '2026-07-12', opened: true, client: 'Demo Mining Co.', email: 'exploration@demo-mining.example' },
+  ...SEED_GEOLOGISTS,
 ]
 export function loginOfContractor(users: AppUser[] | undefined, contractorId: string | undefined) {
   return (users ?? []).find(u => u.role === 'contractor' && u.contractorId === contractorId)
@@ -1854,7 +1873,7 @@ export function loginOfClient(users: AppUser[] | undefined, client: string | und
   return (users ?? []).find(u => u.role === 'client' && !!client && u.client?.toLowerCase() === client.toLowerCase())
 }
 export function nextUsername(users: AppUser[], role: UserRole) {
-  const tag = role === 'supervisor' ? 'SUP' : role === 'contractor' ? 'CON' : 'CLI'
+  const tag = role === 'supervisor' ? 'SUP' : role === 'contractor' ? 'CON' : role === 'geologist' ? 'GEO' : 'CLI'
   const n = Math.max(0, ...users.filter(u => u.role === role).map(u => Number(u.username.match(/(\d+)$/)?.[1] ?? 0))) + 1
   return `${COMPANY_CODE}_${tag}${String(n).padStart(2, '0')}`
 }
@@ -2031,7 +2050,9 @@ function withSeedPlans(s: State): State {
     const seed = SEED_PROJECTS.find(x => x.id === p.id)
     return seed ? { ...p, coords: p.coords ?? seed.coords, utmZone: p.utmZone ?? seed.utmZone, budgetTotal: p.budgetTotal ?? seed.budgetTotal, budgetPerMetre: p.budgetPerMetre ?? seed.budgetPerMetre, plannedEnd: p.plannedEnd ?? seed.plannedEnd } : p
   })
-  return { ...s, projects, holePlans: plans, surveys: s.surveys ?? [], findingStatus: { ...history, ...(s.findingStatus ?? {}) } }
+  /* A demo browser saved before geologist logins existed gets the demo's geologists. */
+  const users = IS_DEMO ? [...(s.users ?? []), ...SEED_GEOLOGISTS.filter(g => !(s.users ?? []).some(u => u.id === g.id))] : s.users
+  return { ...s, users, projects, holePlans: plans, surveys: s.surveys ?? [], findingStatus: { ...history, ...(s.findingStatus ?? {}) } }
 }
 
 export const uid = (p: string) => `${p}_${Date.now()}_${Math.floor(Math.random() * 9999)}`

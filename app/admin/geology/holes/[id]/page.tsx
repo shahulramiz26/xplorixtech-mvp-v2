@@ -27,7 +27,7 @@ export default function HoleLog() {
   const { id } = useParams<{ id: string }>()
   const hole = decodeURIComponent(id)
   const { state } = useCosting()
-  const { review, index } = useCore()
+  const { review, index, fullIndex } = useCore()
   const h = useHole(hole)
   const [tab, setTab] = useState<Tab>('log')
   const { data: geo } = useGeo()
@@ -52,6 +52,12 @@ export default function HoleLog() {
   }, [h.flat, h.rows, state.shiftLogs, hole])
 
   const known = index?.holes.some(x => x.hole === hole)
+  // On another project: a geologist's login sees only the projects assigned to it.
+  if (index && !known && fullIndex?.holes.some(x => x.hole === hole)) return (
+    <Page>
+      <PageHead question={`${hole} is not on your projects`} answer="Your login sees the holes of the projects assigned to you. Ask the Company Admin to add this hole's project if you need it." right={<Btn href="/admin/geology/holes">Your holes</Btn>} />
+    </Page>
+  )
   if (index && !known) return (
     <Page>
       <PageHead question={`${hole}: no core photos yet`} answer="Photos of this hole's trays have not been added. Add them and the log is built from the shift logs and the photos." right={<Btn kind="primary" href={`/admin/geology/photos?hole=${hole}`}>Add tray photos</Btn>} />

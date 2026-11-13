@@ -95,7 +95,7 @@ export async function signOut() {
 }
 
 export const HOME: Record<Role, string> = {
-  admin: '/admin/dashboard', supervisor: '/supervisor/today', contractor: '/contractor', client: '/client',
+  admin: '/admin/dashboard', supervisor: '/supervisor/today', contractor: '/contractor', client: '/client', geologist: '/admin/geology',
 }
 
 // ── keeping the stores and the server in step ─────────────────────────────
