@@ -12,7 +12,8 @@ import { Bar, recColour, rqdColour, pct, DemoPhotos } from '../../components/cor
 import { CoreFactors } from '../../components/core-factors'
 import { useGeo } from '../../../lib/core/geo-data'
 import { useGeoEngine, useAsk, Md } from '../../components/ai'
-import { Sparkles, Camera, Gem, Database, Network, BrainCircuit, Compass, Mountain, Palette, Box } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
+import { LoggingPace, RockQuality, type ChartHole } from '../../components/geo-charts'
 
 /* GEOLOGY TODAY — the geologist's first screen.
  *
@@ -37,7 +38,8 @@ export default function GeologyToday() {
     const checked = all.list.reduce((s, h) => s + h.checked, 0)
     const low = sc.filter(s => s.core.recovery < 85).sort((a, b) => a.core.recovery - b.core.recovery)
     const drillerRec = sc.length ? sc.reduce((s, x) => s + x.drillerRec * x.core.length, 0) / sc.reduce((s, x) => s + x.core.length, 0) : 0
-    return { t, sc, trays, checked, low, drillerRec, f: factors(sc) }
+    const chartHoles: ChartHole[] = all.list.map(h => ({ hole: h.data.hole, trays: h.trays, rows: h.rows, recovery: h.total!.recovery }))
+    return { t, sc, trays, checked, low, drillerRec, f: factors(sc), chartHoles }
   }, [all.list, state.shiftLogs])
 
   const trayAt = (hole: string | null, at: number | null | undefined) => {
@@ -46,7 +48,7 @@ export default function GeologyToday() {
     return t ? `/admin/geology/trays/${t.id}` : `/admin/geology/holes/${hole}`
   }
   if (!all.ready) return <Page><Card><Empty>Loading the core photos…</Empty></Card></Page>
-  const { t, trays, checked, low, drillerRec, f } = view
+  const { t, trays, checked, low, drillerRec, f, chartHoles } = view
   const waiting = trays - checked
 
   return (
@@ -76,7 +78,10 @@ export default function GeologyToday() {
         <Tile label="Trays to check" value={waiting} note={waiting ? `${t.unsure} breaks the photo step is unsure of` : 'All checked'} tone={waiting ? 'warn' : 'good'} />
       </Grid>
 
-      <Modules geo={geo} trays={trays} waiting={waiting} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(460px, 100%), 1fr))', gap: 16 }}>
+        <LoggingPace holes={chartHoles} logs={state.shiftLogs} checked={review.checked} />
+        <RockQuality holes={chartHoles} />
+      </div>
 
       <Card title="Holes" subtitle="Every number is worked out from the tray photos, with the geologist's corrections. Click a hole for its log." pad={false}>
         <Table>
@@ -122,38 +127,5 @@ export default function GeologyToday() {
 
       <div style={{ fontSize: 12, color: T.faint, lineHeight: 1.6 }}>{NVCL_CREDIT} Reviewer: {review.reviewer}.</div>
     </Page>
-  )
-}
-
-/* Everything XPLORIX Core logs, with a live number each: the map of the
- * geology side for someone seeing it for the first time. */
-function Modules({ geo, trays, waiting }: { geo: ReturnType<typeof useGeo>['data']; trays: number; waiting: number }) {
-  const items: { icon: React.ElementType; title: string; what: string; value: string; href: string }[] = [
-    { icon: Camera, title: 'Core photos', what: 'Rows, core, gaps and every break found on each tray photo', value: `${trays} trays · ${waiting} to check`, href: '/admin/geology/review' },
-    { icon: Mountain, title: 'Geotech logging', what: 'Recovery, RQD, fractures, joint density, GSI, weathering, discing', value: geo.ready ? `${geo.holes.length} holes logged` : '…', href: '/admin/geology/rock-mass' },
-    { icon: Palette, title: 'Geology logging', what: 'Rock classes from colour, grain, veins and staining', value: 'Named by the geologist', href: '/admin/geology/classes' },
-    { icon: Gem, title: 'Vein classes', what: 'Every vein found and sorted into kinds; vein volume down the hole', value: geo.ready ? `${geo.veins.length.toLocaleString('en-US')} veins` : '…', href: '/admin/geology/veins' },
-    { icon: Database, title: 'Downhole data', what: 'Assays, geophysics, core scanner, televiewer and lab tests on depth', value: geo.ready ? `${geo.metres.length.toLocaleString('en-US')} metres joined` : '…', href: '/admin/geology/data' },
-    { icon: Network, title: 'Domains', what: 'Metres grouped by photo, chemistry and geophysics together', value: geo.ready ? `${geo.domains('all').k} domains` : '…', href: '/admin/geology/domains' },
-    { icon: BrainCircuit, title: 'Predictions', what: 'Rock strength, minerals and recovery where nobody measured', value: geo.pred ? `Strength R² ${Math.round(geo.pred.ucsFit.r2 * 100)}%` : '…', href: '/admin/geology/predict' },
-    { icon: Compass, title: 'Structures', what: 'True dip and dip direction from the televiewer; joint sets', value: geo.ready ? `${geo.structures.length.toLocaleString('en-US')} planes` : '…', href: '/admin/geology/structures' },
-    { icon: Box, title: 'Digital twin', what: 'Every hole in 3D with its whole record: core, surveys, cost and consumables', value: 'By project', href: '/admin/geology/3d' },
-    { icon: Sparkles, title: 'XPLORIX AI', what: 'Ask anything about the core; it drafts the note that follows', value: 'Ctrl J on any screen', href: '/admin/geology/ask' },
-  ]
-  return (
-    <Card title="XPLORIX Core" subtitle="Everything logged from the photos and the other downhole data, joined to the drilling record." pad={false}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))' }}>
-        {items.map(x => (
-          <Link key={x.title} href={x.href} className="xpl-row" style={{ display: 'flex', gap: 12, padding: '14px 18px', textDecoration: 'none', borderTop: `1px solid ${T.line}`, borderRight: `1px solid ${T.line}` }}>
-            <span aria-hidden style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--x-orange) 12%, transparent)', color: T.orange }}><x.icon size={17} /></span>
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: T.text }}>{x.title}</span>
-              <span style={{ display: 'block', fontSize: 12, color: T.muted, lineHeight: 1.45, marginTop: 2 }}>{x.what}</span>
-              <span style={{ display: 'block', fontSize: 12, color: T.orange, fontWeight: 600, marginTop: 5 }}>{x.value}</span>
-            </span>
-          </Link>
-        ))}
-      </div>
-    </Card>
   )
 }
