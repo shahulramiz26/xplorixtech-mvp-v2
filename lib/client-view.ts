@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { isOwnStop, depthIndex, shiftOrder, type useCosting, type ShiftLog } from './costing-store'
+import { isOwnStop, depthIndex, shiftOrder, type useCosting, type ShiftLog, type InjuryOutcome, type HeatLog } from './costing-store'
 import { useSignedIn } from './session'
 import { holesFromLogs, liveInvoices, invoiceState } from './client-record'
 import { ownerInbox, type PlanStatus } from './projects'
@@ -55,7 +55,10 @@ export interface ClientShift {
   supervisor?: string
   driller?: string
   holeClosed: boolean
-  incidents: { type: string; severity: string; note: string }[]
+  incidents: { type: string; severity: string; note: string; outcome?: InjuryOutcome; daysLost?: number }[]
+  shiftHours: number
+  heat?: HeatLog
+  standby: boolean
   loggedAt?: string
   order: string                 // date, day before night, a second hole after the first
 }
@@ -76,8 +79,8 @@ export function clientShifts(logs: ShiftLog[]): ClientShift[] {
       standbyHours: lines.filter(x => x.side === 'client').reduce((s, x) => s + x.hours, 0),
       breakdownHours: lines.filter(x => x.side === 'internal').reduce((s, x) => s + x.hours, 0),
       stops: lines.map(x => ({ reason: x.reason, hours: x.hours, mine: x.side === 'client' })),
-      crew: l.crewCount, supervisor: l.supervisor, driller: l.driller,
-      holeClosed: !!l.holeClosedThisShift, incidents: l.incidents ?? [], loggedAt: l.loggedAt, order: shiftOrder(l),
+      crew: l.siteCrew ?? l.crewCount, supervisor: l.supervisor, driller: l.driller,
+      holeClosed: !!l.holeClosedThisShift, incidents: l.incidents ?? [], shiftHours: l.shiftHours, heat: l.heat, standby: !!l.standbyMode, loggedAt: l.loggedAt, order: shiftOrder(l),
     }
   }).sort((a, b) => b.order.localeCompare(a.order) || a.rig.localeCompare(b.rig))
 }

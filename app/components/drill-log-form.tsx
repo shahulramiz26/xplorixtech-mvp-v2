@@ -4,8 +4,9 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Trash2, Paperclip, Upload, ShieldCheck, ShieldAlert, OctagonX, Compass } from 'lucide-react'
 import {
   useCosting, uid, nowStamp, shiftOrder, isOwnStop, HOLE_SIZES, LITHOLOGIES,
-  type ShiftLog, type ShiftName, type DowntimeLine,
+  type ShiftLog, type ShiftName, type DowntimeLine, type InjuryOutcome,
 } from '../../lib/costing-store'
+import { inBanWindow, MIDDAY_BAN } from '../../lib/hse'
 import { useInventory, rigHoldings, TODAY } from '../../lib/inventory-store'
 import { equipment as EQUIPMENT, incidentTypes, severityTypes } from '../../lib/mock-data'
 import { projectHoles } from '../../lib/projects'
@@ -128,7 +129,7 @@ interface DownRow { id: string; reason: string; side: 'internal' | 'client'; hou
 interface BitRow { id: string; itemId: string; serial: string; mStart: string; mEnd: string; replaced: boolean; notes: string }
 interface EquipRow { id: string; name: string; hours: string }
 interface AccRow { id: string; itemId: string; qty: string }
-interface IncidentRow { id: string; type: string; severity: string; note: string }
+interface IncidentRow { id: string; type: string; severity: string; note: string; outcome: string; daysLost: string }
 interface SurveyRow { id: string; depth: string; az: string; dip: string; tool: string }
 
 interface F {
@@ -142,6 +143,7 @@ interface F {
   fuel: string; water: string; additives: string
   files: string[]; notes: string
   surveys: SurveyRow[]
+  heatStop: '' | 'yes' | 'no'; heatTemp: string; heatWater: boolean; heatShade: boolean
 }
 
 function fromLog(l: ShiftLog | undefined, scopes: LogScope[], start: Partial<Pick<F, 'project' | 'rig' | 'date' | 'shift' | 'supervisor'>>): F {
@@ -167,7 +169,9 @@ function fromLog(l: ShiftLog | undefined, scopes: LogScope[], start: Partial<Pic
     bits: (l?.bitRuns ?? []).map(b => ({ id: rid(), itemId: b.itemId, serial: b.serialNo ?? '', mStart: str(b.meterStart), mEnd: str(b.meterEnd), replaced: b.replaced, notes: b.notes ?? '' })),
     equip: (l?.equipmentUsed ?? []).map(e => ({ id: rid(), name: e.name, hours: str(e.hours) })),
     acc: (l?.partsUsed ?? []).filter(p => !(l?.bitRuns ?? []).some(b => b.itemId === p.itemId && b.replaced)).map(p => ({ id: rid(), itemId: p.itemId, qty: str(p.qty) })),
-    incidents: (l?.incidents ?? []).map(i => ({ id: rid(), ...i })),
+    incidents: (l?.incidents ?? []).map(i => ({ id: rid(), type: i.type, severity: i.severity, note: i.note, outcome: i.outcome ?? '', daysLost: str(i.daysLost) })),
+    heatStop: l?.heat?.middayStop === true ? 'yes' : l?.heat?.middayStop === false ? 'no' : '', heatTemp: str(l?.heat?.maxTempC),
+    heatWater: l?.heat?.water ?? true, heatShade: l?.heat?.shade ?? true,
     fuel: l ? str(l.fuelLitres) : '', water: l ? str(l.waterLitres) : '', additives: l ? str(l.additivesKg) : '',
     files: l?.attachments ?? [], notes: l?.notes ?? '',
     surveys: (l?.surveys ?? []).map(x => ({ id: rid(), depth: str(x.depth), az: str(x.azimuth), dip: str(x.dip), tool: x.tool ?? '' })),
@@ -294,6 +298,7 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
   const rowsSum = r2(f.downRows.reduce((s, r) => s + num(r.hours), 0))
   const nhMetres = r2(num(f.nhEnd) - num(f.nhStart))
   const blank = (v: string) => v.trim() === ''
+  const banShift = f.shift === 'Day' && inBanWindow(f.date) && !f.standby
 
   const duplicate = !!f.rig && !!f.date && !!f.shift && (
     state.shiftLogs.some(l => l.id !== existing?.id && !l.segmentOf && l.rig === f.rig && l.date === f.date && l.shift === f.shift)
@@ -342,6 +347,8 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
   if (blank(f.additives)) problems.push('Enter the additives used (0 if none).')
   if (f.equip.some(e => !e.name || !(num(e.hours) > 0))) problems.push('Every equipment line needs the equipment and its hours.')
   if (f.incidents.some(i => !i.type || !i.severity)) problems.push('Every incident needs a type and a severity.')
+  if (f.incidents.some(i => /injury/i.test(i.type) && !i.outcome)) problems.push('Every injury needs what it counts as: first aid, medical treatment, restricted work or lost time.')
+  if (f.shift === 'Day' && inBanWindow(f.date) && !f.standby && num(f.drill) > 0 && !f.heatStop) problems.push('Day shift in the midday-ban window: say whether the crew stopped 12:00–15:00.')
   if (!contractor && !f.standby) {
     const deepest = Math.max(mEnd, f.closed && f.nhStarted ? num(f.nhEnd) : 0)
     f.surveys.forEach((x, i) => {
@@ -390,7 +397,11 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
         ...bits.filter(b => b.replaced).map(b => ({ itemId: b.itemId, qty: 1, metres: b.meterEnd - b.meterStart || undefined, note: b.notes })),
       ],
       equipmentUsed: f.equip.map(e => ({ name: e.name, hours: num(e.hours) })),
-      incidents: f.incidents.map(i => ({ type: i.type, severity: i.severity, note: i.note.trim() })),
+      incidents: f.incidents.map(i => ({ type: i.type, severity: i.severity, note: i.note.trim(),
+        ...(/injury/i.test(i.type) && i.outcome ? { outcome: i.outcome as InjuryOutcome } : {}),
+        ...(i.outcome === 'lost-time' && !blank(i.daysLost) ? { daysLost: num(i.daysLost) } : {}) })),
+      heat: banShift ? { middayStop: f.heatStop === 'yes' ? true : f.heatStop === 'no' ? false : undefined,
+        maxTempC: blank(f.heatTemp) ? undefined : num(f.heatTemp), water: f.heatWater, shade: f.heatShade } : undefined,
       attachments: f.files, notes: f.notes.trim() || undefined,
       surveys: contractor || f.standby || !f.surveys.length ? undefined : f.surveys.map(x => ({ depth: r2(num(x.depth)), azimuth: num(x.az), dip: num(x.dip), tool: x.tool || undefined })),
       fuelLitres: num(f.fuel), waterLitres: num(f.water), additivesKg: num(f.additives),
@@ -770,7 +781,7 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
       )}
 
       {/* ── incidents ─────────────────────────────────────────────────────── */}
-      <Panel title={<span style={{ fontSize: 14 }}>Incidents</span>} right={<AddBtn onClick={() => u({ incidents: [...f.incidents, { id: rid(), type: '', severity: '', note: '' }] })} />}>
+      <Panel title={<span style={{ fontSize: 14 }}>Incidents</span>} right={<AddBtn onClick={() => u({ incidents: [...f.incidents, { id: rid(), type: '', severity: '', note: '', outcome: '', daysLost: '' }] })} />}>
         {f.incidents.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>No incidents this shift.</div>}
         <div style={{ display: 'grid', gap: 10 }}>
           {f.incidents.map((x, i) => {
@@ -788,6 +799,18 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
                     <option value="">Severity</option>{severityTypes.map(t => <option key={t.value} value={t.label}>{t.label}</option>)}
                   </select>
                 </div>
+                {/injury/i.test(x.type) && (
+                  <div style={{ flex: '0 1 190px' }}>
+                    <select value={x.outcome} aria-label="Counts as" onChange={e => set({ outcome: e.target.value })} style={sel}>
+                      <option value="">Counts as</option>
+                      <option value="first-aid">First aid</option><option value="medical">Medical treatment</option>
+                      <option value="restricted">Restricted work</option><option value="lost-time">Lost-time injury</option>
+                    </select>
+                  </div>
+                )}
+                {x.outcome === 'lost-time' && /injury/i.test(x.type) && (
+                  <div style={{ flex: '0 1 110px' }}><input value={x.daysLost} inputMode="numeric" aria-label="Days lost" onChange={e => set({ daysLost: e.target.value })} placeholder="Days lost" style={inputStyle} /></div>
+                )}
                 <div style={{ flex: '2 1 240px' }}><input value={x.note} aria-label="What happened" onChange={e => set({ note: e.target.value })} placeholder="What happened" style={inputStyle} /></div>
                 <Bin label="Remove this incident" onClick={() => u({ incidents: f.incidents.filter(y => y.id !== x.id) })} />
               </div>
@@ -795,6 +818,22 @@ export function DrillLogForm({ variant, scopes, existing, start = {}, lockSuperv
           })}
         </div>
       </Panel>
+
+      {/* ── heat: day shifts in the Saudi midday-ban window ─────────────────── */}
+      {f.shift === 'Day' && inBanWindow(f.date) && !f.standby && (
+        <Panel title={<span style={{ fontSize: 14 }}>Heat · midday ban</span>} hint={`No work under direct sun ${MIDDAY_BAN.start}–${MIDDAY_BAN.end}, 15 June to 15 September. Feeds the HSE board.`}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', fontSize: 13.5 }}>
+            <div style={{ flex: '0 1 230px' }}>
+              <select value={f.heatStop} aria-label="Crew stopped 12:00 to 15:00" onChange={e => u({ heatStop: e.target.value as F['heatStop'] })} style={sel}>
+                <option value="">Crew stopped 12:00–15:00?</option><option value="yes">Yes, stopped</option><option value="no">No, kept working</option>
+              </select>
+            </div>
+            <div style={{ flex: '0 1 140px' }}><input value={f.heatTemp} inputMode="decimal" aria-label="Highest temperature in °C" onChange={e => u({ heatTemp: e.target.value })} placeholder="Max °C" style={inputStyle} /></div>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={f.heatWater} onChange={e => u({ heatWater: e.target.checked })} /> Cold water on site</label>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={f.heatShade} onChange={e => u({ heatShade: e.target.checked })} /> Shade shelter</label>
+          </div>
+        </Panel>
+      )}
 
       {/* ── attachments ───────────────────────────────────────────────────── */}
       <Panel title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><Paperclip size={15} style={{ color: T.faint }} /> Attachments</span>}

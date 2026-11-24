@@ -333,7 +333,7 @@ export function reportToShift(r: ContractorReport, wo: WorkOrder, by: string, at
     id: `ctr_${r.rig}_${r.date}_${r.shift}`.replace(/\s+/g, ''),
     rig: r.rig, project: r.project, date: r.date, shift: r.shift,
     holeNumber: metres > 0 || r.holeNumber ? r.holeNumber : null,
-    crewCount: r.extra?.crewCount ?? 0, shiftHours: r.shiftHours ?? 12,
+    crewCount: r.extra?.crewCount ?? 0, siteCrew: r.extra?.crewCount, shiftHours: r.shiftHours ?? 12,
     drillingHours: r.drillingHours, downtimeHours: down, downtimeReason: reason,
     metresDrilled: metres, coreRecovery: core,
     holeSize: r.holeSize, formationType: r.formationType,
@@ -805,7 +805,7 @@ export function draftToReport(log: ShiftLog, wo: WorkOrder, id: string, received
     reason: log.downtimeReason, holeClosed: log.holeClosedThisShift, remarks: log.notes,
     extra: {
       crewCount: log.crewCount, supervisor: log.supervisor, driller: log.driller, engineHmr: log.engineHmr, engineHours: log.engineHours,
-      lithology: log.lithology, standbyMode: log.standbyMode, downtime: lines, equipmentUsed: log.equipmentUsed, incidents: log.incidents,
+      lithology: log.lithology, standbyMode: log.standbyMode, downtime: lines, equipmentUsed: log.equipmentUsed, incidents: log.incidents, heat: log.heat,
       attachments: log.attachments, notes: log.notes, nextHole: log.nextHole,
       fuelLitres: log.fuelLitres, waterLitres: log.waterLitres, additivesKg: log.additivesKg,
       loggedBy: log.loggedBy, loggedAt: log.loggedAt,
@@ -825,7 +825,7 @@ export function reportToDraft(r: ContractorReport): ShiftLog {
   return {
     ...r.extra,
     id: r.id, rig: r.rig, project: r.project, date: r.date, shift: r.shift, holeNumber: r.holeNumber,
-    crewCount: r.extra?.crewCount ?? 0, shiftHours: r.shiftHours ?? 12, drillingHours: r.drillingHours,
+    crewCount: r.extra?.crewCount ?? 0, siteCrew: r.extra?.crewCount, shiftHours: r.shiftHours ?? 12, drillingHours: r.drillingHours,
     downtimeHours: r.standbyHours + r.breakdownHours, downtimeReason: r.reason, downtime: lines,
     metresDrilled: r.metres, coreRecovery: r.coreRecovery, holeSize: r.holeSize, formationType: r.formationType,
     meterStart: r.fromDepth, meterEnd: r.fromDepth != null ? r2(r.fromDepth + r.metres) : undefined,

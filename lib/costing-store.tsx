@@ -78,6 +78,10 @@ export interface ShiftLog {
   shift: ShiftName
   holeNumber: string | null
   crewCount: number
+  /* People on site this shift when that differs from crewCount: a
+   * sub-contractor's own crew is not on our payroll (crewCount 0 for costing)
+   * but still works the man-hours safety figures count. */
+  siteCrew?: number
   shiftHours: number
   drillingHours: number
   downtimeHours: number
@@ -123,7 +127,12 @@ export interface ShiftLog {
   downtime?: DowntimeLine[]
   bitRuns?: BitRun[]
   equipmentUsed?: { name: string; hours: number }[]
-  incidents?: { type: string; severity: string; note: string }[]
+  /* outcome and daysLost are asked for an injury; older logs read the
+   * outcome from type and severity (lib/hse.ts). */
+  incidents?: { type: string; severity: string; note: string; outcome?: InjuryOutcome; daysLost?: number }[]
+  /* Day shifts in the Saudi midday-ban window (15 Jun–15 Sep): did the crew
+   * stop 12:00–15:00, how hot it got, and whether water and shade were there. */
+  heat?: HeatLog
   attachments?: string[]      // file names; the MVP keeps the name, not the file
   notes?: string
   /* Downhole survey readings taken this shift. Optional: most shifts have none.
@@ -145,6 +154,8 @@ export interface ShiftLog {
   history?: LogChange[]
 }
 
+export type InjuryOutcome = 'lost-time' | 'restricted' | 'medical' | 'first-aid' | 'near-miss' | 'other'
+export interface HeatLog { middayStop?: boolean; maxTempC?: number; water?: boolean; shade?: boolean }
 export interface DowntimeLine { reason: string; side: 'internal' | 'client'; hours: number }
 export interface BitRun { itemId: string; serialNo?: string; meterStart: number; meterEnd: number; replaced: boolean; notes?: string }
 export interface NextHole {
@@ -1531,7 +1542,7 @@ const nextDay = (date: string) => { const d = new Date(`${date}T00:00:00Z`); d.s
 
 function checked(logs: ShiftLog[], contractor: string, workOrderId: string, source: ShiftCheck['source'], recovery?: Record<string, number>): ShiftLog[] {
   return logs.map(l => ({
-    ...l, crewCount: 0, fuelLitres: 0, waterLitres: 0, additivesKg: 0, partsUsed: [],
+    ...l, crewCount: 0, siteCrew: l.crewCount, fuelLitres: 0, waterLitres: 0, additivesKg: 0, partsUsed: [],
     coreRecovery: l.holeNumber && recovery?.[l.holeNumber] ? +(l.metresDrilled * recovery[l.holeNumber]).toFixed(2) : l.coreRecovery,
     contractor, workOrderId,
     check: { by: 'Pradeep Rao', at: `${nextDay(l.date)}T09:${l.shift === 'Day' ? '10' : '25'}`, source },
@@ -1626,12 +1637,51 @@ function detailed(logs: ShiftLog[]): ShiftLog[] {
   })
 }
 
+/* The demo's safety record: incidents on the logs where they happened, the
+ * heat lines on day shifts in the midday-ban window (two days a crew kept
+ * working, a sub-contractor who did not record it, one hot day without
+ * shade), and one driller sent from a night shift straight onto a day shift. */
+const SEED_INCIDENTS: [string, string, ShiftName, string, string, string, InjuryOutcome?, number?][] = [
+  ['RIG-001', '2026-07-28', 'Day', 'Near miss', 'Minor', 'Rod slipped in the breakout; nobody in the line of fire', 'near-miss'],
+  ['RIG-001', '2026-08-09', 'Night', 'Injury', 'Minor', 'Hand cut changing the core lifter; first aid on site', 'first-aid'],
+  ['RIG-002', '2026-08-26', 'Day', 'Injury', 'Major', "Heat exhaustion: offsider taken to the clinic, back next day", 'medical'],
+  ['RIG-002', '2026-08-30', 'Night', 'Near miss', 'Minor', 'Hose whip at the water pump coupling', 'near-miss'],
+  ['RIG-001', '2026-09-06', 'Day', 'Equipment Damage', 'Major', 'Mast hydraulic hose burst; area cleared'],
+  ['RIG-003', '2026-09-24', 'Day', 'Safety Violation', 'Minor', 'No harness on the mast platform; work stopped and crew briefed'],
+  ['CP-01', '2026-10-03', 'Night', 'Injury', 'Minor', 'Finger pinched between rod and foot clamp; first aid on site', 'first-aid'],
+  ['RIG-001', '2026-10-11', 'Day', 'Near miss', 'Minor', 'Light vehicle reversed close to the rig with no spotter', 'near-miss'],
+  ['RIG-001', '2026-10-19', 'Night', 'Injury', 'Minor', 'Drilling additive in the eye; flushed at the eyewash', 'first-aid'],
+  ['CP-02', '2026-10-25', 'Day', 'Near miss', 'Minor', 'Dropped object from the mast; exclusion zone held', 'near-miss'],
+]
+function withSafety(logs: ShiftLog[]): ShiftLog[] {
+  const hash = (t: string) => Array.from(t).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+  const worked = new Set(['RIG-002_2026-08-19', 'RIG-002_2026-08-26'])
+  const night = logs.find(l => l.rig === 'RIG-001' && l.date === '2026-10-07' && l.shift === 'Night' && !l.segmentOf)
+  return logs.map(l => {
+    if (l.segmentOf) return l
+    let out = l
+    const inc = SEED_INCIDENTS.filter(([r, d, sh]) => r === l.rig && d === l.date && sh === l.shift)
+    if (inc.length) out = { ...out, incidents: inc.map(([, , , type, severity, note, outcome, daysLost]) => ({ type, severity, note, outcome, daysLost })) }
+    const md = l.date.slice(5)
+    if (l.shift === 'Day' && md >= '06-15' && md <= '09-15' && l.drillingHours > 0 && !l.contractor) {
+      const key = `${l.rig}_${l.date}`
+      const t = 41 + (hash(key) % 8)
+      out = { ...out, heat: worked.has(key)
+        ? { middayStop: false, maxTempC: Math.max(t, 46), water: true, shade: true }
+        : key === 'RIG-001_2026-08-05' ? { middayStop: true, maxTempC: 48, water: true, shade: false }
+        : { middayStop: true, maxTempC: t, water: true, shade: true } }
+    }
+    if (night && l.rig === 'RIG-001' && l.date === '2026-10-08' && l.shift === 'Day') out = { ...out, driller: night.driller }
+    return out
+  })
+}
+
 export const SEED_SHIFT_LOGS: ShiftLog[] =
-  detailed(markClosures(
+  withSafety(detailed(markClosures(
     [...SEED_SHIFT_LOGS_JUNE, ...SEED_SHIFT_LOGS_JULY, ...SEED_SHIFT_LOGS_A,
      ...SEED_SHIFT_LOGS_B, ...SEED_SHIFT_LOGS_SEP, ...SEED_SHIFT_LOGS_CONTRACTORS],
     ['DH-901', 'DH-902', 'DH-911', 'DH-951', 'DH-952', 'DH-961',
-     'DH-001', 'DH-002', 'DH-011', 'DH-101', 'DH-131', 'DH-141', 'DH-151']))
+     'DH-001', 'DH-002', 'DH-011', 'DH-101', 'DH-131', 'DH-141', 'DH-151'])))
 
 /* Planned depth for every seeded hole. A closed hole was planned at what it
  * reached, rounded up to the next 5 m; a hole still drilling has further to go. */

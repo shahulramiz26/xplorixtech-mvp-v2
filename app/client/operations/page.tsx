@@ -6,6 +6,7 @@ import { monthOf, monthLabel, monthShort, COMPANY_NAME } from '../../../lib/cost
 import { TODAY } from '../../../lib/inventory-store'
 import { useClient } from '../../../lib/client-view'
 import { downloadCsv } from '../../../lib/client-record'
+import { outcomeOf, RECORDABLE, inBanWindow, MILLION } from '../../../lib/hse'
 import { T, tint, Page, PageHead, Card, Tile, Grid, Split, Seg, Btn, Status, Empty, Table, Meter, inputStyle, th, thR, td, tdR, rowLine } from '../../components/kit'
 
 /* ==========================================================================
@@ -40,6 +41,13 @@ export default function ClientOperations() {
   const standbyH = rows.reduce((s, x) => s + x.standbyHours, 0)
   const breakH = rows.reduce((s, x) => s + x.breakdownHours, 0)
   const incidents = rows.flatMap(s => s.incidents.map(i => ({ ...i, s })))
+  // Safety, from the same shifts: man-hours, injury rates, the midday ban.
+  const firstRows = rows.filter(s => s.crew > 0)
+  const manHours = firstRows.reduce((a, s) => a + s.crew * s.shiftHours, 0)
+  const outcomes = incidents.map(i => outcomeOf(i))
+  const lti = outcomes.filter(o => o === 'lost-time').length, rec = outcomes.filter(o => RECORDABLE.includes(o)).length
+  const ban = firstRows.filter(s => s.shift === 'Day' && inBanWindow(s.date) && !s.standby && s.drillingHours > 0)
+  const banKept = ban.filter(s => s.heat?.middayStop === true).length
 
   // Metres a day, oldest first.
   const days = Array.from(new Set(rows.map(s => s.date))).sort().slice(-31)
@@ -155,6 +163,17 @@ export default function ClientOperations() {
           ))}
         </Card>
       </Split>
+
+      {firstRows.length > 0 && (
+        <Card title="Safety on your sites" subtitle="From the same shift logs: crew × shift hours, the incidents, and the midday-ban lines on day shifts. Rates are per million man-hours.">
+          <Grid min={150}>
+            <Tile label="Man-hours" value={Math.round(manHours).toLocaleString('en-US')} />
+            <Tile label="LTIFR" value={n1(manHours ? lti * MILLION / manHours : 0)} note={`${lti} lost-time`} tone={lti ? 'bad' : 'good'} />
+            <Tile label="TRIFR" value={n1(manHours ? rec * MILLION / manHours : 0)} note={`${rec} recordable`} tone={rec ? 'warn' : 'good'} />
+            <Tile label="Midday ban kept" value={ban.length ? `${Math.round(banKept / ban.length * 100)}%` : '—'} note={ban.length ? `${banKept} of ${ban.length} day shifts, 15 Jun–15 Sep` : 'No day shift in the ban window'} tone={ban.length && banKept < ban.length ? 'warn' : ban.length ? 'good' : undefined} />
+          </Grid>
+        </Card>
+      )}
 
       {incidents.length > 0 && (
         <Card title={`Incidents · ${incidents.length}`} pad={false}>

@@ -3,6 +3,7 @@ import { TODAY, addDays, rigHoldings, normFormation as groundOfLog, type Formati
 import { computeRigMonth, type CostingState, type InvState } from './costing-view'
 import { workOrderFor, contractorName } from './contracting'
 import { shortDate } from './client-record'
+import { hse, MIDDAY_BAN, HOT_C } from './hse'
 
 /* ==========================================================================
  * ANALYTICS — every figure on the six dashboards, worked out from the record
@@ -396,7 +397,8 @@ export function safety(state: CostingState, f: Filters) {
   const wk = weeks(s.from, s.to, s.logs)
   const trend = wk.map(w => ({ week: shortDate(w), incidents: incidents.filter(i => weekOf(i.date) === w).length }))
   const shifts = s.whole.length
-  return { s, incidents: incidents.sort((a, b) => b.date.localeCompare(a.date)), byType: count('type'), bySeverity: count('severity'), trend, shifts, crewShifts: sum(s.whole, l => l.crewCount) }
+  const h = hse(s.logs, TODAY, l => { const o = ownerOf(state, l); return o === 'Own' ? undefined : o })
+  return { s, h, incidents: incidents.sort((a, b) => b.date.localeCompare(a.date)), byType: count('type'), bySeverity: count('severity'), trend, shifts, crewShifts: sum(s.whole, l => l.crewCount) }
 }
 
 export function safetyInsights(x: ReturnType<typeof safety>): Insight[] {
@@ -407,6 +409,41 @@ export function safetyInsights(x: ReturnType<typeof safety>): Insight[] {
   out.push({ id: 'count', tone: serious.length ? 'bad' : 'info', title: `${plural(x.incidents.length, 'incident')} in ${plural(x.shifts, 'shift')}`, detail: `${serious.length ? `${plural(serious.length, 'serious one')}. ` : ''}Most often: ${x.byType[0]?.name}.` })
   const byRig = Object.entries(x.incidents.reduce((a, i) => ({ ...a, [i.rig]: (a[i.rig] ?? 0) + 1 }), {} as Record<string, number>)).sort((a, b) => b[1] - a[1])[0]
   if (byRig && byRig[1] >= 2) out.push({ id: 'rig', tone: 'warn', title: `${byRig[0]} has the most: ${byRig[1]}`, detail: 'Go through them with its supervisor.' })
+  out.push(...hseInsights(x.h))
+  return out
+}
+
+/* Heat and fatigue: the midday ban, hot shifts without cover, no rest. */
+export function hseInsights(h: ReturnType<typeof hse>): Insight[] {
+  const out: Insight[] = []
+  const href = '/admin/analytics/hsc'
+  h.banWorked.forEach(b => out.push({
+    id: `ban:${b.id}`, tone: 'bad', href,
+    title: `${b.rig} worked through the midday ban on ${shortDate(b.date)}`,
+    detail: `The day shift log says the crew did not stop ${MIDDAY_BAN.start}–${MIDDAY_BAN.end}${b.maxTempC ? ` at ${b.maxTempC} °C` : ''}. Saudi law bans work under direct sun in those hours from 15 June to 15 September.`,
+    action: 'Confirm with the supervisor and plan the stop into the day shift.',
+  }))
+  if (h.banMissing.length) out.push({
+    id: 'ban:missing', tone: 'warn', href,
+    title: `${plural(h.banMissing.length, 'day shift')} in the midday-ban window ${h.banMissing.length === 1 ? 'does' : 'do'} not say whether the crew stopped`,
+    detail: `${Array.from(new Set(h.banMissing.map(b => b.rig))).join(', ')}. Without it there is nothing to show an inspector.`,
+    action: 'Ask the supervisors to fill in the heat lines on the drill log.',
+  })
+  h.hotNoCover.forEach(l => out.push({
+    id: `heat:${l.id}`, tone: 'warn', href,
+    title: `${l.rig} hit ${l.heat?.maxTempC} °C on ${shortDate(l.date)} without ${!l.heat?.shade ? 'shade' : 'water'} on site`,
+    detail: `At ${HOT_C} °C and above the log should show water and shade for the crew.`,
+    action: 'Check the rig has a shade shelter and cold water before the next hot shift.',
+  }))
+  h.fatigue.filter(f => f.kind === 'turnaround').forEach(f => out.push({
+    id: `fatigue:${f.id}`, tone: 'warn', href,
+    title: `${f.who} worked a night shift and the next day shift`,
+    detail: `${f.rig}, ${shortDate(f.date)}: no real rest between the two shifts.`,
+    action: 'Keep a rest break between a night and a day shift in the roster.',
+  }))
+  h.fatigue.filter(f => f.kind === 'long').slice(0, 3).forEach(f => out.push({
+    id: `fatigue:${f.id}`, tone: 'warn', href, title: `${f.rig}: ${f.detail} on ${shortDate(f.date)}`, detail: 'Shifts over 12 hours raise the chance of an incident.',
+  }))
   return out
 }
 
